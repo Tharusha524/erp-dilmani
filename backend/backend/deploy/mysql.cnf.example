@@ -1,0 +1,28 @@
+# MySQL / MariaDB tuning for ERP workloads (adjust RAM to your server)
+# Linux: /etc/mysql/mariadb.conf.d/99-erp.cnf
+# Windows XAMPP: my.ini [mysqld] section
+
+[mysqld]
+# InnoDB buffer pool — use 50-70% of dedicated DB server RAM
+innodb_buffer_pool_size = 1G
+innodb_log_file_size = 256M
+innodb_flush_log_at_trx_commit = 2
+innodb_flush_method = O_DIRECT
+
+max_connections = 200
+thread_cache_size = 50
+table_open_cache = 4000
+tmp_table_size = 64M
+max_heap_table_size = 64M
+
+# Slow query log — find reports to optimize
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2
+
+# Character set
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+# Restart MySQL after changes:
+#   sudo systemctl restart mysql

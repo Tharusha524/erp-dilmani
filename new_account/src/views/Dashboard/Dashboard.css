@@ -1,0 +1,180 @@
+.erp-dashboard {
+  min-height: 100%;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 220px, #f8fafc 100%);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.erp-dashboard__hero {
+  border-radius: 18px;
+  border: 1px solid rgba(2, 66, 113, 0.1);
+  background: linear-gradient(135deg, #0b1220 0%, #024271 52%, #0369a1 100%);
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+}
+
+.erp-dashboard__hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(14, 165, 233, 0.22), transparent 42%);
+  pointer-events: none;
+}
+
+.erp-dashboard__hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.erp-dashboard__hero-metric {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  height: 100%;
+}
+
+.erp-dashboard__alerts-banner {
+  border-radius: 16px !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  background: linear-gradient(135deg, rgba(254, 243, 199, 0.65) 0%, rgba(255, 251, 235, 0.95) 100%) !important;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08) !important;
+}
+
+.erp-dashboard__alert-item {
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+}
+
+.erp-dashboard__alert-item--clickable {
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.erp-dashboard__alert-item--clickable:hover {
+  border-color: rgba(245, 158, 11, 0.55);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.12);
+  transform: translateY(-1px);
+}
+
+.erp-dashboard__report-strip {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+}
+
+.erp-dashboard__report-btn {
+  border-radius: 999px !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+.erp-dashboard__report-btn:hover {
+  border-color: rgba(2, 66, 113, 0.35) !important;
+  background: rgba(2, 66, 113, 0.04) !important;
+}
+
+.erp-dashboard__section-title {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.01em;
+}
+
+.erp-dashboard__section-subtitle {
+  font-size: 0.82rem !important;
+  color: #64748b !important;
+}
+
+.erp-dashboard__card {
+  border-radius: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.03) !important;
+  height: 100%;
+}
+
+.erp-dashboard__card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.erp-dashboard__card-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(2, 66, 113, 0.08);
+  color: #024271;
+  white-space: nowrap;
+}
+
+.erp-stat-card {
+  border-radius: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+  height: 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+}
+
+.erp-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(2, 66, 113, 0.15) !important;
+  box-shadow: 0 8px 24px rgba(2, 66, 113, 0.08) !important;
+}
+
+.erp-stat-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.erp-stat-card__change {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.erp-stat-card__change--up {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.erp-stat-card__change--down {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.erp-dashboard__quick-card {
+  border-radius: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  transition: all 0.2s ease;
+}
+
+.erp-dashboard__quick-card:hover {
+  transform: translateY(-2px);
+}

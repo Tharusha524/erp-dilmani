@@ -1,0 +1,36 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.suo
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+!.env.docker
+
+# Backend (Laravel)
+backend/backend/vendor/
+backend/backend/node_modules/
+backend/backend/public/build/
+backend/backend/public/hot/
+backend/backend/public/storage/
+backend/backend/storage/*.key
+backend/backend/storage/logs/*.log
+backend/backend/storage/app/backups/*.sql
+backend/backend/.phpunit.cache/
+backend/backend/.phpunit.result.cache
+
+# Frontend (React/Vite)
+new_account/node_modules/
+new_account/dist/
+new_account/dist-ssr/
+new_account/.vite/
+
+# Logs
+*.log
+npm-debug.log*

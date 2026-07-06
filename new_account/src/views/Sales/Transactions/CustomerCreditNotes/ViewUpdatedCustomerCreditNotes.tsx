@@ -1,0 +1,294 @@
+import React, { useMemo, useState, useEffect } from "react";
+import { Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
+import { getShippingCompanies } from "../../../../api/ShippingCompany/ShippingCompanyApi";
+import { getBranches } from "../../../../api/CustomerBranch/CustomerBranchApi";
+import { getSalesTypes } from "../../../../api/SalesMaintenance/salesService";
+import { getDebtorTrans } from "../../../../api/DebtorTrans/DebtorTransApi";
+import { getDebtorTransDetails } from "../../../../api/DebtorTrans/DebtorTransDetailsApi";
+import { getItems } from "../../../../api/Item/ItemApi";
+import { getItemUnits } from "../../../../api/ItemUnit/ItemUnitApi";
+import { getTaxGroupItemsByGroupId } from "../../../../api/Tax/TaxGroupItemApi";
+import { getTaxTypes } from "../../../../api/Tax/taxServices";
+import { creditNoteGlNavState } from "../../../../utils/salesGlJournalNavState";
+import { TransactionPrintPage, TransactionPrintTemplate } from "../../../../components/Print";
+import {
+  DOCUMENT_PRINT_TYPES,
+  STANDARD_ITEM_PRINT_COLUMNS,
+} from "../../../../utils/transactionPrintColumns";
+import {
+  buildDebtorDetailPrintLines,
+  computeSalesTaxLines,
+} from "../../../../utils/transactionPrintHelpers";
+
+export default function ViewUpdatedCustomerCreditNotes() {
+  const { state } = useLocation();
+  const navigate = useNavigate();
+
+  const {
+    trans_no,
+    reference,
+    date,
+    trans_type,
+    autoPrint,
+  } = state || {};
+
+  // Fetch customers
+  const { data: customers = [] } = useQuery({
+    queryKey: ["customers"],
+    queryFn: getCustomers,
+    refetchOnMount: true,
+  });
+
+  // Fetch branches
+  const { data: branches = [] } = useQuery({
+    queryKey: ["branches"],
+    queryFn: () => getBranches(),
+    refetchOnMount: true,
+  });
+
+  // Fetch sales types
+  const { data: salesTypes = [] } = useQuery({
+    queryKey: ["salesTypes"],
+    queryFn: getSalesTypes,
+    refetchOnMount: true,
+  });
+
+  // Fetch shipping companies
+  const { data: shippingCompanies = [] } = useQuery({
+    queryKey: ["shippingCompanies"],
+    queryFn: getShippingCompanies,
+    refetchOnMount: true,
+  });
+
+  // Fetch debtor trans
+  const { data: debtorTrans = [] } = useQuery({
+    queryKey: ["debtorTrans"],
+    queryFn: getDebtorTrans,
+    refetchOnMount: true,
+  });
+
+  // Fetch debtor trans details
+  const { data: debtorTransDetails = [] } = useQuery({
+    queryKey: ["debtorTransDetails"],
+    queryFn: getDebtorTransDetails,
+    refetchOnMount: true,
+  });
+
+  // Fetch items
+  const { data: items = [] } = useQuery({
+    queryKey: ["items"],
+    queryFn: getItems,
+    refetchOnMount: true,
+  });
+
+  // Fetch item units
+  const { data: itemUnits = [] } = useQuery({
+    queryKey: ["itemUnits"],
+    queryFn: getItemUnits,
+    refetchOnMount: true,
+  });
+
+  // Fetch tax types
+  const { data: taxTypes = [] } = useQuery({
+    queryKey: ["taxTypes"],
+    queryFn: getTaxTypes,
+    refetchOnMount: true,
+  });
+
+  const [taxGroupItems, setTaxGroupItems] = useState<any[]>([]);
+
+  // Find the current debtor trans (only credit notes: trans_type === 11)
+  const currentTrans = useMemo(() => {
+  //  console.log("debtorTrans:", debtorTrans);
+    //console.log("trans_no:", trans_no);
+    const found = debtorTrans.find((d: any) => d.trans_no == trans_no && d.trans_type == 11);
+   // console.log("found transaction:", found);
+    return found;
+  }, [debtorTrans, trans_no]);
+
+  // Find the details for this trans (match debtor_trans.trans_no === debtor_trans_details.debtor_trans_no)
+  const currentDetails = useMemo(() => {
+    // Only return details when the parent debtor_trans is a customer credit note (trans_type === 11)
+    if (!currentTrans || Number(currentTrans.trans_type) !== 11) return [];
+    const transNo = currentTrans.trans_no ?? trans_no;
+    return debtorTransDetails.filter((d: any) => Number(d.debtor_trans_no) === Number(transNo));
+  }, [debtorTransDetails, currentTrans, trans_no]);
+
+  // Memoize selected branch to prevent unnecessary re-renders
+  const selectedBranch = useMemo(() => {
+    if (!currentTrans?.branch_code) return null;
+    return (branches || []).find((b: any) => String(b.branch_code) === String(currentTrans.branch_code));
+  }, [currentTrans?.branch_code, branches]);
+
+  // Fetch tax group items when branch is available
+  useEffect(() => {
+    if (selectedBranch?.tax_group) {
+      getTaxGroupItemsByGroupId(selectedBranch.tax_group)
+        .then((items) => setTaxGroupItems(items))
+        .catch((err) => {
+          console.error("Failed to fetch tax group items:", err);
+          setTaxGroupItems([]);
+        });
+    } else {
+      setTaxGroupItems([]);
+    }
+  }, [selectedBranch?.tax_group]);
+
+  // Resolve customer info
+  const customerName = useMemo(() => {
+    if (!currentTrans?.debtor_no) return "—";
+    const found = (customers || []).find(
+      (c) => String(c.debtor_no) === String(currentTrans.debtor_no)
+    );
+    return found ? found.name : String(currentTrans.debtor_no);
+  }, [customers, currentTrans]);
+
+  const customerAddress = useMemo(() => {
+    if (!currentTrans?.debtor_no) return "";
+    const found = (customers || []).find(
+      (c) => String(c.debtor_no) === String(currentTrans.debtor_no)
+    );
+    if (!found) return "";
+    return [found.address, found.city, found.state, found.postal_code]
+      .filter(Boolean)
+      .join(", ");
+  }, [customers, currentTrans]);
+
+  const customerCurrency = useMemo(() => {
+    if (!currentTrans?.debtor_no) return undefined;
+    const found = (customers || []).find(
+      (c) => String(c.debtor_no) === String(currentTrans.debtor_no)
+    );
+    return found?.curr_code || undefined;
+  }, [customers, currentTrans]);
+
+  // Resolve branch info
+  const branchInfo = useMemo(() => {
+    if (!currentTrans?.branch_code) return "-";
+    const found = (branches || []).find(
+      (b) => String(b.branch_code) === String(currentTrans.branch_code)
+    );
+    if (found) {
+      const address = [found.br_address, found.city, found.state, found.postal_code].filter(Boolean).join(", ");
+      return `${found.br_name} - ${address}`;
+    }
+    return currentTrans.branch_code;
+  }, [branches, currentTrans]);
+
+  // Resolve sales type name
+  const salesTypeName = useMemo(() => {
+    if (!currentTrans?.tpe) return "-";
+    const found = (salesTypes || []).find(
+      (s) => String(s.id) === String(currentTrans.tpe)
+    );
+    return found ? found.typeName : currentTrans.tpe;
+  }, [salesTypes, currentTrans]);
+
+  // Determine selected price list (sales type)
+  const selectedPriceList = useMemo(() => {
+    if (!currentTrans?.tpe) return null;
+    return (salesTypes || []).find(
+      (s) => String(s.id) === String(currentTrans.tpe)
+    );
+  }, [salesTypes, currentTrans]);
+
+  // Resolve shipping company name
+  const shippingName = useMemo(() => {
+    if (!currentTrans?.ship_via) return "-";
+    const found = (shippingCompanies || []).find(
+      (s) => String(s.shipper_id) === String(currentTrans.ship_via)
+    );
+    return found ? found.shipper_name : currentTrans.ship_via;
+  }, [shippingCompanies, currentTrans]);
+
+  // Calculate sub total
+  const subTotal = useMemo(() => {
+    return currentDetails.reduce((sum, item) => {
+      const total = (item.unit_price || 0) * (item.quantity || 0) * (1 - (item.discount_percent || 0) / 100);
+      return sum + total;
+    }, 0);
+  }, [currentDetails]);
+
+  // Calculate taxes
+  const taxLines = useMemo(
+    () =>
+      computeSalesTaxLines(
+        subTotal,
+        taxGroupItems,
+        taxTypes,
+        Boolean(selectedPriceList?.taxIncl)
+      ),
+    [subTotal, taxGroupItems, taxTypes, selectedPriceList]
+  );
+
+  const totalCredit = useMemo(() => {
+    const taxSum = taxLines.reduce((sum, line) => sum + line.amount, 0);
+    if (selectedPriceList?.taxIncl) return subTotal;
+    return subTotal + taxSum;
+  }, [selectedPriceList, subTotal, taxLines]);
+
+  const printLines = useMemo(
+    () => buildDebtorDetailPrintLines(currentDetails, items, itemUnits),
+    [currentDetails, items, itemUnits]
+  );
+
+  const breadcrumbItems = [
+    { title: "Home", href: "/dashboard" },
+    { title: "Customer Credit Notes" },
+  ];
+
+  return (
+    <TransactionPrintPage
+      pageTitle={`Customer Credit Note - ${currentTrans?.reference || reference || "—"}`}
+      breadcrumbs={breadcrumbItems}
+      onBack={() => navigate(-1)}
+      autoPrint={Boolean(autoPrint)}
+      ready={Boolean(currentTrans)}
+      extraActions={
+        <Button
+          variant="outlined"
+          onClick={() =>
+            navigate("/sales/transactions/gl-journal-entries", {
+              state: creditNoteGlNavState({
+                trans_no: currentTrans?.trans_no ?? trans_no,
+                reference: currentTrans?.reference ?? reference,
+                date: currentTrans?.tran_date ?? date,
+                trans_type: 11,
+              }),
+            })
+          }
+        >
+          View GL Journal Entries
+        </Button>
+      }
+      printContent={
+        <TransactionPrintTemplate
+          documentType={DOCUMENT_PRINT_TYPES.creditNote}
+          documentNumber={currentTrans?.trans_no ?? trans_no}
+          reference={currentTrans?.reference ?? reference}
+          documentDate={currentTrans?.tran_date ?? date}
+          currency={customerCurrency}
+          partyName={customerName}
+          partyLines={customerAddress ? [customerAddress] : []}
+          documentFields={[
+            { label: "Branch", value: branchInfo },
+            { label: "Sales Type", value: salesTypeName },
+            { label: "Shipping", value: shippingName },
+          ]}
+          columns={STANDARD_ITEM_PRINT_COLUMNS}
+          lines={printLines}
+          totals={{
+            subtotal: subTotal,
+            taxLines,
+            total: totalCredit,
+            currency: customerCurrency,
+          }}
+          footerNote="Credit note — amounts credited to customer account as listed above."
+        />
+      }
+    />
+  );
+}

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Grow Ledger</title>
+    <script>
+      (function () {
+        var BASE = "/sky_erp";
+        var path = location.pathname || "";
+        var rest = path.indexOf(BASE) === 0 ? path.slice(BASE.length) : path;
+        if (!rest || rest === "/" || rest === "/index.html") {
+          location.replace(BASE + "/");
+          return;
+        }
+        if (rest.charAt(0) !== "/") rest = "/" + rest;
+        location.replace(BASE + "/#" + rest + location.search);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>Loading Grow Ledger…</p>
+  </body>
+</html>

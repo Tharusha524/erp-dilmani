@@ -1,0 +1,90 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: erp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: erp_root_secret
+      MYSQL_DATABASE: backend
+      MYSQL_USER: erp
+      MYSQL_PASSWORD: erp_secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uerp", "-perp_secret"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: erp-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend/backend
+      dockerfile: Dockerfile
+    container_name: erp-backend
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./backend/backend:/var/www/html
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: backend
+      DB_USERNAME: erp
+      DB_PASSWORD: erp_secret
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      SESSION_DRIVER: redis
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "composer install --no-interaction &&
+             php artisan key:generate --force --no-interaction 2>/dev/null || true &&
+             php artisan migrate --force --no-interaction &&
+             php artisan serve --host=0.0.0.0 --port=8000"
+
+  frontend:
+    build:
+      context: ./new_account
+      dockerfile: Dockerfile
+    container_name: erp-frontend
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./new_account:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: /api
+      VITE_API_PROXY_TARGET: http://backend:8000
+    depends_on:
+      - backend
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+
+volumes:
+  mysql_data:
+  frontend_node_modules:

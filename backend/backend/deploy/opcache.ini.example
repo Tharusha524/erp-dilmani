@@ -1,0 +1,15 @@
+; PHP OPcache — add to php.ini or conf.d/opcache.ini (production)
+
+opcache.enable=1
+opcache.enable_cli=0
+opcache.memory_consumption=256
+opcache.interned_strings_buffer=16
+opcache.max_accelerated_files=20000
+opcache.validate_timestamps=0
+opcache.revalidate_freq=0
+opcache.save_comments=1
+opcache.jit=1255
+opcache.jit_buffer_size=128M
+
+; After deploy run: php artisan optimize
+; For dev, set opcache.validate_timestamps=1

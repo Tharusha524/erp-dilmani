@@ -1,0 +1,10 @@
+# OPTIONAL helper if parent folder rewrite is needed.
+# Frontend lives at /public_html/sky_erp/
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_URI} ^/sky_erp/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^sky_erp/(.*)$ /sky_erp/index.html [L,QSA]
+</IfModule>

@@ -1,0 +1,18 @@
+# REQUIRED for clean URLs on refresh (/sky_erp/dashboard)
+# Merge into public_html/.htaccess if SPA refresh returns 404.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Let real files through (backend, assets, etc.)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^sky_erp/assets/ - [L]
+
+  # SPA: /sky_erp/dashboard -> index.html
+  RewriteCond %{REQUEST_URI} ^/sky_erp/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^sky_erp/(.*)$ /sky_erp/index.html [L,QSA]
+</IfModule>

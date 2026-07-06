@@ -1,0 +1,811 @@
+import React, { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Box,
+  Button,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableFooter,
+  Paper,
+  TextField,
+  Typography,
+  MenuItem,
+  Grid,
+  ListSubheader,
+  Alert,
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import { useNavigate } from "react-router-dom";
+import Breadcrumb from "../../../../components/BreadCrumb";
+import PageTitle from "../../../../components/PageTitle";
+import ItemSearchSelect from "../../../../components/ItemSearchSelect";
+import theme from "../../../../theme";
+import { getSuppliers } from "../../../../api/Supplier/SupplierApi";
+import { createRef } from "../../../../api/Refs/RefsApi";
+import { getFiscalYears } from "../../../../api/FiscalYear/FiscalYearApi";
+import { getCompanies } from "../../../../api/CompanySetup/CompanySetupApi";
+import { getInventoryLocations } from "../../../../api/InventoryLocation/InventoryLocationApi";
+import { getDimensions } from "../../../../api/Dimension/DimensionApi";
+import { getItems } from "../../../../api/Item/ItemApi";
+import { getItemUnits } from "../../../../api/ItemUnit/ItemUnitApi";
+import { getItemCategories } from "../../../../api/ItemCategories/ItemCategoriesApi";
+import { getNextPurchOrderNo, postPurchOrderWithDetails } from '../../../../api/PurchOrders/PurchOrderApi';
+import auditTrailApi from '../../../../api/AuditTrail/AuditTrailApi';
+import useCurrentUser from "../../../../hooks/useCurrentUser";
+import { useMessageDialog } from "../../../../context/MessageDialogContext";
+import { runTransactionSave } from "../../../../utils/transactionSave";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
+import { useSupplierCredit } from "../../../../hooks/useSupplierCredit";
+import SupplierCreditSummaryFields from "../../../../components/SupplierCreditSummaryFields";
+import SupplierCurrencyField from "../../../../components/SupplierCurrencyField";
+import CurrencyAmountInput from "../../../../components/CurrencyAmountInput";
+import { resolveSupplierTransactionCurrencyCode } from "../../../../utils/relationId";
+import { resolvePurchaseItemPrice } from "../../../../utils/resolvePurchaseItemPrice";
+import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
+import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
+
+export default function PurchaseOrderEntry() {
+  const navigate = useNavigate();
+  const { user } = useCurrentUser();
+  const { showError } = useMessageDialog();
+
+  // ========= Form Fields =========
+  const [supplier, setSupplier] = useState("");
+  const [supplierRef, setSupplierRef] = useState("");
+  const [deliverTo, setDeliverTo] = useState("");
+  const [orderDate, setOrderDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [dimension, setDimension] = useState("");
+  const [receiveInto, setReceiveInto] = useState("");
+  const [reference, setReference] = useState("");
+
+  const [memo, setMemo] = useState("");
+  const [dateError, setDateError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  // order number will be generated from server-side sequence (client will request max+1)
+
+  // API data states
+  const [suppliers, setSuppliers] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [dimensions, setDimensions] = useState([]);
+  const [items, setItems] = useState([]);
+  const [itemUnits, setItemUnits] = useState([]);
+  const [categories, setCategories] = useState<{ category_id: number; description: string }[]>([]);
+
+  // Group items by category for rendering selects; typed as Record<string, any[]>
+  const groupedItemsByCategory: Record<string, any[]> = (items || []).reduce((groups: Record<string, any[]>, item: any) => {
+    const catId = item.category_id || "Uncategorized";
+    if (!groups[catId]) groups[catId] = [];
+    groups[catId].push(item);
+    return groups;
+  }, {} as Record<string, any[]>);
+
+  // Helper to resolve supplier identifier (handles different backend shapes)
+  const resolveSupplierId = (s: any) => s?.id ?? s?.supplier_id ?? s?.supp_id ?? s?.supplierId ?? s?.debtor_no ?? s?.code ?? s?.supp_code ?? null;
+
+  // ========= Generate Reference =========
+  // Fetch fiscal years to build fiscal-year-aware reference
+  const { data: fiscalYears = [] } = useQuery({ queryKey: ["fiscalYears"], queryFn: getFiscalYears });
+
+  const { data: companyData } = useQuery({
+    queryKey: ["company"],
+    queryFn: getCompanies,
+  });
+
+  // Find selected fiscal year from company setup
+  const selectedFiscalYear = React.useMemo(() => {
+    if (!companyData || companyData.length === 0) return null;
+    const company = companyData[0];
+    return fiscalYears.find((fy: any) => fy.id === company.fiscal_year_id);
+  }, [companyData, fiscalYears]);
+
+  // Validate date is within fiscal year
+  const validateDate = (selectedDate: string) => {
+    if (!selectedFiscalYear) {
+      setDateError("No fiscal year selected from company setup");
+      return false;
+    }
+
+    if (selectedFiscalYear.closed) {
+      setDateError("The fiscal year is closed for further data entry.");
+      return false;
+    }
+
+    const selected = new Date(selectedDate);
+    const from = new Date(selectedFiscalYear.fiscal_year_from);
+    const to = new Date(selectedFiscalYear.fiscal_year_to);
+
+    if (selected < from || selected > to) {
+      setDateError("The entered date is out of fiscal year.");
+      return false;
+    }
+
+    setDateError("");
+    return true;
+  };
+
+  // Handle date change with validation
+  const handleDateChange = (value: string) => {
+    setOrderDate(value);
+    validateDate(value);
+  };
+
+  // Set initial date based on selected fiscal year
+  useEffect(() => {
+    if (selectedFiscalYear) {
+      const currentYear = new Date().getFullYear();
+      const fiscalYear = new Date(selectedFiscalYear.fiscal_year_from).getFullYear();
+      let initialDate = "";
+      if (fiscalYear === currentYear) {
+        initialDate = new Date().toISOString().split("T")[0];
+      } else {
+        initialDate = new Date(selectedFiscalYear.fiscal_year_from).toISOString().split("T")[0];
+      }
+      setOrderDate(initialDate);
+      validateDate(initialDate); // Validate immediately to show error if invalid
+    }
+  }, [selectedFiscalYear]);
+
+  const { reference: nextReference, manualEntryRequired, suffix } =
+    useNextFiscalYearReference(18, { asOfDate: orderDate });
+
+  useEffect(() => {
+    if (nextReference) {
+      setReference(nextReference);
+    }
+  }, [nextReference]);
+
+  const { summary: supplierCreditSummary, isLoading: supplierCreditLoading } =
+    useSupplierCredit(supplier || null, suppliers);
+
+  const selectedSupplier = useMemo(
+    () =>
+      suppliers.find(
+        (s: any) => String(resolveSupplierId(s)) === String(supplier)
+      ),
+    [suppliers, supplier]
+  );
+  const { code: homeCurrencyCode } = useHomeCurrency();
+  const currencyCode = resolveSupplierTransactionCurrencyCode(
+    selectedSupplier,
+    homeCurrencyCode
+  );
+  const { formatMoney } = useTransactionMoney(currencyCode);
+
+  // Auto-fill Deliver To with selected Receive Into location name (but keep editable).
+  // If deliverTo was previously auto-filled from a location, changing the receiveInto
+  // will update deliverTo to the new location name. If the user edited deliverTo
+  // to a custom value, we won't overwrite it.
+  const prevAutoDeliverRef = React.useRef<string>("");
+  useEffect(() => {
+    try {
+      const selectedLoc = locations.find((l) => String(l.id) === String(receiveInto));
+      const locName = selectedLoc ? (selectedLoc.location_name ?? selectedLoc.name ?? "") : "";
+      if (!locName) return;
+
+      const current = deliverTo ?? "";
+      const isEmpty = current.toString().trim() === "";
+      const wasAuto = current === prevAutoDeliverRef.current;
+
+      if (isEmpty || wasAuto) {
+        setDeliverTo(locName);
+        prevAutoDeliverRef.current = locName;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [receiveInto, locations]);
+
+  // ========= Fetch API Data =========
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [suppliersData, locationsData, dimensionsData, itemsData, itemUnitsData, categoriesData] = await Promise.all([
+          getSuppliers(),
+          getInventoryLocations(),
+          getDimensions(),
+          getItems(),
+          getItemUnits(),
+          getItemCategories(),
+        ]);
+        setSuppliers(suppliersData);
+        // if supplier not selected yet, default to first supplier (resolve id field)
+        if ((!supplier || supplier === "") && Array.isArray(suppliersData) && suppliersData.length > 0) {
+          const first = suppliersData[0];
+          const firstId = resolveSupplierId(first);
+          if (firstId != null) setSupplier(String(firstId));
+        }
+
+        setLocations(locationsData);
+        // if receiveInto not selected yet, default to first location
+        if ((!receiveInto || receiveInto === "") && Array.isArray(locationsData) && locationsData.length > 0) {
+          setReceiveInto(String(locationsData[0].id));
+        }
+        setDimensions(dimensionsData);
+        setItems(itemsData);
+        setItemUnits(itemUnitsData);
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // ========= Table Rows =========
+  const [rows, setRows] = useState([
+    {
+      id: 1,
+      stockId: "",
+      itemCode: "",
+      description: "",
+      quantity: 0,
+      unit: "",
+      deliveryDate: new Date().toISOString().split("T")[0],
+      price: 0,
+      total: 0,
+      isEditing: true,
+    },
+  ]);
+
+  const handleAddRow = () => {
+    setRows((prev) => {
+      if (prev.length === 0) {
+        return [
+          ...prev,
+          {
+            id: prev.length + 1,
+            stockId: "",
+            itemCode: "",
+            description: "",
+            quantity: 0,
+            unit: "",
+            deliveryDate: new Date().toISOString().split("T")[0],
+            price: 0,
+            total: 0,
+            isEditing: true,
+          },
+        ];
+      }
+
+      const last = prev[prev.length - 1];
+      // If last row is being edited, validate and commit it (set isEditing=false) and append a new editable row
+      if (last && last.isEditing) {
+        if (!validateRow(last)) return prev;
+        const committed = { ...last, isEditing: false };
+        return [
+          ...prev.slice(0, -1),
+          committed,
+          {
+            id: prev.length + 1,
+            stockId: "",
+            itemCode: "",
+            description: "",
+            quantity: 0,
+            unit: "",
+            deliveryDate: new Date().toISOString().split("T")[0],
+            price: 0,
+            total: 0,
+            isEditing: true,
+          },
+        ];
+      }
+
+      // otherwise just add a new editable row
+      return [
+        ...prev,
+        {
+          id: prev.length + 1,
+          stockId: "",
+          itemCode: "",
+          description: "",
+          quantity: 0,
+          unit: "",
+          deliveryDate: new Date().toISOString().split("T")[0],
+          price: 0,
+          total: 0,
+          isEditing: true,
+        },
+      ];
+    });
+  };
+
+  const handleRemoveRow = (id) => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const handleChange = (id, field, value) => {
+    setValidationMsg("");
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+            ...r,
+            [field]: value,
+            total:
+              field === "quantity" || field === "price"
+                ? (field === "quantity" ? value : r.quantity) *
+                (field === "price" ? value : r.price)
+                : r.total,
+          }
+          : r
+      )
+    );
+  };
+
+  const setRowEditing = (id, editing) => {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, isEditing: editing } : r)));
+    if (editing) setValidationMsg("");
+  };
+
+  const [validationMsg, setValidationMsg] = useState("");
+
+  const validateRow = (r: any) => {
+    const qty = Number(r.quantity ?? 0);
+    const hasItem = !!(r.itemCode || r.stockId || r.description);
+    if (!hasItem) {
+      setValidationMsg('Please select an item before confirming.');
+      return false;
+    }
+    if (isNaN(qty) || qty <= 0) {
+      setValidationMsg('Quantity must be greater than zero.');
+      return false;
+    }
+    setValidationMsg("");
+    return true;
+  };
+
+  const validateAndConfirm = (id: number) => {
+    const row = rows.find((x) => x.id === id);
+    if (!row) return;
+    if (!validateRow(row)) return;
+    setRowEditing(id, false);
+  };
+
+  // ========= Subtotal =========
+  const subTotal = rows.reduce((sum, r) => sum + r.total, 0);
+
+  // ========= Place Order =========
+  const handlePlaceOrder = () => {
+    (async () => {
+      try {
+        // basic validations
+        if (!supplier) { setSaveError('Select supplier first'); return; }
+        if (!reference?.trim()) {
+          setSaveError(manualEntryRequired ? 'Enter a reference' : 'Reference is not ready yet. Please wait a moment.');
+          return;
+        }
+        const detailsToPost = rows.filter(r => r.itemCode && r.quantity > 0);
+        if (detailsToPost.length === 0) { setSaveError('Add at least one item with quantity > 0'); return; }
+
+        // resolve supplier id and location code
+        const selectedSupplierObj = suppliers.find((s: any) => String(resolveSupplierId(s)) === String(supplier));
+        const supplierIdToSend = selectedSupplierObj ? Number(resolveSupplierId(selectedSupplierObj)) : null;
+        if (!supplierIdToSend) { throw new Error('Missing supplier id'); }
+        const taxIncludedForSupplier = Boolean(selectedSupplierObj?.tax_included ?? selectedSupplierObj?.taxIncluded ?? false);
+
+        const selectedLocationObj = locations.find((l: any) => String(l.id) === String(receiveInto));
+        const intoLocationCode = selectedLocationObj ? (selectedLocationObj.loc_code || selectedLocationObj.location_name || String(receiveInto)) : String(receiveInto || "");
+
+        setIsSaving(true);
+        setSaveError("");
+
+        const nextOrderNo = await getNextPurchOrderNo();
+
+        const lines = detailsToPost.map((r) => {
+          const foundItem = (items || []).find((it: any) => String(it.stock_id) === String(r.itemCode));
+          const stdCost = Number(foundItem?.material_cost ?? foundItem?.standard_cost ?? 0) || 0;
+          return {
+            item_code: r.itemCode,
+            description: r.description || null,
+            delivery_date: r.deliveryDate || orderDate,
+            qty_invoiced: 0,
+            unit_price: Number(r.price) || 0,
+            act_price: 0,
+            std_cost_unit: stdCost,
+            quantity_ordered: Number(r.quantity) || 0,
+            quantity_received: 0,
+          };
+        });
+
+        const saveResult = await runTransactionSave(() =>
+          postPurchOrderWithDetails({
+            header: {
+              order_no: nextOrderNo,
+              supplier_id: supplierIdToSend,
+              comments: memo || null,
+              ord_date: orderDate,
+              reference: reference,
+              requisition_no: supplierRef || null,
+              into_stock_location: intoLocationCode,
+              delivery_address: deliverTo || "",
+              total: Number(subTotal) || 0,
+              prep_amount: 0,
+              alloc: 0,
+              tax_included: taxIncludedForSupplier,
+            },
+            lines,
+          })
+        );
+
+        if (saveResult.ok === false) {
+          showError(saveResult.message);
+          setSaveError(saveResult.message);
+          return;
+        }
+
+        const usedOrderNo = saveResult.data.order_no ?? saveResult.data.order?.order_no ?? nextOrderNo;
+
+        // Create audit trail entry for the purchase order
+        try {
+          const company = Array.isArray(companyData) && companyData.length > 0 ? companyData[0] : null;
+          const fiscalYearIdToUse = company ? (company.fiscal_year_id ?? company.fiscal_year ?? null) : null;
+          const currentUserId = user?.id ?? (Number(localStorage.getItem("userId")) || null);
+          await auditTrailApi.create({
+            type: 18,
+            trans_no: usedOrderNo,
+            user: currentUserId,
+            stamp: new Date().toISOString(),
+            description: "",
+            fiscal_year: fiscalYearIdToUse,
+            gl_date: orderDate,
+            gl_seq: 0,
+          });
+        } catch (atErr) {
+          console.warn('Failed to create audit trail for purchase order', atErr);
+        }
+
+        // Save reference record in refs table (id = order no, type = 18)
+        try {
+          await createRef({ id: usedOrderNo, type: 18, reference: reference });
+        } catch (refErr) {
+          console.warn('Failed to create ref record for purchase order', refErr);
+        }
+
+        // Redirect to success page with relevant state
+        navigate("/purchase/transactions/purchase-order-entry/success", {
+          state: {
+            location: intoLocationCode,
+            reference: reference,
+            date: orderDate,
+            orderNo: usedOrderNo,
+          },
+        });
+      } catch (err: any) {
+        console.error('Failed to create purchase order', err);
+        const detail = err?.response?.data ? JSON.stringify(err.response.data) : err?.message || String(err);
+        setSaveError('Failed to save purchase order: ' + detail);
+      } finally {
+        setIsSaving(false);
+      }
+    })();
+  };
+
+  const breadcrumbItems = [
+    { title: "Purchases", href: "/purchases" },
+    { title: "Purchase Order Entry" },
+  ];
+
+  return (
+    <Stack spacing={2}>
+      {/* Header */}
+      <Box
+        sx={{
+          padding: theme.spacing(2),
+          boxShadow: 2,
+          borderRadius: 1,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Box>
+          <PageTitle title=" Purchase Order Entry" />
+          <Breadcrumb breadcrumbs={breadcrumbItems} />
+        </Box>
+
+        <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>
+          Back
+        </Button>
+      </Box>
+
+      {/* Form Fields */}
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={4}>
+            <Stack spacing={2}>
+              <TextField select fullWidth label="Supplier" size="small" value={supplier} onChange={(e) => setSupplier(String(e.target.value))}>
+                <MenuItem key="select-supplier" value="">Select supplier</MenuItem>
+                {suppliers.map((s) => {
+                  const sid = resolveSupplierId(s);
+                  return (
+                    <MenuItem key={String(sid ?? Math.random())} value={String(sid ?? "")}>
+                      {s.supp_name ?? s.name ?? s.supplier_name}
+                    </MenuItem>
+                  );
+                })}
+              </TextField>
+
+              <TextField
+                label="Order Date"
+                type="date"
+                fullWidth
+                size="small"
+                value={orderDate}
+                onChange={(e) => handleDateChange(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                error={!!dateError}
+                helperText={dateError}
+              />
+
+              <SupplierCreditSummaryFields
+                summary={supplierCreditSummary}
+                documentTotal={subTotal}
+                isLoading={supplierCreditLoading}
+                currencyCode={currencyCode}
+              />
+
+              <TextField
+                label="Reference"
+                fullWidth
+                size="small"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                InputProps={{ readOnly: !manualEntryRequired }}
+                helperText={
+                  manualEntryRequired
+                    ? `Auto numbering is off — enter a reference for FY ${suffix || "active year"}`
+                    : undefined
+                }
+              />
+            </Stack>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Stack spacing={2}>
+              <SupplierCurrencyField supplier={selectedSupplier} />
+              <TextField label="Supplier's Reference" fullWidth size="small" value={supplierRef} onChange={(e) => setSupplierRef(e.target.value)} />
+
+              <TextField select fullWidth label="Dimension" size="small" value={dimension} onChange={(e) => setDimension(String(e.target.value))}>
+                {dimensions.map((d) => (
+                  <MenuItem key={d.id} value={String(d.id)}>{d.name}</MenuItem>
+                ))}
+              </TextField>
+
+              <TextField select fullWidth label="Receive Into" size="small" value={receiveInto} onChange={(e) => setReceiveInto(String(e.target.value))}>
+                {locations.map((l) => (
+                  <MenuItem key={l.id} value={String(l.id)}>{l.location_name}</MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField label="Deliver To" fullWidth size="small" multiline rows={3} value={deliverTo} onChange={(e) => setDeliverTo(e.target.value)} />
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* Order Items Table */}
+      <Typography variant="subtitle1" sx={{ mb: 1, textAlign: "center" }}>
+        Order Items
+      </Typography>
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+            <TableRow>
+              <TableCell>No</TableCell>
+              <TableCell>Item Code</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Quantity</TableCell>
+              <TableCell>Unit</TableCell>
+              <TableCell>Required Delivery Date</TableCell>
+              <TableCell>Price Before Tax</TableCell>
+              <TableCell>Line Total</TableCell>
+              <TableCell align="center">Action</TableCell>
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {rows.map((row, i) => (
+              <TableRow key={row.id}>
+                <TableCell>{i + 1}</TableCell>
+
+                {/* Item Code */}
+                <TableCell>
+                  <ItemSearchSelect
+                    displayField="code"
+                    hideLabel
+                    disabled={!row.isEditing}
+                    value={row.description}
+                    selectedStockId={String(row.stockId ?? row.itemCode ?? "")}
+                    items={items as any[]}
+                    categories={categories.map((cat: any) => ({
+                      id: cat.category_id,
+                      category_name: cat.description,
+                    }))}
+                    onSelect={(selected) => {
+                      if (!selected) return;
+                      const unitObj = itemUnits.find((u) => String(u.id) === String(selected.units));
+                      handleChange(row.id, "description", selected.description);
+                      handleChange(row.id, "itemCode", String(selected.stock_id));
+                      handleChange(row.id, "stockId", String(selected.stock_id));
+                      handleChange(row.id, "unit", unitObj ? unitObj.abbr : String((selected as any).units ?? ""));
+                      (async () => {
+                        const supplierIdNum = Number(supplier) || 0;
+                        const { price } = await resolvePurchaseItemPrice(
+                          supplierIdNum,
+                          String(selected.stock_id)
+                        );
+                        handleChange(row.id, "price", price);
+                      })();
+                    }}
+                  />
+                </TableCell>
+
+                {/* Description */}
+                <TableCell>
+                  <ItemSearchSelect
+                    hideLabel
+                    disabled={!row.isEditing}
+                    value={row.description}
+                    selectedStockId={String(row.stockId ?? row.itemCode ?? "")}
+                    items={items as any[]}
+                    categories={categories.map((cat: any) => ({
+                      id: cat.category_id,
+                      category_name: cat.description,
+                    }))}
+                    onSelect={(selected) => {
+                      if (!selected) return;
+                      const unitObj = itemUnits.find((u) => String(u.id) === String(selected.units));
+                      handleChange(row.id, "description", selected.description);
+                      handleChange(row.id, "itemCode", String(selected.stock_id));
+                      handleChange(row.id, "stockId", String(selected.stock_id));
+                      handleChange(row.id, "unit", unitObj ? unitObj.abbr : String((selected as any).units ?? ""));
+                      (async () => {
+                        const supplierIdNum = Number(supplier) || 0;
+                        const { price } = await resolvePurchaseItemPrice(
+                          supplierIdNum,
+                          String(selected.stock_id)
+                        );
+                        handleChange(row.id, "price", price);
+                      })();
+                    }}
+                  />
+                </TableCell>
+
+                {/* Quantity */}
+                <TableCell>
+                  <TextField size="small" type="number" value={row.quantity} disabled={!row.isEditing} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
+                </TableCell>
+
+                {/* Unit */}
+                <TableCell>
+                  <TextField size="small" value={row.unit} InputProps={{ readOnly: true }} disabled={!row.isEditing} />
+                </TableCell>
+
+                {/* Delivery Date */}
+                <TableCell>
+                  <TextField
+                    size="small"
+                    type="date"
+                    value={row.deliveryDate}
+                    disabled={!row.isEditing}
+                    onChange={(e) => handleChange(row.id, "deliveryDate", e.target.value)}
+                  />
+                </TableCell>
+
+                {/* Price Before Tax */}
+                <TableCell>
+                  <CurrencyAmountInput
+                    size="small"
+                    value={row.price}
+                    currencyCode={currencyCode}
+                    onChange={(v) => handleChange(row.id, "price", v)}
+                    disabled={!row.isEditing}
+                  />
+                </TableCell>
+
+                {/* Line Total */}
+                <TableCell>{formatMoney(row.total)}</TableCell>
+
+                {/* Actions */}
+                <TableCell align="center">
+                  {i === rows.length - 1 ? (
+                    <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddRow}>
+                      Add
+                    </Button>
+                  ) : (
+                    <Stack direction="row" spacing={1}>
+                      {row.isEditing ? (
+                        <Button variant="contained" size="small" onClick={() => setRowEditing(row.id, false)}>
+                          Confirm
+                        </Button>
+                      ) : (
+                        <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => setRowEditing(row.id, true)}>
+                          Edit
+                        </Button>
+                      )}
+                      <Button variant="outlined" color="error" size="small" startIcon={<DeleteIcon />} onClick={() => handleRemoveRow(row.id)}>
+                        Delete
+                      </Button>
+                    </Stack>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+
+          <TableFooter>
+            <TableRow>
+              <TableCell colSpan={7} sx={{ fontWeight: 600 }}>
+                Sub-total
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{formatMoney(subTotal)}</TableCell>
+              <TableCell></TableCell>
+            </TableRow>
+
+            <TableRow>
+              <TableCell colSpan={7} sx={{ fontWeight: 600 }}>
+                Amount Total
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>{formatMoney(subTotal)}</TableCell>
+              <TableCell></TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </TableContainer>
+
+      {validationMsg ? (
+        <Box sx={{ mt: 1 }}>
+          <Alert
+            severity="error"
+            icon={<ErrorOutlineIcon />}
+            sx={{
+              backgroundColor: (theme) => theme.palette.error.light + '22',
+              borderRadius: 1,
+            }}
+          >
+            {validationMsg}
+          </Alert>
+        </Box>
+      ) : null}
+
+      {saveError ? (
+        <Box sx={{ mt: 2 }}>
+          <Alert severity="error">{saveError}</Alert>
+        </Box>
+      ) : null}
+
+      {/* Memo Section */}
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
+        <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          Memo
+        </Typography>
+        <TextField fullWidth multiline rows={3} value={memo} onChange={(e) => setMemo(e.target.value)} />
+
+        <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2, gap: 2 }}>
+          <Button variant="outlined" onClick={() => navigate(-1)}>
+            Cancel Order
+          </Button>
+          <Button variant="contained" color="primary" disabled={isSaving} onClick={handlePlaceOrder}>
+            {isSaving ? "Placing..." : "Place Order"}
+          </Button>
+        </Box>
+      </Paper>
+    </Stack>
+  );
+}

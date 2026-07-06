@@ -1,0 +1,85 @@
+<?php
+
+namespace App\Services\Inventory;
+
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+class LocStockQuantityService
+{
+    public function applyMoveDelta(string $stockId, string $locCode, float $qtyDelta): void
+    {
+        if (! Schema::hasTable('loc_stock') || ! Schema::hasColumn('loc_stock', 'quantity')) {
+            return;
+        }
+
+        $stockId = trim($stockId);
+        $locCode = strtoupper(trim($locCode));
+        if ($stockId === '' || $locCode === '' || abs($qtyDelta) < 1e-12) {
+            return;
+        }
+
+        $row = DB::table('loc_stock')
+            ->where('loc_code', $locCode)
+            ->where('stock_id', $stockId)
+            ->first();
+
+        if (! $row) {
+            DB::table('loc_stock')->insert([
+                'loc_code' => $locCode,
+                'stock_id' => $stockId,
+                'reorder_level' => 0,
+                'quantity' => round($qtyDelta, 4),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return;
+        }
+
+        DB::table('loc_stock')
+            ->where('loc_code', $locCode)
+            ->where('stock_id', $stockId)
+            ->update([
+                'quantity' => round((float) ($row->quantity ?? 0) + $qtyDelta, 4),
+                'updated_at' => now(),
+            ]);
+    }
+
+    /**
+     * @param  object|array<string, mixed>|null  $move
+     */
+    public function applyStockMoveRecord(object|array|null $move): void
+    {
+        if ($move === null) {
+            return;
+        }
+
+        $data = is_array($move) ? $move : (array) $move;
+        $stockId = (string) ($data['stock_id'] ?? $data['item_code'] ?? '');
+        $locCode = (string) ($data['loc_code'] ?? $data['location'] ?? '');
+        $qty = (float) ($data['qty'] ?? $data['quantity'] ?? 0);
+
+        $this->applyMoveDelta($stockId, $locCode, $qty);
+    }
+
+    /**
+     * @param  object|array<string, mixed>|null  $before
+     * @param  object|array<string, mixed>|null  $after
+     */
+    public function reconcileStockMoveChange(object|array|null $before, object|array|null $after): void
+    {
+        if ($before !== null) {
+            $b = is_array($before) ? $before : (array) $before;
+            $this->applyMoveDelta(
+                (string) ($b['stock_id'] ?? $b['item_code'] ?? ''),
+                (string) ($b['loc_code'] ?? $b['location'] ?? ''),
+                -1 * (float) ($b['qty'] ?? $b['quantity'] ?? 0)
+            );
+        }
+
+        if ($after !== null) {
+            $this->applyStockMoveRecord($after);
+        }
+    }
+}

@@ -1,0 +1,52 @@
+<?php
+/**
+ * ONE-TIME deploy helper — Terminal / SSH nænam me use karanna.
+ *
+ * Setup:
+ *   1. Copy this file to: backend/public/panel-deploy.php
+ *   2. Change DEPLOY_TOKEN below to a long random string
+ *   3. Browser eken open: https://your-domain.com/panel-deploy.php?token=YOUR_TOKEN
+ *   4. "Done" penni nam public/panel-deploy.php DELETE karanna (important!)
+ */
+
+declare(strict_types=1);
+
+const DEPLOY_TOKEN = 'CHANGE-ME-use-long-random-string-here';
+
+if (! isset($_GET['token']) || ! hash_equals(DEPLOY_TOKEN, (string) $_GET['token'])) {
+    http_response_code(403);
+    header('Content-Type: text/plain; charset=utf-8');
+    exit("Forbidden. Add ?token=YOUR_TOKEN to the URL.\n");
+}
+
+header('Content-Type: text/plain; charset=utf-8');
+
+$base = dirname(__DIR__);
+if (! is_file($base.'/artisan')) {
+    http_response_code(500);
+    exit("artisan not found. Is this file inside backend/public/?\n");
+}
+
+chdir($base);
+
+$php = PHP_BINARY ?: 'php';
+$commands = [
+    'optimize:clear',
+    'migrate --force',
+    'config:cache',
+    'route:cache',
+    'view:cache',
+    'event:cache',
+];
+
+echo "Grow Ledger — panel deploy\n";
+echo "Base: {$base}\n\n";
+
+foreach ($commands as $command) {
+    echo ">>> php artisan {$command}\n";
+    passthru(escapeshellcmd($php).' artisan '.$command.' 2>&1', $exitCode);
+    echo $exitCode === 0 ? "OK\n\n" : "FAILED (exit {$exitCode})\n\n";
+}
+
+echo "Done.\n";
+echo "DELETE this file now: public/panel-deploy.php\n";
