@@ -14,11 +14,11 @@ import { useQuery } from "@tanstack/react-query";
 import { getFiscalYears } from "../../../../api/FiscalYear/FiscalYearApi";
 import { getAccountTags } from "../../../../api/AccountTag/AccountTagsApi";
 import { useReportGenerate } from "../../../../hooks/useReportGenerate";
-import ReportDimensionSelect from "../../../../components/ReportDimensionSelect";
+import ReportCostCenterSelect from "../../../../components/ReportCostCenterSelect";
 
 interface AnnualExpenseBreakdownFormData {
   year: string;
-  dimension: string;
+  costCenter: string;
   accountTags: string;
   comments: string;
   orientation: string;
@@ -32,7 +32,7 @@ export default function AnnualExpenseBreakdownForm() {
 
   const [formData, setFormData] = useState<AnnualExpenseBreakdownFormData>({
     year: "",
-    dimension: "",
+    costCenter: "",
     accountTags: "",
     comments: "",
     orientation: "Portrait",
@@ -123,9 +123,9 @@ export default function AnnualExpenseBreakdownForm() {
             ))}
           </TextField>
 
-          <ReportDimensionSelect
-            value={formData.dimension}
-            onChange={(value) => setFormData({ ...formData, dimension: value })}
+          <ReportCostCenterSelect
+            value={formData.costCenter}
+            onChange={(value) => setFormData({ ...formData, costCenter: value })}
           />
 
           {/* Account Tags dropdown */}

@@ -48,7 +48,7 @@ class SupplierInvoiceService
      *     tax_included?:bool,
      *     comments?:string|null,
      *     lines: array<int, array{grn_item_id:int, quantity:float}>,
-     *     gl_lines?: array<int, array{gl_code:string, amount:float, memo?:string|null, dimension_id?:int|null}>
+     *     gl_lines?: array<int, array{gl_code:string, amount:float, memo?:string|null, cost_center_id?:int|null}>
      * }  $payload
      */
     public function invoiceFromGrn(array $payload): array
@@ -137,8 +137,8 @@ class SupplierInvoiceService
                     'discount_percent' => $discountPercent,
                     'unit_tax' => 0,
                     'memo' => '',
-                    'dimension_id' => 0,
-                    'dimension2_id' => 0,
+                    'cost_center_id' => 0,
+                    'cost_center2_id' => 0,
                 ];
             }
 
@@ -154,7 +154,7 @@ class SupplierInvoiceService
                     $glCode,
                     $amount,
                     (string) ($glLine['memo'] ?? ''),
-                    (int) ($glLine['dimension_id'] ?? 0)
+                    (int) ($glLine['cost_center_id'] ?? 0)
                 );
             }
 
@@ -390,7 +390,7 @@ class SupplierInvoiceService
         string $glCode,
         float $amount,
         string $memo,
-        int $dimensionId = 0
+        int $costCenterId = 0
     ): array {
         return [
             'supp_trans_no' => $transNo,
@@ -404,8 +404,8 @@ class SupplierInvoiceService
             'unit_price' => round($amount, 2),
             'unit_tax' => 0,
             'memo' => $memo,
-            'dimension_id' => $dimensionId,
-            'dimension2_id' => 0,
+            'cost_center_id' => $costCenterId,
+            'cost_center2_id' => 0,
         ];
     }
 

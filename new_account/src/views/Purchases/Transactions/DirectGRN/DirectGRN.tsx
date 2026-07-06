@@ -30,7 +30,7 @@ import ItemSearchSelect from "../../../../components/ItemSearchSelect";
 import theme from "../../../../theme";
 import { getSuppliers } from "../../../../api/Supplier/SupplierApi";
 import { getInventoryLocations } from "../../../../api/InventoryLocation/InventoryLocationApi";
-import { getDimensions } from "../../../../api/Dimension/DimensionApi";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { getItems } from "../../../../api/Item/ItemApi";
 import { getItemUnits } from "../../../../api/ItemUnit/ItemUnitApi";
 import { getItemCategories } from "../../../../api/ItemCategories/ItemCategoriesApi";
@@ -64,7 +64,7 @@ export default function DirectGRN() {
   const [deliveryDate, setDeliveryDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-  const [dimension, setDimension] = useState(0);
+  const [costCenter, setCostCenter] = useState(0);
   const [receiveInto, setReceiveInto] = useState(0);
   const [reference, setReference] = useState("");
   const [dateError, setDateError] = useState("");
@@ -74,7 +74,7 @@ export default function DirectGRN() {
   // API data states
   const [suppliers, setSuppliers] = useState([]);
   const [locations, setLocations] = useState([]);
-  const [dimensions, setDimensions] = useState([]);
+  const [costCenters, setCostCenters] = useState([]);
   const [items, setItems] = useState([]);
   const [itemUnits, setItemUnits] = useState([]);
   const [categories, setCategories] = useState<{ category_id: number; description: string }[]>([]);
@@ -175,10 +175,10 @@ export default function DirectGRN() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [suppliersData, locationsData, dimensionsData, itemsData, itemUnitsData, categoriesData] = await Promise.all([
+        const [suppliersData, locationsData, costCentersData, itemsData, itemUnitsData, categoriesData] = await Promise.all([
           getSuppliers(),
           getInventoryLocations(),
-          getDimensions(),
+          getCostCenters(),
           getItems(),
           getItemUnits(),
           getItemCategories(),
@@ -195,7 +195,7 @@ export default function DirectGRN() {
         if ((!receiveInto || receiveInto === 0) && Array.isArray(locationsData) && locationsData.length > 0) {
           setReceiveInto(Number(locationsData[0].id));
         }
-        setDimensions(dimensionsData);
+        setCostCenters(costCentersData);
         setItems(itemsData);
         setItemUnits(itemUnitsData);
         setCategories(categoriesData);
@@ -561,8 +561,8 @@ export default function DirectGRN() {
               <SupplierCurrencyField supplier={selectedSupplier} />
               <TextField label="Supplier's Reference" fullWidth size="small" value={supplierRef} onChange={(e) => setSupplierRef(e.target.value)} />
 
-              <TextField select fullWidth label="Dimension" size="small" value={dimension} onChange={(e) => setDimension(Number(e.target.value))}>
-                {dimensions.map((d) => (
+              <TextField select fullWidth label="Cost Center" size="small" value={costCenter} onChange={(e) => setCostCenter(Number(e.target.value))}>
+                {costCenters.map((d) => (
                   <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
                 ))}
               </TextField>

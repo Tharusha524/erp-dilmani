@@ -28,7 +28,7 @@ import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
 import { getBranches } from "../../../../api/CustomerBranch/CustomerBranchApi";
 import { getSalesTypes } from "../../../../api/SalesMaintenance/salesService";
 import { getShippingCompanies } from "../../../../api/ShippingCompany/ShippingCompanyApi";
-import DimensionSelect from "../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../components/CostCenterSelect";
 import { getItems, getItemById } from "../../../../api/Item/ItemApi";
 import { getItemUnits } from "../../../../api/ItemUnit/ItemUnitApi";
 import { getItemCategories } from "../../../../api/ItemCategories/ItemCategoriesApi";
@@ -76,7 +76,7 @@ export default function CustomerCreditNotes() {
     const [creditNoteDate, setCreditNoteDate] = useState(
         new Date().toISOString().split("T")[0]
     );
-    const [dimension, setDimension] = useState("");
+    const [costCenter, setCostCenter] = useState("");
     const [creditNoteType, setCreditNoteType] = useState("");
     const [returnLocation, setReturnLocation] = useState("");
     const [glAccount, setGlAccount] = useState("");
@@ -94,7 +94,7 @@ export default function CustomerCreditNotes() {
     const { data: branches = [] } = useQuery({ queryKey: ["branches"], queryFn: () => getBranches() });
     const { data: salesTypes = [] } = useQuery({ queryKey: ["salesTypes"], queryFn: getSalesTypes });
     const { data: shippingCompanies = [] } = useQuery({ queryKey: ["shippingCompanies"], queryFn: getShippingCompanies });
-    //   const { data: dimensions = [] } = useQuery({ queryKey: ["dimensions"], queryFn: getDimensions });
+    //   const { data: costCenters = [] } = useQuery({ queryKey: ["costCenters"], queryFn: getCostCenters });
     const { data: items = [] } = useQuery({ queryKey: ["items"], queryFn: getItems });
     const { data: itemUnits = [] } = useQuery({ queryKey: ["itemUnits"], queryFn: getItemUnits });
     const { data: categories = [] } = useQuery({ queryKey: ["itemCategories"], queryFn: () => getItemCategories() });
@@ -613,11 +613,11 @@ export default function CustomerCreditNotes() {
                                 error={!!dateError}
                                 helperText={dateError}
                             />
-                            <DimensionSelect
-                                label="Dimension"
-                                value={dimension}
-                                onChange={setDimension}
-                                dimensionType={1}
+                            <CostCenterSelect
+                                label="Cost Center"
+                                value={costCenter}
+                                onChange={setCostCenter}
+                                costCenterType={1}
                             />
                         </Stack>
                     </Grid>

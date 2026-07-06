@@ -11,7 +11,7 @@ type JournalLine = {
   journalDate?: string;
   accountCode?: string;
   accountName?: string;
-  dimension?: string;
+  costCenter?: string;
   debit?: string | number;
   credit?: string | number;
   memo?: string;
@@ -36,7 +36,7 @@ export default function ViewJournalEntry() {
         journalDate: date || "2025-11-14",
         accountCode: "1001",
         accountName: "Cash at Bank",
-        dimension: "",
+        costCenter: "",
         debit: "1500.00",
         credit: "",
         memo: "Payment processed",
@@ -45,7 +45,7 @@ export default function ViewJournalEntry() {
         journalDate: date || "2025-11-14",
         accountCode: "2001",
         accountName: "Accounts Payable",
-        dimension: "",
+        costCenter: "",
         debit: "",
         credit: "1500.00",
         memo: "Vendor payment",
@@ -59,7 +59,7 @@ export default function ViewJournalEntry() {
         date: entry.journalDate || date || "—",
         account: entry.accountCode || "—",
         description: entry.accountName || "—",
-        dimension: entry.dimension || "—",
+        costCenter: entry.costCenter || "—",
         debit: entry.debit ? Number(entry.debit).toFixed(2) : "—",
         credit: entry.credit ? Number(entry.credit).toFixed(2) : "—",
         memo: entry.memo || "—",

@@ -35,7 +35,7 @@ class TransTypesSeeder extends Seeder
             ['id' => 19, 'trans_type' => 30, 'description' => 'Sales Order'],
             ['id' => 20, 'trans_type' => 32, 'description' => 'Sales Quotation'],
             ['id' => 21, 'trans_type' => 35, 'description' => 'Cost Update'],
-            ['id' => 22, 'trans_type' => 40, 'description' => 'Dimension'],
+            ['id' => 22, 'trans_type' => 40, 'description' => 'Cost Center'],
         ]);
     }
 }

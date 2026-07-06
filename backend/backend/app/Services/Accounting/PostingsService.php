@@ -41,7 +41,7 @@ class PostingsService
         $reference = $debtorTrans->reference ?? ('INV-'.$typeNo);
 
         $lines = [];
-        $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $receivable, $arAmount, 0, 'Invoice AR', $debtorTrans->dimension_id, $rate);
+        $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $receivable, $arAmount, 0, 'Invoice AR', $debtorTrans->cost_center_id, $rate);
 
         $this->appendDebtorRevenueLines($lines, $debtorTrans, $transType, $typeNo, $reference, $tranDate, false);
 
@@ -72,7 +72,7 @@ class PostingsService
         $writeOffAccount = trim((string) ($debtorTrans->write_off_account ?? ''));
 
         $lines = [];
-        $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $receivable, 0, $arAmount, 'Credit note AR', $debtorTrans->dimension_id, $rate);
+        $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $receivable, 0, $arAmount, 'Credit note AR', $debtorTrans->cost_center_id, $rate);
 
         $this->appendDebtorRevenueLines($lines, $debtorTrans, $transType, $typeNo, $reference, $tranDate, true);
 
@@ -98,8 +98,8 @@ class PostingsService
 
                 if ($writeOffAccount !== '') {
                     if ($lineCogs) {
-                        $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $writeOffAccount, $cogsAmount, 0, 'Write-off '.$stockLine['stock_id'], $debtorTrans->dimension_id, $rate);
-                        $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $lineCogs, 0, $cogsAmount, 'Write-off COGS '.$stockLine['stock_id'], $debtorTrans->dimension_id, $rate);
+                        $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $writeOffAccount, $cogsAmount, 0, 'Write-off '.$stockLine['stock_id'], $debtorTrans->cost_center_id, $rate);
+                        $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $lineCogs, 0, $cogsAmount, 'Write-off COGS '.$stockLine['stock_id'], $debtorTrans->cost_center_id, $rate);
                     }
 
                     continue;
@@ -107,8 +107,8 @@ class PostingsService
 
                 $lineInventory = $itemAccounts['inventory'] ?? $inventoryAccount;
                 if ($lineCogs && $lineInventory) {
-                    $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $lineInventory, $cogsAmount, 0, 'Reverse inventory '.$stockLine['stock_id'], $debtorTrans->dimension_id, $rate);
-                    $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $lineCogs, 0, $cogsAmount, 'Reverse COGS '.$stockLine['stock_id'], $debtorTrans->dimension_id, $rate);
+                    $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $lineInventory, $cogsAmount, 0, 'Reverse inventory '.$stockLine['stock_id'], $debtorTrans->cost_center_id, $rate);
+                    $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $lineCogs, 0, $cogsAmount, 'Reverse COGS '.$stockLine['stock_id'], $debtorTrans->cost_center_id, $rate);
                 }
             }
         }
@@ -234,7 +234,7 @@ class PostingsService
                 0,
                 $arCredit,
                 'Customer payment',
-                $debtor->dimension_id ?? null,
+                $debtor->cost_center_id ?? null,
                 $rate
             );
 
@@ -250,7 +250,7 @@ class PostingsService
                         $discount,
                         0,
                         'Payment discount',
-                        $debtor->dimension_id ?? null,
+                        $debtor->cost_center_id ?? null,
                         $rate
                     );
                 }
@@ -268,7 +268,7 @@ class PostingsService
                         $bankCharge,
                         0,
                         'Bank charge',
-                        $debtor->dimension_id ?? null,
+                        $debtor->cost_center_id ?? null,
                         $rate
                     );
                 }
@@ -1039,7 +1039,7 @@ class PostingsService
         $tranDate = $debtorTrans->tran_date ?? now();
         $reference = $debtorTrans->reference ?? ('DN-'.$typeNo);
         $debtorNo = (int) ($debtorTrans->debtor_no ?? 0);
-        $customerDim = $this->customerDimension($debtorNo);
+        $customerDim = $this->customerCostCenter($debtorNo);
 
         $details = DB::table('debtor_trans_details')
             ->where('debtor_trans_no', $typeNo)
@@ -1077,8 +1077,8 @@ class PostingsService
                     $unitCost = $this->resolveDebtorDetailUnitCost($d);
                 }
 
-                $dim = $this->resolveLineDimension(
-                    (int) ($debtorTrans->dimension_id ?? 0),
+                $dim = $this->resolveLineCostCenter(
+                    (int) ($debtorTrans->cost_center_id ?? 0),
                     $customerDim,
                     (int) ($itemAccounts['mb_flag'] ?? 0)
                 );
@@ -1142,7 +1142,7 @@ class PostingsService
         if ($isPrepaid && $prepaidTotal > 0.001) {
             $deferred = GlAccountResolver::resolve('deferredIncomeAccount', $this->pref('deferredIncomeAccount'));
             if ($deferred) {
-                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $deferred, $prepaidTotal, 0, 'Deferred income', $debtorTrans->dimension_id, $rate);
+                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $deferred, $prepaidTotal, 0, 'Deferred income', $debtorTrans->cost_center_id, $rate);
             }
         }
 
@@ -1153,22 +1153,22 @@ class PostingsService
         $this->insertBalancedLines($lines, 'Delivery GL is not balanced. Check COGS and inventory accounts.');
     }
 
-    private function customerDimension(int $debtorNo): int
+    private function customerCostCenter(int $debtorNo): int
     {
         if ($debtorNo <= 0) {
             return 0;
         }
 
-        return (int) (DB::table('debtors_master')->where('debtor_no', $debtorNo)->value('dimension_id') ?? 0);
+        return (int) (DB::table('debtors_master')->where('debtor_no', $debtorNo)->value('cost_center_id') ?? 0);
     }
 
-    private function resolveLineDimension(int $docDim, int $customerDim, int $mbFlag): int
+    private function resolveLineCostCenter(int $docCostCenter, int $customerCostCenter, int $mbFlag): int
     {
-        if ($docDim > 0 && $docDim !== $customerDim) {
-            return $docDim;
+        if ($docCostCenter > 0 && $docCostCenter !== $customerCostCenter) {
+            return $docCostCenter;
         }
 
-        return $customerDim > 0 ? $customerDim : 0;
+        return $customerCostCenter > 0 ? $customerCostCenter : 0;
     }
 
     /**
@@ -1626,7 +1626,7 @@ class PostingsService
 
     /**
      * Labour / overhead journal for a work order — Dr WIP / Cr credit account (type 0).
-     * WIP line uses finished item dimension (FA add_wo_costs_journal dim1/dim2 on WIP side).
+     * WIP line uses finished item cost center (FA add_wo_costs_journal dim1/dim2 on WIP side).
      */
     public function postWoCostJournal(
         int $journalTransNo,
@@ -1656,14 +1656,14 @@ class PostingsService
             throw new GlPostingException('Credit account is required for work order cost journal.');
         }
 
-        $dimension = $this->finishedStockDimension((string) ($workOrder->stock_id ?? ''));
+        $costCenter = $this->finishedStockCostCenter((string) ($workOrder->stock_id ?? ''));
 
         $transType = 0;
         GlTransHelper::deletePosted($transType, $journalTransNo);
 
         $costLabel = $costType === 0 ? 'Labour cost' : 'Overhead cost';
         $lines = [
-            $this->line($transType, $journalTransNo, $reference, $tranDate, $finished['wip'], $amount, 0, $costLabel, $dimension),
+            $this->line($transType, $journalTransNo, $reference, $tranDate, $finished['wip'], $amount, 0, $costLabel, $costCenter),
             $this->line($transType, $journalTransNo, $reference, $tranDate, $creditAccount, 0, $amount, $costLabel.' credit'),
         ];
 
@@ -1694,7 +1694,7 @@ class PostingsService
             return [];
         }
 
-        $dimension = $this->finishedStockDimension((string) ($workOrder->stock_id ?? ''));
+        $costCenter = $this->finishedStockCostCenter((string) ($workOrder->stock_id ?? ''));
         $costLabel = $costType === 0 ? 'Labour cost' : 'Overhead cost';
 
         return [
@@ -2295,19 +2295,19 @@ class PostingsService
             'sales' => trim((string) ($row->sales_account ?? '')),
             'standard_cost' => $standardCost,
             'mb_flag' => (int) ($row->mb_flag ?? 0),
-            'dimension_id' => (int) ($row->dimension_id ?? 0),
-            'dimension2_id' => (int) ($row->dimension2_id ?? 0),
+            'cost_center_id' => (int) ($row->cost_center_id ?? 0),
+            'cost_center2_id' => (int) ($row->cost_center2_id ?? 0),
         ];
     }
 
-    private function finishedStockDimension(string $stockId): ?int
+    private function finishedStockCostCenter(string $stockId): ?int
     {
         $accounts = $this->stockItemAccounts($stockId);
         if (! $accounts) {
             return null;
         }
 
-        $dim = (int) ($accounts['dimension_id'] ?? 0);
+        $dim = (int) ($accounts['cost_center_id'] ?? 0);
 
         return $dim > 0 ? $dim : null;
     }
@@ -2417,17 +2417,17 @@ class PostingsService
         if ($reverse) {
             foreach ($salesByAccount as $account => $amount) {
                 if ($amount > 0.001 && $account) {
-                    $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $account, $amount, 0, 'Reverse sales', $debtorTrans->dimension_id, $rate);
+                    $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $account, $amount, 0, 'Reverse sales', $debtorTrans->cost_center_id, $rate);
                 }
             }
             if ($totalDiscount > 0.001 && $discountAccount) {
-                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $discountAccount, 0, $totalDiscount, 'Reverse sales discount', $debtorTrans->dimension_id, $rate);
+                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $discountAccount, 0, $totalDiscount, 'Reverse sales discount', $debtorTrans->cost_center_id, $rate);
             }
             if ($outputTax > 0.001) {
-                $this->appendOutputTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $outputTax, $debtorTrans->dimension_id, true, $rate);
+                $this->appendOutputTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $outputTax, $debtorTrans->cost_center_id, true, $rate);
             }
             if ($freight > 0.001 && $shippingAccount) {
-                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $shippingAccount, $freight, 0, 'Reverse freight', $debtorTrans->dimension_id, $rate);
+                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $shippingAccount, $freight, 0, 'Reverse freight', $debtorTrans->cost_center_id, $rate);
             }
 
             return;
@@ -2435,17 +2435,17 @@ class PostingsService
 
         foreach ($salesByAccount as $account => $amount) {
             if ($amount > 0.001 && $account) {
-                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $account, 0, $amount, 'Sales revenue', $debtorTrans->dimension_id, $rate);
+                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $account, 0, $amount, 'Sales revenue', $debtorTrans->cost_center_id, $rate);
             }
         }
         if ($totalDiscount > 0.001 && $discountAccount) {
-            $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $discountAccount, $totalDiscount, 0, 'Sales discount', $debtorTrans->dimension_id, $rate);
+            $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $discountAccount, $totalDiscount, 0, 'Sales discount', $debtorTrans->cost_center_id, $rate);
         }
         if ($outputTax > 0.001) {
-            $this->appendOutputTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $outputTax, $debtorTrans->dimension_id, false, $rate);
+            $this->appendOutputTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $outputTax, $debtorTrans->cost_center_id, false, $rate);
         }
         if ($freight > 0.001 && $shippingAccount) {
-            $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $shippingAccount, 0, $freight, 'Freight charged', $debtorTrans->dimension_id, $rate);
+            $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $shippingAccount, 0, $freight, 'Freight charged', $debtorTrans->cost_center_id, $rate);
         }
     }
 
@@ -2542,7 +2542,7 @@ class PostingsService
         string $reference,
         $tranDate,
         float $headerTax,
-        $dimension,
+        $costCenter,
         bool $reverse,
         float $rate = 1.0
     ): void {
@@ -2562,7 +2562,7 @@ class PostingsService
                 $reverse ? $headerTax : 0,
                 $reverse ? 0 : $headerTax,
                 'Output tax',
-                $dimension,
+                $costCenter,
                 $rate
             );
 
@@ -2586,7 +2586,7 @@ class PostingsService
                 $reverse ? $amount : 0,
                 $reverse ? 0 : $amount,
                 'Output tax type '.$taxTypeId,
-                $dimension,
+                $costCenter,
                 $rate
             );
         }
@@ -2770,7 +2770,7 @@ class PostingsService
         float $debit,
         float $credit,
         string $memo,
-        $dimension = null,
+        $costCenter = null,
         float $rate = 1.0
     ): array {
         return [
@@ -2782,7 +2782,7 @@ class PostingsService
             'debit' => CustomerExchangeRate::toHomeCurrency($debit, $rate),
             'credit' => CustomerExchangeRate::toHomeCurrency($credit, $rate),
             'memo' => $memo,
-            'dimension' => $dimension,
+            'cost_center_id' => $costCenter,
         ];
     }
 }

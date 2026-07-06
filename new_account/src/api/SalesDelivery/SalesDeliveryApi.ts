@@ -11,8 +11,8 @@ export interface DispatchSalesDeliveryPayload {
   due_date?: string;
   ship_via?: number | null;
   freight_cost?: number;
-  dimension_id?: number;
-  dimension2_id?: number;
+  cost_center_id?: number;
+  cost_center2_id?: number;
   comments?: string;
   close_order?: boolean;
   reference?: string;
@@ -38,8 +38,8 @@ export interface DirectSalesDeliveryPayload {
   payment_terms?: number | null;
   freight_cost?: number;
   from_stk_loc: string;
-  dimension_id?: number;
-  dimension2_id?: number;
+  cost_center_id?: number;
+  cost_center2_id?: number;
   comments?: string;
   reference?: string;
   customer_ref?: string;

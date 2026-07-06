@@ -20,7 +20,7 @@ import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
 import api from "../../../../api/apiClient";
-import DimensionSelect from "../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../components/CostCenterSelect";
 import { useFiscalYearFormDefaults } from "../../../../hooks/useFiscalYearFormDefaults";
 import GlHomeCurrencyNotice from "../../../../components/GlHomeCurrencyNotice";
 import {
@@ -107,7 +107,7 @@ function BalanceSheetDrilldownPage() {
 
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [dimension, setDimension] = useState("");
+  const [costCenter, setCostCenter] = useState("");
 
   const { data: chartClasses = [] } = useQuery({
     queryKey: ["chartClasses"],
@@ -143,14 +143,14 @@ function BalanceSheetDrilldownPage() {
   const canSearch = !!fromDate && !!toDate;
 
   const { data, refetch, isFetching, isError, error } = useQuery({
-    queryKey: ["balanceSheet", fromDate, toDate, dimension],
+    queryKey: ["balanceSheet", fromDate, toDate, costCenter],
     queryFn: async () => {
       const response = await api.post(
         "/balance-sheet/search",
         {
           fromDate,
           toDate,
-          dimension: dimension || null,
+          costCenter: costCenter || null,
           noZeroValues: true,
           syncGl: true,
         },
@@ -361,11 +361,11 @@ function BalanceSheetDrilldownPage() {
             />
           </Grid>
           <Grid item xs={12} sm={3}>
-            <DimensionSelect
-              label="Dimension"
-              value={dimension}
-              onChange={setDimension}
-              emptyLabel="All dimensions"
+            <CostCenterSelect
+              label="Cost Center"
+              value={costCenter}
+              onChange={setCostCenter}
+              emptyLabel="All costCenters"
             />
           </Grid>
           <Grid item xs={12} sm={3}>

@@ -23,8 +23,8 @@ class SuppInvoiceItem extends Model
         'unit_price',
         'unit_tax',
         'memo',
-        'dimension_id',
-        'dimension2_id',
+        'cost_center_id',
+        'cost_center2_id',
     ];
 
     public function suppTransNo()

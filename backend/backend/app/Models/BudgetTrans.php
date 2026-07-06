@@ -11,8 +11,8 @@ class BudgetTrans extends Model
     protected $fillable = [
         'fiscal_year_id',
         'account',
-        'dimension_id',
-        'dimension2_id',
+        'cost_center_id',
+        'cost_center2_id',
         'tran_date',
         'amount',
     ];

@@ -18,7 +18,7 @@ class GlTrans extends Model
         'reference',
         'date',
         'account',
-        'dimension',
+        'cost_center_id',
         'debit',
         'credit',
         'memo',

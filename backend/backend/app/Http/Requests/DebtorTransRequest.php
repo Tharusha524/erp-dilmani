@@ -42,8 +42,8 @@ class DebtorTransRequest extends FormRequest
                 'prep_amount' => 'nullable|numeric',
                 'rate' => 'nullable|numeric',
                 'ship_via' => 'nullable|integer',
-                'dimension_id' => 'nullable|integer',
-                'dimension2_id' => 'nullable|integer',
+                'cost_center_id' => 'nullable|integer',
+                'cost_center2_id' => 'nullable|integer',
                 'payment_terms' => 'nullable|integer',
                 'tax_included' => 'nullable|boolean',
             ];
@@ -70,8 +70,8 @@ class DebtorTransRequest extends FormRequest
                 'prep_amount' => 'nullable|numeric',
                 'rate' => 'nullable|numeric',
                 'ship_via' => 'nullable|integer',
-                'dimension_id' => 'nullable|integer',
-                'dimension2_id' => 'nullable|integer',
+                'cost_center_id' => 'nullable|integer',
+                'cost_center2_id' => 'nullable|integer',
                 'payment_terms' => 'nullable|integer',
                 'tax_included' => 'nullable|boolean',
             ];

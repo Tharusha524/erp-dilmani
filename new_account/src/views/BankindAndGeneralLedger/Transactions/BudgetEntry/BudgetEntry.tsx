@@ -28,13 +28,13 @@ import {
 } from "../../../../api/Budget/BudgetApi";
 import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
-import DimensionSelect from "../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../components/CostCenterSelect";
 import { useCompanySetupSettings } from "../../../../hooks/useCompanySetupSettings";
 import theme from "../../../../theme";
 
 export default function BudgetEntry() {
   const navigate = useNavigate();
-  const { useDimensions, dimensionLevel } = useCompanySetupSettings();
+  const { useCostCenters, costCenterLevel } = useCompanySetupSettings();
 
   // Fetch fiscal years
   const { data: fiscalYears = [] } = useQuery({
@@ -67,8 +67,8 @@ export default function BudgetEntry() {
   //  Form fields
   const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>("");
   const [selectedAccountCode, setSelectedAccountCode] = useState<string>("");
-  const [dimension, setDimension] = useState<string>("");
-  const [dimension2, setDimension2] = useState<string>("");
+  const [costCenter, setCostCenter] = useState<string>("");
+  const [costCenter2, setCostCenter2] = useState<string>("");
   const [getText, setGetText] = useState<string>("");
   const [periodAmounts, setPeriodAmounts] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -118,8 +118,8 @@ export default function BudgetEntry() {
       const rows = await getBudgetTrans({
         fiscal_year_id: Number(selectedFiscalYear),
         account: selectedAccountCode,
-        dimension_id: Number(dimension) || 0,
-        dimension2_id: Number(dimension2) || 0,
+        cost_center_id: Number(costCenter) || 0,
+        cost_center2_id: Number(costCenter2) || 0,
       });
       const map: Record<string, string> = {};
       rows.forEach((r) => {
@@ -148,8 +148,8 @@ export default function BudgetEntry() {
       await saveBudgetTrans({
         fiscal_year_id: Number(selectedFiscalYear),
         account: selectedAccountCode,
-        dimension_id: Number(dimension) || 0,
-        dimension2_id: Number(dimension2) || 0,
+        cost_center_id: Number(costCenter) || 0,
+        cost_center2_id: Number(costCenter2) || 0,
         periods: budgetPeriods.map((p: { id: string; tran_date?: string }) => ({
           tran_date: p.tran_date ?? p.id,
           amount: Number(periodAmounts[p.id] ?? 0),
@@ -173,8 +173,8 @@ export default function BudgetEntry() {
       await deleteBudgetTrans({
         fiscal_year_id: Number(selectedFiscalYear),
         account: selectedAccountCode,
-        dimension_id: Number(dimension) || 0,
-        dimension2_id: Number(dimension2) || 0,
+        cost_center_id: Number(costCenter) || 0,
+        cost_center2_id: Number(costCenter2) || 0,
       });
       setPeriodAmounts({});
       setGetText("Deleted");
@@ -272,27 +272,27 @@ export default function BudgetEntry() {
             </TextField>
           </Grid>
 
-          {useDimensions && (
+          {useCostCenters && (
             <Grid item xs={12} sm={3}>
-              <DimensionSelect
-                value={dimension}
-                onChange={setDimension}
+              <CostCenterSelect
+                value={costCenter}
+                onChange={setCostCenter}
                 allowEmpty
-                emptyLabel="No dimension"
-                label="Dimension"
-                dimensionType={1}
+                emptyLabel="No costCenter"
+                label="Cost Center"
+                costCenterType={1}
               />
             </Grid>
           )}
-          {useDimensions && dimensionLevel >= 2 && (
+          {useCostCenters && costCenterLevel >= 2 && (
             <Grid item xs={12} sm={3}>
-              <DimensionSelect
-                value={dimension2}
-                onChange={setDimension2}
+              <CostCenterSelect
+                value={costCenter2}
+                onChange={setCostCenter2}
                 allowEmpty
-                emptyLabel="No dimension 2"
-                label="Dimension 2"
-                dimensionType={2}
+                emptyLabel="No costCenter 2"
+                label="CostCenter 2"
+                costCenterType={2}
               />
             </Grid>
           )}

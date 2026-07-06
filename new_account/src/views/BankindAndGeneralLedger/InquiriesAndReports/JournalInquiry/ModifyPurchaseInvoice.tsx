@@ -28,7 +28,7 @@ import theme from "../../../../theme";
 
 import { useNavigate } from "react-router-dom";
 import { getSuppliers } from "../../../../api/Supplier/SupplierApi";
-import { getDimensions } from "../../../../api/Dimension/DimensionApi";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { getTaxGroups } from "../../../../api/Tax/taxServices";
 import { getPaymentTerms } from "../../../../api/PaymentTerm/PaymentTermApi";
 import { getChartMasters } from "../../../../api/GLAccounts/ChartMasterApi";
@@ -46,13 +46,13 @@ export default function ModifyPurchaseInvoice() {
     const [terms, setTerms] = useState(0);
     const [credit, setCredit] = useState(0);
     const [reference, setReference] = useState("");
-    const [dimension, setDimension] = useState(0);
+    const [costCenter, setCostCenter] = useState(0);
     const [supplierRef, setSupplierRef] = useState("");
     const [memo, setMemo] = useState("");
 
     // API Data
     const [suppliers, setSuppliers] = useState([]);
-    const [dimensions, setDimensions] = useState([]);
+    const [costCenters, setCostCenters] = useState([]);
     const [taxGroups, setTaxGroups] = useState([]);
     const [termList, setTermList] = useState([]);
     const [chartMasters, setChartMasters] = useState([]);
@@ -86,13 +86,13 @@ export default function ModifyPurchaseInvoice() {
         const load = async () => {
             const [s, d, t, p, c] = await Promise.all([
                 getSuppliers(),
-                getDimensions(),
+                getCostCenters(),
                 getTaxGroups(),
                 getPaymentTerms(),
                 getChartMasters(),
             ]);
             setSuppliers(s);
-            setDimensions(d);
+            setCostCenters(d);
             setTaxGroups(t);
             setTermList(p);
             setChartMasters(c);
@@ -182,7 +182,7 @@ export default function ModifyPurchaseInvoice() {
             id: 1,
             account: "",
             name: "",
-            dimension: "",
+            costCenter: "",
             amount: 0,
             memo: "",
         },
@@ -195,7 +195,7 @@ export default function ModifyPurchaseInvoice() {
                 id: p.length + 1,
                 account: "",
                 name: "",
-                dimension: "",
+                costCenter: "",
                 amount: 0,
                 memo: "",
             },
@@ -208,7 +208,7 @@ export default function ModifyPurchaseInvoice() {
                 id: 1,
                 account: "",
                 name: "",
-                dimension: "",
+                costCenter: "",
                 amount: 0,
                 memo: "",
             },
@@ -345,12 +345,12 @@ export default function ModifyPurchaseInvoice() {
 
                             <TextField
                                 select
-                                label="Dimension"
+                                label="Cost Center"
                                 size="small"
-                                value={dimension}
-                                onChange={(e) => setDimension(Number(e.target.value))}
+                                value={costCenter}
+                                onChange={(e) => setCostCenter(Number(e.target.value))}
                             >
-                                {dimensions.map((d) => (
+                                {costCenters.map((d) => (
                                     <MenuItem key={d.id} value={d.id}>
                                         {d.name}
                                     </MenuItem>
@@ -561,7 +561,7 @@ export default function ModifyPurchaseInvoice() {
                         <TableRow>
                             <TableCell>Account</TableCell>
                             <TableCell>Name</TableCell>
-                            <TableCell>Dimension</TableCell>
+                            <TableCell>Cost Center</TableCell>
                             <TableCell>Amount</TableCell>
                             <TableCell>Memo</TableCell>
                             <TableCell align="center">Action</TableCell>
@@ -620,9 +620,9 @@ export default function ModifyPurchaseInvoice() {
                                 <TableCell>
                                     <TextField
                                         size="small"
-                                        value={row.dimension}
+                                        value={row.costCenter}
                                         onChange={(e) =>
-                                            updateGLRow(row.id, "dimension", e.target.value)
+                                            updateGLRow(row.id, "costCenter", e.target.value)
                                         }
                                     />
                                 </TableCell>

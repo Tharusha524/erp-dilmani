@@ -22,7 +22,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
 import { getBranches } from "../../../../api/CustomerBranch/CustomerBranchApi";
 import { getBankAccounts } from "../../../../api/BankAccount/BankAccountApi";
-// import { getDimensions } from "../../../../api/Dimension/DimensionApi"; // hypothetical API
+// import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi"; // hypothetical API
 import { getDebtorTrans, createDebtorTran, updateDebtorTran } from "../../../../api/DebtorTrans/DebtorTransApi";
 import { buildCustomerPaymentAllocationRows } from "../../../../utils/customerPaymentAllocation";
 import CustomerCurrencyField from "../../../../components/CustomerCurrencyField";
@@ -70,7 +70,7 @@ export default function UpdateCustomerPayments() {
   );
   const [reference, setReference] = useState("");
   const [bankCharge, setBankCharge] = useState(0);
-  const [dimension, setDimension] = useState("");
+  const [costCenter, setCostCenter] = useState("");
   const [promptDiscount, setPromptDiscount] = useState(0);
   const [amountOfDiscount, setAmountOfDiscount] = useState(0);
   const [amount, setAmount] = useState(0);
@@ -376,8 +376,8 @@ export default function UpdateCustomerPayments() {
         prep_amount: 0,
         rate: 1,
         ship_via: null,
-        dimension_id: 0,
-        dimension2_id: 0,
+        cost_center_id: 0,
+        cost_center2_id: 0,
         payment_terms: null,
         tax_included: 0,
       };
@@ -392,8 +392,8 @@ export default function UpdateCustomerPayments() {
         ref: reference,
         trans_date: depositDate,
         amount: amount - bankCharge,
-        dimension_id: 0,
-        dimension2_id: 0,
+        cost_center_id: 0,
+        cost_center2_id: 0,
         person_type_id: 2, // Debtor
         person_id: Number(customer),
         reconciled: null,
@@ -630,13 +630,13 @@ export default function UpdateCustomerPayments() {
                 onChange={(e) => setBankCharge(Number(e.target.value))}
               />
               <TextField
-                label="Dimension"
+                label="Cost Center"
                 fullWidth
                 size="small"
-                value={dimension}
-                onChange={(e) => setDimension(e.target.value)}
+                value={costCenter}
+                onChange={(e) => setCostCenter(e.target.value)}
               >
-                {/* {dimensions.map((d: any) => (
+                {/* {costCenters.map((d: any) => (
                   <MenuItem key={d.id} value={d.id}>
                     {d.name}
                   </MenuItem>

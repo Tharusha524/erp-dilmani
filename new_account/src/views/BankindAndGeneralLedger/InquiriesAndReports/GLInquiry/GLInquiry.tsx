@@ -30,7 +30,7 @@ import DeleteConfirmationModal from "../../../../components/DeleteConfirmationMo
 import theme from "../../../../theme";
 import api from "../../../../api/apiClient";
 import { deleteJournalTransaction } from "../../../../api/Journals/JournalApi";
-import DimensionSelect from "../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../components/CostCenterSelect";
 import { formatAccountingAmount } from "../../../../utils/accountingDisplay";
 import { notify } from "../../../../services/notificationService";
 
@@ -51,7 +51,7 @@ interface Row {
   reference: string;
   date: string;
   account: string;
-  dimension: string;
+  costCenter: string;
   personItem: string;
   debit: string;
   credit: string;
@@ -65,7 +65,7 @@ export default function GLInquiry() {
     selectedAccount?: string;
     fromDate?: string;
     toDate?: string;
-    dimension?: string;
+    costCenter?: string;
     autoSearch?: boolean;
   }) || {};
   const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down("md"));
@@ -111,7 +111,7 @@ export default function GLInquiry() {
   const [selectedAccount, setSelectedAccount] = useState(navState.selectedAccount ?? "");
   const [fromDate, setFromDate] = useState(navState.fromDate ?? "");
   const [toDate, setToDate] = useState(navState.toDate ?? "");
-  const [dimension, setDimension] = useState(navState.dimension ?? "");
+  const [costCenter, setCostCenter] = useState(navState.costCenter ?? "");
   const [memo, setMemo] = useState("");
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
@@ -126,7 +126,7 @@ export default function GLInquiry() {
         selectedAccount,
         fromDate,
         toDate,
-        dimension,
+        costCenter,
         memo,
         amountMin,
         amountMax,
@@ -143,7 +143,7 @@ export default function GLInquiry() {
         reference: item.reference || "",
         date: item.date || "",
         account: item.account || "",
-        dimension: item.dimension || "",
+        costCenter: item.costCenter || "",
         personItem: item.personItem || "",
         debit: item.debit?.toString() || "0",
         credit: item.credit?.toString() || "0",
@@ -305,11 +305,11 @@ export default function GLInquiry() {
           </Grid>
 
           <Grid item xs={12} sm={3}>
-            <DimensionSelect
-              label="Dimension"
-              value={dimension}
-              onChange={setDimension}
-              emptyLabel="All dimensions"
+            <CostCenterSelect
+              label="Cost Center"
+              value={costCenter}
+              onChange={setCostCenter}
+              emptyLabel="All costCenters"
             />
           </Grid>
 
@@ -405,7 +405,7 @@ export default function GLInquiry() {
               <TableCell>Reference</TableCell>
               <TableCell>Date</TableCell>
               <TableCell>Account</TableCell>
-              <TableCell>Dimension</TableCell>
+              <TableCell>Cost Center</TableCell>
               <TableCell>Person/Item</TableCell>
               <TableCell>Debit</TableCell>
               <TableCell>Credit</TableCell>
@@ -422,7 +422,7 @@ export default function GLInquiry() {
                 <TableCell>{r.reference}</TableCell>
                 <TableCell>{r.date}</TableCell>
                 <TableCell>{r.account}</TableCell>
-                <TableCell>{r.dimension}</TableCell>
+                <TableCell>{r.costCenter}</TableCell>
                 <TableCell>{r.personItem}</TableCell>
                 <TableCell>{r.debit}</TableCell>
                 <TableCell>{r.credit}</TableCell>

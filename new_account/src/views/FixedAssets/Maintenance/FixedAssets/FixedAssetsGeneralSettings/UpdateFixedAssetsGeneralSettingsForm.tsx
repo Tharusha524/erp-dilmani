@@ -48,7 +48,7 @@ export default function UpdateFixedAssetsGeneralSettingsForm({ itemId }: ItemGen
     depreciationYears: "",
     rateMultiplier: "",
     depreciationStart: null as Date | null,
-    dimension: "",
+    costCenter: "",
     salesAccount: "",
     assetAccount: "",
     depreciationCostAccount: "",
@@ -170,7 +170,7 @@ export default function UpdateFixedAssetsGeneralSettingsForm({ itemId }: ItemGen
       depreciationYears: data.depreciation_years ? String(data.depreciation_years) : (data.depreciationYears ? String(data.depreciationYears) : (data.depreciation_rate ? String(data.depreciation_rate) : "")),
       rateMultiplier: data.depreciation_factor ? String(data.depreciation_factor) : "",
       depreciationStart: data.depreciation_start ? new Date(data.depreciation_start) : null,
-      dimension: "", // assuming not in API yet
+      costCenter: "", // assuming not in API yet
       salesAccount: data.sales_account ?? prev.salesAccount ?? "",
       assetAccount: data.inventory_account ?? prev.assetAccount ?? "",
       depreciationCostAccount: data.cogs_account ?? prev.depreciationCostAccount ?? "",
@@ -597,20 +597,20 @@ export default function UpdateFixedAssetsGeneralSettingsForm({ itemId }: ItemGen
 
 
 
-              <Typography variant="subtitle1" sx={{ mt: 2 }}>Dimension</Typography>
+              <Typography variant="subtitle1" sx={{ mt: 2 }}>Cost Center</Typography>
               <Divider />
 
               <FormControl size="small" fullWidth>
-                <InputLabel>Dimension</InputLabel>
+                <InputLabel>Cost Center</InputLabel>
                 <Select
-                  name="dimension"
-                  value={formData.dimension}
+                  name="costCenter"
+                  value={formData.costCenter}
                   onChange={handleSelectChange}
-                  label="Dimension"
+                  label="Cost Center"
                 >
-                  <MenuItem value="dimension1">Dimension 1</MenuItem>
-                  <MenuItem value="dimension2">Dimension 2</MenuItem>
-                  <MenuItem value="dimension3">Dimension 3</MenuItem>
+                  <MenuItem value="costCenter1">CostCenter 1</MenuItem>
+                  <MenuItem value="costCenter2">CostCenter 2</MenuItem>
+                  <MenuItem value="costCenter3">CostCenter 3</MenuItem>
                 </Select>
               </FormControl>
             </Stack>

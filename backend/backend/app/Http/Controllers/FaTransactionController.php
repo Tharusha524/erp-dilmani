@@ -127,7 +127,7 @@ class FaTransactionController extends Controller
             'invoice_reference' => 'nullable|string|max:60',
             'tran_date' => 'nullable|date',
             'due_date' => 'nullable|date',
-            'dimension_id' => 'nullable|integer',
+            'cost_center_id' => 'nullable|integer',
             'lines' => 'required|array|min:1',
             'lines.*.stock_id' => 'required|string',
             'lines.*.quantity' => 'required|numeric|min:0.0001',
@@ -138,7 +138,7 @@ class FaTransactionController extends Controller
 
         try {
             return response()->json($this->faTransactions->sale(
-                $request->only(['debtor_no', 'branch_code', 'loc_code', 'reference', 'invoice_reference', 'tran_date', 'due_date', 'dimension_id']),
+                $request->only(['debtor_no', 'branch_code', 'loc_code', 'reference', 'invoice_reference', 'tran_date', 'due_date', 'cost_center_id']),
                 $validated['lines']
             ));
         } catch (\InvalidArgumentException $e) {

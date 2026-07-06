@@ -16,7 +16,7 @@ export interface CreateCustomerPaymentPayload {
   bank_charge?: number;
   reference?: string;
   comments?: string;
-  dimension_id?: number;
+  cost_center_id?: number;
   allocations?: CustomerPaymentAllocation[];
 }
 

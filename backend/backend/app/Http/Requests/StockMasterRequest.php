@@ -42,8 +42,8 @@ class StockMasterRequest extends FormRequest
             'adjustment_account' => 'required|string|exists:chart_master,account_code',
             'wip_account' => 'required|string|exists:chart_master,account_code',
 
-            'dimension_id' => 'nullable|integer',
-            'dimension2_id' => 'nullable|integer',
+            'cost_center_id' => 'nullable|integer',
+            'cost_center2_id' => 'nullable|integer',
             'purchase_cost' => 'required|numeric|min:0',
             'salvage_value' => 'nullable|numeric|min:0',
             'useful_life_years' => 'nullable|integer|min:0|max:100',

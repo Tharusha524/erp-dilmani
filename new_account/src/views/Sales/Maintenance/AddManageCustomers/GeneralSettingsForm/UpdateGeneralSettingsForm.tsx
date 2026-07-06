@@ -23,7 +23,7 @@ import ErrorModal from "../../../../../components/ErrorModal";
 import UpdateConfirmationModal from "../../../../../components/UpdateConfirmationModal";
 import DeleteConfirmationModal from "../../../../../components/DeleteConfirmationModal";
 import { getPaymentTerms } from "../../../../../api/PaymentTerm/PaymentTermApi";
-import DimensionSelect from "../../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../../components/CostCenterSelect";
 import { getFriendlyApiErrorMessage } from "../../../../../utils/apiErrorMessage";
 
 interface GeneralSettingsFormProps {
@@ -84,7 +84,7 @@ export default function UpdateGeneralSettingsForm({ customerId, onCustomerDelete
         creditLimit: "",
         paymentTerms: "",
         creditStatus: "",
-        dimension: "",
+        costCenter: "",
         generalNotes: "",
         defaultInventoryLocation: "",
         defaultShippingCompany: "",
@@ -203,7 +203,7 @@ export default function UpdateGeneralSettingsForm({ customerId, onCustomerDelete
                                 customerRes.payment_terms ?? customerRes.paymentTerm
                             ),
                             creditStatus: creditStatusId,
-                            dimension: customerRes.dimension_id || "",
+                            costCenter: customerRes.cost_center_id || "",
                             generalNotes: customerRes.notes || "",
                             defaultInventoryLocation: customerRes.default_inventory_location || "",
                             defaultShippingCompany: customerRes.default_shipping_company || "",
@@ -565,13 +565,13 @@ export default function UpdateGeneralSettingsForm({ customerId, onCustomerDelete
                                 </Select>
                                 <FormHelperText>{errors.creditStatus || " "}</FormHelperText>
                             </FormControl>
-                            <DimensionSelect
-                                label="Dimension 1"
-                                value={formData.dimension || ""}
-                                onChange={(v) => handleChange("dimension", v)}
-                                dimensionType={1}
-                                error={!!errors.dimension}
-                                helperText={errors.dimension || " "}
+                            <CostCenterSelect
+                                label="CostCenter 1"
+                                value={formData.costCenter || ""}
+                                onChange={(v) => handleChange("costCenter", v)}
+                                costCenterType={1}
+                                error={!!errors.costCenter}
+                                helperText={errors.costCenter || " "}
                             />
                             {/* Customer Branches */}
                             <Box>

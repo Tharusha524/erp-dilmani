@@ -31,7 +31,7 @@ class CompanySetup extends Model
         'company_logo_on_reports',
         'use_barcodes_on_stocks',
         'auto_increase_of_document_references',
-        'use_dimensions_on_recurrent_invoices',
+        'use_cost_centers_on_recurrent_invoices',
         'use_long_descriptions_on_invoices',
         'company_logo_on_views',
         'fiscal_year_id',
@@ -45,7 +45,7 @@ class CompanySetup extends Model
         'round_calculated_prices_to_nearest_cents',
         'manufacturing_enabled',
         'fixed_assets_enabled',
-        'use_dimensions',
+        'use_cost_centers',
         'short_name_and_name_in_list',
         'open_print_dialog_direct_on_reports',
         'search_item_list',
@@ -61,7 +61,7 @@ class CompanySetup extends Model
         'company_logo_on_reports' => 'boolean',
         'use_barcodes_on_stocks' => 'boolean',
         'auto_increase_of_document_references' => 'boolean',
-        'use_dimensions_on_recurrent_invoices' => 'boolean',
+        'use_cost_centers_on_recurrent_invoices' => 'boolean',
         'use_long_descriptions_on_invoices' => 'boolean',
         'company_logo_on_views' => 'boolean',
         'put_alternative_tax_include_on_docs' => 'boolean',
@@ -74,7 +74,7 @@ class CompanySetup extends Model
         'search_item_list' => 'boolean',
         'search_customer_list' => 'boolean',
         'search_supplier_list' => 'boolean',
-        'use_dimensions' => 'boolean',
+        'use_cost_centers' => 'boolean',
     ];
 
     public function homeCurrency() 

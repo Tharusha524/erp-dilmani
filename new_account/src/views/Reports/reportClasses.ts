@@ -51,8 +51,8 @@ export const reportClasses = {
     "Fixed Assets Valuation",
   ],
 
-  Dimensions: [
-    "Dimension Summary",
+  CostCenters: [
+    "CostCenter Summary",
   ],
 
   Banking: [

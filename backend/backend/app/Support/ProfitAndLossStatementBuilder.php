@@ -34,7 +34,7 @@ class ProfitAndLossStatementBuilder
         string $fromDate,
         string $toDate,
         string $compareTo = 'Accumulated',
-        ?string $dimension = null
+        ?string $costCenter = null
     ): array {
         $normalized = $rows
             ->map(fn ($row) => $this->normalizeRow($row))
@@ -66,8 +66,8 @@ class ProfitAndLossStatementBuilder
             ->reject(fn ($r) => ChartAccountMetadata::isCogsChartGroup((string) ($r['typeName'] ?? '')))
             ->concat($discountGivenRows);
 
-        $openingStock = $this->inventoryStockBalances($fromDate, $toDate, $compareTo, $dimension, 'opening');
-        $closingStock = $this->inventoryStockBalances($fromDate, $toDate, $compareTo, $dimension, 'closing');
+        $openingStock = $this->inventoryStockBalances($fromDate, $toDate, $compareTo, $costCenter, 'opening');
+        $closingStock = $this->inventoryStockBalances($fromDate, $toDate, $compareTo, $costCenter, 'closing');
 
         $totalSales = $this->sumAmounts($salesRows);
         $totalPurchases = $this->sumAmounts($cogsRows);
@@ -440,7 +440,7 @@ class ProfitAndLossStatementBuilder
         string $fromDate,
         string $toDate,
         string $compareTo,
-        ?string $dimension,
+        ?string $costCenter,
         string $which
     ): array {
         if (! Schema::hasTable('gl_trans') || ! Schema::hasTable('chart_master')) {
@@ -454,8 +454,8 @@ class ProfitAndLossStatementBuilder
         $compareAsAt = $this->compareStockAsAt($fromDate, $toDate, $compareTo, $which);
 
         return [
-            'period' => $this->inventoryStockAt($periodAsAt, $dimension),
-            'compare' => $this->inventoryStockAt($compareAsAt, $dimension),
+            'period' => $this->inventoryStockAt($periodAsAt, $costCenter),
+            'compare' => $this->inventoryStockAt($compareAsAt, $costCenter),
         ];
     }
 
@@ -477,7 +477,7 @@ class ProfitAndLossStatementBuilder
             : Carbon::parse($fromDate)->subDay()->toDateString();
     }
 
-    private function inventoryStockAt(string $asAtDate, ?string $dimension): float
+    private function inventoryStockAt(string $asAtDate, ?string $costCenter): float
     {
         $debitExpr = GlBalanceQuery::throughDateDebitSumExpr('gt', $asAtDate);
         $creditExpr = GlBalanceQuery::throughDateCreditSumExpr('gt', $asAtDate);
@@ -487,7 +487,7 @@ class ProfitAndLossStatementBuilder
                 $join->on(DB::raw('TRIM(cm.account_code)'), '=', DB::raw('TRIM(gt.account)'));
             })
             ->where('cm.account_type', (string) self::INVENTORY_ACCOUNT_TYPE);
-        GlBalanceQuery::applyDimension($query, $dimension);
+        GlBalanceQuery::applyCostCenter($query, $costCenter);
 
         $rows = $query
             ->groupBy('cm.account_code', 'cm.account_type')

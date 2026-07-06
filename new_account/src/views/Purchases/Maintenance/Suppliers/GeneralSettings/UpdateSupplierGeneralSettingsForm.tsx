@@ -31,7 +31,7 @@ import DeleteConfirmationModal from "../../../../../components/DeleteConfirmatio
 import UpdateConfirmationModal from "../../../../../components/UpdateConfirmationModal";
 import ErrorModal from "../../../../../components/ErrorModal";
 import { getPaymentTerms } from "../../../../../api/PaymentTerm/PaymentTermApi";
-import DimensionSelect from "../../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../../components/CostCenterSelect";
 import { getFriendlyApiErrorMessage } from "../../../../../utils/apiErrorMessage";
 
 interface UpdateSupplierGeneralSettingProps {
@@ -59,7 +59,7 @@ export default function UpdateSupplierGeneralSettingsForm({
         accountsPayable: "",
         purchaseAccount: "",
         purchaseDiscountAccount: "",
-        dimension: "",
+        costCenter: "",
         documentLanguage: "",
         mailingAddress: "",
         physicalAddress: "",
@@ -160,7 +160,7 @@ export default function UpdateSupplierGeneralSettingsForm({
                         accountsPayable: res.payable_account || "",
                         purchaseAccount: res.purchase_account || "",
                         purchaseDiscountAccount: res.payment_discount_account || "",
-                        dimension: res.dimension_id || "",
+                        costCenter: res.cost_center_id || "",
                         documentLanguage: res.document_language || "",
                         mailingAddress: res.mail_address || "",
                         physicalAddress: res.bill_address || "",
@@ -211,8 +211,8 @@ export default function UpdateSupplierGeneralSettingsForm({
                 payable_account: formData.accountsPayable || null,
                 purchase_account: formData.purchaseAccount || null,
                 payment_discount_account: formData.purchaseDiscountAccount || null,
-                dimension_id: Number(formData.dimension) || 0,
-                dimension2_id: 0,
+                cost_center_id: Number(formData.costCenter) || 0,
+                cost_center2_id: 0,
                 mail_address: formData.mailingAddress || "",
                 bill_address: formData.physicalAddress || formData.mailingAddress || "",
                 notes: formData.generalNotes || "",
@@ -515,13 +515,13 @@ export default function UpdateSupplierGeneralSettingsForm({
                         <Stack spacing={2}>
                             <Typography variant="subtitle1">Addresses</Typography>
                             <Divider />
-                            <DimensionSelect
-                                label="Dimension 1"
-                                value={formData.dimension || ""}
-                                onChange={(v) => handleChange("dimension", v)}
-                                dimensionType={1}
-                                error={!!errors.dimension}
-                                helperText={errors.dimension || " "}
+                            <CostCenterSelect
+                                label="CostCenter 1"
+                                value={formData.costCenter || ""}
+                                onChange={(v) => handleChange("costCenter", v)}
+                                costCenterType={1}
+                                error={!!errors.costCenter}
+                                helperText={errors.costCenter || " "}
                             />
                             <TextField
                                 label="Mailing Address"

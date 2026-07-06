@@ -157,7 +157,7 @@ export default function Payments() {
       id: 1,
       accountCode: "",
       accountDescription: "",
-      dimension: "",
+      costCenter: "",
       amount: "",
       memo: "",
       selectedAccountCode: "",
@@ -205,7 +205,7 @@ export default function Payments() {
       id: index + 1,
       accountCode: String(line.account_code ?? ""),
       accountDescription: "",
-      dimension: line.dimension ? String(line.dimension) : "",
+      costCenter: line.costCenter ? String(line.costCenter) : "",
       amount: line.amount != null ? String(line.amount) : "",
       memo: line.memo ?? "",
       selectedAccountCode: String(line.account_code ?? ""),
@@ -219,7 +219,7 @@ export default function Payments() {
               id: 1,
               accountCode: "",
               accountDescription: "",
-              dimension: "",
+              costCenter: "",
               amount: "",
               memo: "",
               selectedAccountCode: "",
@@ -268,7 +268,7 @@ export default function Payments() {
         id: prev.length + 1,
         accountCode: "",
         accountDescription: "",
-        dimension: "",
+        costCenter: "",
         amount: "",
         memo: "",
         selectedAccountCode: "",
@@ -300,7 +300,7 @@ export default function Payments() {
       .map((r: any) => ({
         accountCode: r.selectedAccountCode || r.accountCode,
         accountDescription: r.accountDescription,
-        dimension: r.dimension,
+        costCenter: r.costCenter,
         amount: r.amount,
         memo: r.memo,
         selectedAccountCode: r.selectedAccountCode,
@@ -527,7 +527,7 @@ export default function Payments() {
               <TableCell>No</TableCell>
               <TableCell>Account Code</TableCell>
               <TableCell>Account Description</TableCell>
-              <TableCell>Dimension</TableCell>
+              <TableCell>Cost Center</TableCell>
               <TableCell>Amount</TableCell>
               <TableCell>Memo</TableCell>
               <TableCell align="center">Action</TableCell>
@@ -596,7 +596,7 @@ export default function Payments() {
                   </TextField>
                 </TableCell>
                 <TableCell>
-                  <TextField size="small" value={row.dimension} onChange={(e) => handleChange(row.id, "dimension", e.target.value)} />
+                  <TextField size="small" value={row.costCenter} onChange={(e) => handleChange(row.id, "costCenter", e.target.value)} />
                 </TableCell>
                 <TableCell>
                   <TextField size="small" type="number" value={row.amount} onChange={(e) => handleChange(row.id, "amount", e.target.value)} />

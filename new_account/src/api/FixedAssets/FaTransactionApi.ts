@@ -52,7 +52,7 @@ export const postFaSale = async (payload: {
   invoice_reference?: string;
   tran_date?: string;
   due_date?: string;
-  dimension_id?: number;
+  cost_center_id?: number;
   lines: { stock_id: string; quantity: number; price: number; loc_code?: string; description?: string }[];
 }) => {
   const { data } = await api.post("/fixed-assets/sale", payload);

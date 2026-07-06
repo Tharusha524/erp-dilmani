@@ -10,20 +10,20 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureCompanyModuleEnabled
 {
     /**
-     * @param  string  $module  manufacturing|fixed_assets|dimensions
+     * @param  string  $module  manufacturing|fixed_assets|cost_centers
      */
     public function handle(Request $request, Closure $next, string $module): Response
     {
         $enabled = match ($module) {
             'manufacturing' => CompanySetupSettings::manufacturingEnabled(),
             'fixed_assets' => CompanySetupSettings::fixedAssetsEnabled(),
-            'dimensions' => CompanySetupSettings::dimensionsEnabled(),
+            'cost_centers' => CompanySetupSettings::costCentersEnabled(),
             default => true,
         };
 
         if (! $enabled) {
             $label = match ($module) {
-                'dimensions' => 'Dimension',
+                'cost_centers' => 'Cost center',
                 default => str_replace('_', ' ', ucfirst($module)),
             };
 

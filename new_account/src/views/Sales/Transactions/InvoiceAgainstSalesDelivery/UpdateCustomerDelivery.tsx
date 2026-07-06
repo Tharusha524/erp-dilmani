@@ -453,7 +453,7 @@ export default function UpdateCustomerDelivery() {
                 documentTotal={documentTotal}
                 isLoading={creditLoading}
               />
-              <TextField fullWidth label="Dimension" value="" size="small" InputProps={{ readOnly: true }} />
+              <TextField fullWidth label="Cost Center" value="" size="small" InputProps={{ readOnly: true }} />
               <TextField
                 type="date"
                 label="Invoice Deadline"

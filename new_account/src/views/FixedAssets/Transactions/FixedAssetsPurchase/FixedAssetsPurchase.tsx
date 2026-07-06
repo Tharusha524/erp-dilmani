@@ -28,7 +28,7 @@ import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
 import { getSuppliers } from "../../../../api/Supplier/SupplierApi";
 import { getLocations } from "../../../../api/FixedAssetsLocation/FixedAssetsLocationApi";
-import { getDimensions } from "../../../../api/Dimension/DimensionApi";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { getItems } from "../../../../api/Item/ItemApi";
 import { getItemUnits } from "../../../../api/ItemUnit/ItemUnitApi";
 import { getPaymentTerms } from "../../../../api/PaymentTerm/PaymentTermApi";
@@ -74,7 +74,7 @@ export default function FixedAssetsPurchase() {
   const [dueDate, setDueDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-  const [dimension, setDimension] = useState(0);
+  const [costCenter, setCostCenter] = useState(0);
   const [receiveInto, setReceiveInto] = useState("");
   const [reference, setReference] = useState("");
 
@@ -86,7 +86,7 @@ export default function FixedAssetsPurchase() {
   // API data states
   const [suppliers, setSuppliers] = useState([]);
   const [locations, setLocations] = useState([]);
-  const [dimensions, setDimensions] = useState([]);
+  const [costCenters, setCostCenters] = useState([]);
   const [items, setItems] = useState([]);
   const [itemUnits, setItemUnits] = useState([]);
   const [paymentTerms, setPaymentTerms] = useState<any[]>([]);
@@ -136,10 +136,10 @@ export default function FixedAssetsPurchase() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [suppliersData, locationsData, dimensionsData, itemsData, itemUnitsData, paymentTermsData, bankAccountsData, categoriesData] = await Promise.all([
+        const [suppliersData, locationsData, costCentersData, itemsData, itemUnitsData, paymentTermsData, bankAccountsData, categoriesData] = await Promise.all([
           getSuppliers(),
           getLocations(),
-          getDimensions(),
+          getCostCenters(),
           getItems(),
           getItemUnits(),
           getPaymentTerms(),
@@ -152,7 +152,7 @@ export default function FixedAssetsPurchase() {
         if (faLocs.length === 1) {
           setReceiveInto(faLocationCode(faLocs[0]));
         }
-        setDimensions(dimensionsData);
+        setCostCenters(costCentersData);
         setItems(itemsData);
         setItemUnits(itemUnitsData);
         setPaymentTerms(Array.isArray(paymentTermsData) ? paymentTermsData : []);
@@ -390,8 +390,8 @@ export default function FixedAssetsPurchase() {
 
               <TextField label="Due Date" type="date" fullWidth size="small" value={dueDate} onChange={(e) => setDueDate(e.target.value)} InputLabelProps={{ shrink: true }} />
 
-              <TextField select fullWidth label="Dimension" size="small" value={dimension} onChange={(e) => setDimension(Number(e.target.value))}>
-                {dimensions.map((d) => (
+              <TextField select fullWidth label="Cost Center" size="small" value={costCenter} onChange={(e) => setCostCenter(Number(e.target.value))}>
+                {costCenters.map((d) => (
                   <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
                 ))}
               </TextField>

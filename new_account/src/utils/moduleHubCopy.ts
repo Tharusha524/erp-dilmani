@@ -20,9 +20,9 @@ export type HubSectionKey =
   | "banking:transactions"
   | "banking:maintenance"
   | "banking:inquiries"
-  | "dimension:transactions"
-  | "dimension:maintenance"
-  | "dimension:inquiries"
+  | "costCenter:transactions"
+  | "costCenter:maintenance"
+  | "costCenter:inquiries"
   | "setup:maintenance"
   | "setup:companysetup"
   | "setup:miscellaneous"
@@ -122,21 +122,21 @@ export const HUB_MODULE_INTRO: Partial<Record<HubSectionKey, ScreenCopy>> = {
       "Financial reports show amounts in home currency (LKR).",
     ],
   },
-  "dimension:transactions": {
-    title: "Dimension Transactions",
-    summary: "Create and manage analytical dimensions (projects, departments, cost centres) on transactions.",
+  "costCenter:transactions": {
+    title: "CostCenter Transactions",
+    summary: "Create and manage analytical costCenters (projects, departments, cost centres) on transactions.",
     bullets: [
-      "Assign dimensions on sales, purchase, and journal lines where enabled.",
+      "Assign costCenters on sales, purchase, and journal lines where enabled.",
     ],
   },
-  "dimension:maintenance": {
-    title: "Dimension Maintenance",
-    summary: "Define dimension tags used to analyse income and expenses by project or department.",
+  "costCenter:maintenance": {
+    title: "CostCenter Maintenance",
+    summary: "Define costCenter tags used to analyse income and expenses by project or department.",
     bullets: [],
   },
-  "dimension:inquiries": {
-    title: "Dimension Inquiries & Reports",
-    summary: "Search dimension activity and print dimension analysis reports.",
+  "costCenter:inquiries": {
+    title: "CostCenter Inquiries & Reports",
+    summary: "Search costCenter activity and print costCenter analysis reports.",
     bullets: [],
   },
   "setup:maintenance": {
@@ -292,11 +292,11 @@ export const HUB_CARD_DESCRIPTIONS: Record<string, string> = {
   "/bankingandgeneralledger/inquiriesandreports/trial-balance": "All accounts — home currency",
   "/bankingandgeneralledger/inquiriesandreports/balance-sheet-drilldown": "Assets, liabilities, equity",
   "/bankingandgeneralledger/inquiriesandreports/profit-and-loss-drilldown": "Income and expenses",
-  // Dimension
-  "/dimension/transactions/dimension-entry": "Create project / cost centre",
-  "/dimension/transactions/outstanding-dimensions": "Open dimension entries",
-  "/dimension/maintenance/dimension-tags": "Dimension tag definitions",
-  "/dimension/inquiriesandreports/dimension-inquiry": "Dimension balances",
+  // CostCenter
+  "/costCenter/transactions/costCenter-entry": "Create project / cost centre",
+  "/costCenter/transactions/outstanding-costCenters": "Open costCenter entries",
+  "/costCenter/maintenance/costCenter-tags": "CostCenter tag definitions",
+  "/costCenter/inquiriesandreports/costCenter-inquiry": "CostCenter balances",
   // Setup
   "/setup/maintenance/void-a-transaction": "Reverse a posted document",
   "/setup/maintenance/view-or-print-transaction": "Find and print any transaction",

@@ -203,7 +203,7 @@ class VoidTransactionService
                     'memo' => $memo ? "VOID: {$memo}" : 'VOID',
                     'debit' => (float) ($line->credit ?? 0),
                     'credit' => (float) ($line->debit ?? 0),
-                    'dimension' => $line->dimension ?? null,
+                    'cost_center_id' => $line->cost_center_id ?? null,
                 ];
             }
 

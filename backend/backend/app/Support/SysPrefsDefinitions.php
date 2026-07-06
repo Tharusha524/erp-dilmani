@@ -17,7 +17,7 @@ class SysPrefsDefinitions
             ['name' => 'exchangeVariancesAccount', 'category' => 'glsetup.general', 'type' => 'string', 'length' => 15, 'value' => '4450'],
             ['name' => 'bankChargesAccount', 'category' => 'glsetup.general', 'type' => 'string', 'length' => 15, 'value' => '5690'],
             ['name' => 'taxAlgorithm', 'category' => 'glsetup.general', 'type' => 'string', 'length' => 20, 'value' => '1'],
-            ['name' => 'dimensionRequiredByAfter', 'category' => 'glsetup.dimensions', 'type' => 'number', 'length' => 11, 'value' => '1'],
+            ['name' => 'costCenterRequiredByAfter', 'category' => 'glsetup.costcenters', 'type' => 'number', 'length' => 11, 'value' => '1'],
             ['name' => 'defaultCreditLimit', 'category' => 'glsetup.customer', 'type' => 'number', 'length' => 11, 'value' => '1000'],
             ['name' => 'invoiceIdentification', 'category' => 'glsetup.customer', 'type' => 'string', 'length' => 20, 'value' => '1'],
             ['name' => 'accumulateBatchShipping', 'category' => 'glsetup.customer', 'type' => 'boolean', 'length' => null, 'value' => 'false'],

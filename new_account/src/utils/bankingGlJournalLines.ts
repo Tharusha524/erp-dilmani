@@ -28,7 +28,7 @@ export interface BankingFormLine {
   credit?: string | number;
   amount?: string | number;
   memo?: string;
-  dimension?: string;
+  costCenter?: string;
 }
 
 function lineAccountCode(line: BankingFormLine): string {

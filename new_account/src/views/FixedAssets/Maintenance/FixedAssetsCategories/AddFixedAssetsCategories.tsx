@@ -22,7 +22,7 @@ import { getChartMasters } from "../../../../api/GLAccounts/ChartMasterApi";
 import { getItemUnits } from "../../../../api/ItemUnit/ItemUnitApi";
 import { getItemTaxTypes } from "../../../../api/ItemTaxType/ItemTaxTypeApi";
 import { createItemCategory } from "../../../../api/ItemCategories/ItemCategoriesApi";
-import { getDimensions } from "../../../../api/Dimension/DimensionApi";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
@@ -37,7 +37,7 @@ interface ItemCategoriesFormData {
   inventoryAccount: string;
   cogsAccount: string;
   inventoryAdjustmentAccount: string;
-  dimension: string;
+  costCenter: string;
 }
 
 export default function AddFixedAssetsCategories() {
@@ -57,7 +57,7 @@ export default function AddFixedAssetsCategories() {
     inventoryAccount: "",
     cogsAccount: "",
     inventoryAdjustmentAccount: "",
-    dimension: "",
+    costCenter: "",
   });
 
   const accountTypeMap: { [key: number]: string } = {
@@ -79,7 +79,7 @@ export default function AddFixedAssetsCategories() {
   const [chartMasters, setChartMasters] = useState<any[]>([]);
   const [itemTaxTypes, setItemTaxTypes] = useState<any[]>([]);
   const [unitsOfMeasure, setUnitsOfMeasure] = useState<any[]>([]);
-  const [dimensions, setDimensions] = useState<any[]>([]);
+  const [costCenters, setCostCenters] = useState<any[]>([]);
   const [errors, setErrors] = useState<Partial<ItemCategoriesFormData>>({});
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
@@ -89,11 +89,11 @@ export default function AddFixedAssetsCategories() {
     const fetchData = async () => {
       try {
         // Fetch all data in parallel
-        const [chartMastersRes, taxTypesRes, unitsRes, dimensionsRes] = await Promise.all([
+        const [chartMastersRes, taxTypesRes, unitsRes, costCentersRes] = await Promise.all([
           getChartMasters(),
           getItemTaxTypes(),
           getItemUnits(),
-          getDimensions(),
+          getCostCenters(),
         ]);
 
         const filteredTaxTypes = (taxTypesRes || []).filter((type) => !type.inactive);
@@ -102,7 +102,7 @@ export default function AddFixedAssetsCategories() {
         setChartMasters(chartMastersRes || []);
         setItemTaxTypes(filteredTaxTypes);
         setUnitsOfMeasure(filteredUnits);
-        setDimensions(dimensionsRes || []);
+        setCostCenters(costCentersRes || []);
 
         // Set default values for dropdowns
         setFormData((prev) => ({
@@ -259,17 +259,17 @@ export default function AddFixedAssetsCategories() {
           />
 
           <FormControl size="small" fullWidth>
-            <InputLabel>Dimension</InputLabel>
+            <InputLabel>Cost Center</InputLabel>
             <Select
-              name="dimension"
-              value={formData.dimension}
+              name="costCenter"
+              value={formData.costCenter}
               onChange={handleSelectChange}
-              label="Dimension"
+              label="Cost Center"
             >
               <MenuItem value="">
                 <em>None</em>
               </MenuItem>
-              {dimensions.map((dim: any) => (
+              {costCenters.map((dim: any) => (
                 <MenuItem key={dim.id} value={String(dim.id)}>
                   {dim.name}
                 </MenuItem>

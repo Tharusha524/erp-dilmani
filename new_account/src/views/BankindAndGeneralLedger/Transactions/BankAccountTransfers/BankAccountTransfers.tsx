@@ -76,7 +76,7 @@ export default function BankAccountTransfers() {
     new Date().toISOString().split("T")[0]
   );
   const [reference, setReference] = useState("");
-  const [dimension, setDimension] = useState("");
+  const [costCenter, setCostCenter] = useState("");
   const [memo, setMemo] = useState("");
   const [dateError, setDateError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -202,7 +202,7 @@ export default function BankAccountTransfers() {
         trans_date: transferDate,
         reference,
         bank_charge: parseFloat(bankCharge) || 0,
-        memo: memo || dimension,
+        memo: memo || costCenter,
       });
 
       navigate("/bankingandgeneralledger/transactions/bank-account-transfers/success", {
@@ -219,7 +219,7 @@ export default function BankAccountTransfers() {
             fromCurrency && toCurrency && fromCurrency !== toCurrency
               ? incomingAmount
               : amount,
-          dimension,
+          costCenter,
           memo,
         },
       });
@@ -398,14 +398,14 @@ export default function BankAccountTransfers() {
             />
           </Grid>
 
-          {/* Fifth row: Dimension */}
+          {/* Fifth row: CostCenter */}
           <Grid item xs={12}>
             <TextField
-              label="Dimension"
+              label="Cost Center"
               fullWidth
               size="small"
-              value={dimension}
-              onChange={(e) => setDimension(e.target.value)}
+              value={costCenter}
+              onChange={(e) => setCostCenter(e.target.value)}
             />
           </Grid>
 

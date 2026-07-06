@@ -174,9 +174,9 @@ class GlTransHelper
         $date = $line['date'] ?? $line['tran_date'] ?? now()->toDateString();
         $transType = $line['type'] ?? $line['trans_type'] ?? 0;
 
-        $dimension = $line['dimension'] ?? $line['dimension_id'] ?? null;
-        if ($dimension === '' || $dimension === '0' || $dimension === 0) {
-            $dimension = null;
+        $costCenter = $line['cost_center_id'] ?? null;
+        if ($costCenter === '' || $costCenter === '0' || $costCenter === 0) {
+            $costCenter = null;
         }
 
         $row = [];
@@ -194,16 +194,14 @@ class GlTransHelper
             $account = $line['account'] ?? null;
             $row['account'] = is_string($account) ? trim($account) : $account;
         }
-        if (Schema::hasColumn('gl_trans', 'dimension_id')) {
-            $row['dimension_id'] = $dimension;
-        } elseif (Schema::hasColumn('gl_trans', 'dimension')) {
-            $row['dimension'] = $dimension;
+        if (Schema::hasColumn('gl_trans', 'cost_center_id')) {
+            $row['cost_center_id'] = $costCenter;
         }
 
-        $dimension2 = $line['dimension2_id'] ?? $line['dimension2'] ?? null;
-        if ($dimension2 !== null && $dimension2 !== '' && (int) $dimension2 > 0
-            && Schema::hasColumn('gl_trans', 'dimension2_id')) {
-            $row['dimension2_id'] = (int) $dimension2;
+        $costCenter2 = $line['cost_center2_id'] ?? null;
+        if ($costCenter2 !== null && $costCenter2 !== '' && (int) $costCenter2 > 0
+            && Schema::hasColumn('gl_trans', 'cost_center2_id')) {
+            $row['cost_center2_id'] = (int) $costCenter2;
         }
         if (Schema::hasColumn('gl_trans', 'debit')) {
             $row['debit'] = $debit;

@@ -97,8 +97,8 @@ class FaTransactionService
                         'unit_price' => (float) $line['price'],
                         'unit_tax' => 0,
                         'memo' => '',
-                        'dimension_id' => (int) ($header['dimension_id'] ?? 0),
-                        'dimension2_id' => 0,
+                        'cost_center_id' => (int) ($header['cost_center_id'] ?? 0),
+                        'cost_center2_id' => 0,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -386,7 +386,7 @@ class FaTransactionService
                 'ov_freight_tax' => 0,
                 'ov_discount' => 0,
                 'alloc' => 0,
-                'dimension_id' => (int) ($header['dimension_id'] ?? 0),
+                'cost_center_id' => (int) ($header['cost_center_id'] ?? 0),
             ]);
 
             $invoiceTrans = DebtorTrans::create([
@@ -403,7 +403,7 @@ class FaTransactionService
                 'ov_freight_tax' => 0,
                 'ov_discount' => 0,
                 'alloc' => 0,
-                'dimension_id' => (int) ($header['dimension_id'] ?? 0),
+                'cost_center_id' => (int) ($header['cost_center_id'] ?? 0),
             ]);
 
             $stockMoves = [];

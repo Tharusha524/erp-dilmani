@@ -311,7 +311,7 @@ ERP modules (sidebar):
 - Items & Inventory: items, locations, transfers, adjustments, pricing, standard costs
 - Manufacturing (optional): BOM, work orders, issue, produce, cost
 - Fixed Assets (optional): purchase, depreciation, transfer, disposal, sale
-- Dimension (optional): project/cost center tagging
+- Cost Center (optional): project/cost center tagging
 - Banking & GL: payments, deposits, transfers, journals, reconcile, accruals, trial balance, P&L, balance sheet
 - Setup: company, users, access, taxes, fiscal year, GL defaults, diagnostics, backup
 

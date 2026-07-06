@@ -142,21 +142,21 @@ const baseSidebarItems: Array<SidebarItem> = [
     ],
   },
   {
-    title: "Dimension",
-    href: "/dimension",
+    title: "CostCenter",
+    href: "/costCenter",
     icon: <ChangeHistoryIcon fontSize="small" />,
     nestedItems: [
       {
         title: "Transactions",
-        href: "/dimension/transactions",
+        href: "/costCenter/transactions",
       },
       {
         title: "Inquiries and Reports",
-        href: "/dimension/inquiriesandreports",
+        href: "/costCenter/inquiriesandreports",
       },
       {
         title: "Maintenance",
-        href: "/dimension/maintenance",
+        href: "/costCenter/maintenance",
       },
     ],
   },
@@ -184,7 +184,7 @@ const baseSidebarItems: Array<SidebarItem> = [
 export interface SidebarModuleFlags {
   manufacturingEnabled?: boolean;
   fixedAssetsEnabled?: boolean;
-  useDimensions?: boolean;
+  useCostCenters?: boolean;
 }
 
 // Filter modules by Company Setup flags; optionally append Setup for admins.
@@ -195,13 +195,13 @@ export const getSidebarItems = (
   const {
     manufacturingEnabled = true,
     fixedAssetsEnabled = true,
-    useDimensions = true,
+    useCostCenters = true,
   } = moduleFlags;
 
   const items = baseSidebarItems.filter((item) => {
     if (item.title === "Manufacturing") return manufacturingEnabled;
     if (item.title === "Fixed Assets") return fixedAssetsEnabled;
-    if (item.title === "Dimension") return useDimensions;
+    if (item.title === "CostCenter") return useCostCenters;
     return true;
   });
 

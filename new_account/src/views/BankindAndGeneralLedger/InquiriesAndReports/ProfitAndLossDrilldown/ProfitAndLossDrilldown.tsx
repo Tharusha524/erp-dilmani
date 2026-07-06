@@ -24,7 +24,7 @@ import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
 import api from "../../../../api/apiClient";
 import { getFriendlyApiErrorMessage } from "../../../../utils/apiErrorMessage";
-import DimensionSelect from "../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../components/CostCenterSelect";
 import { useFiscalYearFormDefaults } from "../../../../hooks/useFiscalYearFormDefaults";
 import { isProfitAndLossAccount, isProfitAndLossIncomeAccount, isProfitAndLossCostAccount, buildChartGroupMetaMap } from "../../../../utils/trialAccountBalance";
 import {
@@ -59,7 +59,7 @@ interface PlSearchParams {
   fromDate: string;
   toDate: string;
   compareTo: string;
-  dimension: string;
+  costCenter: string;
 }
 
 function isPlAccountRow(
@@ -229,7 +229,7 @@ function ProfitAndLossDrilldownPage() {
   const [reportPeriodMode, setReportPeriodMode] = useState<ReportPeriodMode>("custom");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [compareTo, setCompareTo] = useState("Accumulated");
-  const [dimension, setDimension] = useState("");
+  const [costCenter, setCostCenter] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
   const [dateError, setDateError] = useState("");
   const [searchParams, setSearchParams] = useState<PlSearchParams | null>(null);
@@ -324,7 +324,7 @@ function ProfitAndLossDrilldownPage() {
           fromDate: searchParams.fromDate,
           toDate: searchParams.toDate,
           compareTo: searchParams.compareTo,
-          dimension: searchParams.dimension,
+          costCenter: searchParams.costCenter,
           syncGl: true,
         },
         { skipErrorDialog: true } as Record<string, unknown>
@@ -367,7 +367,7 @@ function ProfitAndLossDrilldownPage() {
       fromDate: dates.fromDate,
       toDate: dates.toDate,
       compareTo,
-      dimension,
+      costCenter,
     });
   };
 
@@ -497,7 +497,7 @@ function ProfitAndLossDrilldownPage() {
         typeName: String(line.typeName ?? accountTypeLabelMap[String(accountType)] ?? ""),
         accountName: String(line.label ?? cm?.account_name ?? ""),
       },
-      { fromDate: activeFrom, toDate: activeTo, dimension }
+      { fromDate: activeFrom, toDate: activeTo, costCenter }
     );
     navigate(target.path, { state: target.state });
   };
@@ -518,7 +518,7 @@ function ProfitAndLossDrilldownPage() {
         typeName: String(line.typeName ?? accountTypeLabelMap[String(accountType)] ?? ""),
         accountName: String(line.label ?? cm?.account_name ?? ""),
       },
-      { fromDate: activeFrom, toDate: activeTo, dimension }
+      { fromDate: activeFrom, toDate: activeTo, costCenter }
     );
     return (
       <Tooltip title={target.label}>
@@ -834,14 +834,14 @@ function ProfitAndLossDrilldownPage() {
           </Grid>
 
           <Grid item xs={12} sm={3}>
-            <DimensionSelect
-              label="Dimension"
-              value={dimension}
+            <CostCenterSelect
+              label="Cost Center"
+              value={costCenter}
               onChange={(value) => {
-                setDimension(value);
+                setCostCenter(value);
                 setHasSearched(false);
               }}
-              emptyLabel="All dimensions"
+              emptyLabel="All costCenters"
             />
           </Grid>
 

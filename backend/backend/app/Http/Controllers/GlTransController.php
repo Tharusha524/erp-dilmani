@@ -29,7 +29,7 @@ class GlTransController extends Controller
      */
     public function search(Request $request): JsonResponse
     {
-        $filters = $request->only(['selectedAccount', 'fromDate', 'toDate', 'dimension', 'dimension2', 'memo', 'amountMin', 'amountMax']);
+        $filters = $request->only(['selectedAccount', 'fromDate', 'toDate', 'costCenter', 'costCenter2', 'memo', 'amountMin', 'amountMax']);
         $results = $this->glTransRepository->search($filters);
 
         return response()->json($results);

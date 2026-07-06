@@ -57,7 +57,7 @@ export default function FixedAssetsGeneralSettingsForm({ itemId }: ItemGeneralSe
     usefulLifeYears: "",
     estimatedCost: "0",
     depreciationStart: null as Date | null,
-    dimension: "",
+    costCenter: "",
     salesAccount: "",
     assetAccount: "",
     depreciationCostAccount: "",
@@ -585,20 +585,20 @@ export default function FixedAssetsGeneralSettingsForm({ itemId }: ItemGeneralSe
                 onChange={(date) => handleChange("depreciationStart", date)}
               />
 
-              <Typography variant="subtitle1" sx={{ mt: 2 }}>Dimension</Typography>
+              <Typography variant="subtitle1" sx={{ mt: 2 }}>Cost Center</Typography>
               <Divider />
 
               <FormControl size="small" fullWidth>
-                <InputLabel>Dimension</InputLabel>
+                <InputLabel>Cost Center</InputLabel>
                 <Select
-                  name="dimension"
-                  value={formData.dimension}
+                  name="costCenter"
+                  value={formData.costCenter}
                   onChange={handleSelectChange}
-                  label="Dimension"
+                  label="Cost Center"
                 >
-                  <MenuItem value="dimension1">Dimension 1</MenuItem>
-                  <MenuItem value="dimension2">Dimension 2</MenuItem>
-                  <MenuItem value="dimension3">Dimension 3</MenuItem>
+                  <MenuItem value="costCenter1">CostCenter 1</MenuItem>
+                  <MenuItem value="costCenter2">CostCenter 2</MenuItem>
+                  <MenuItem value="costCenter3">CostCenter 3</MenuItem>
                 </Select>
               </FormControl>
             </Stack>

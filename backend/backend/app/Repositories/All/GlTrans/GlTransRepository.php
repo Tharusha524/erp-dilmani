@@ -39,7 +39,7 @@ class GlTransRepository extends BaseRepository implements GlTransInterface
                 $account,
                 (string) ($filters['fromDate'] ?? $filters['startDate'] ?? ''),
                 (string) ($filters['toDate'] ?? $filters['endDate'] ?? ''),
-                $filters['dimension'] ?? null
+                $filters['costCenter'] ?? null
             )
             : null;
 
@@ -531,7 +531,7 @@ class GlTransRepository extends BaseRepository implements GlTransInterface
         string $accountCode,
         string $fromDate,
         string $toDate,
-        $dimension
+        $costCenter
     ): array {
         $accountCode = trim($accountCode);
         $accountType = (int) (DB::table('chart_master')
@@ -546,7 +546,7 @@ class GlTransRepository extends BaseRepository implements GlTransInterface
         if ($fromDate !== '') {
             $openingQuery = DB::table('gl_trans as gt')
                 ->whereRaw('TRIM(gt.account) = ?', [$accountCode]);
-            GlBalanceQuery::applyDimension($openingQuery, $dimension, 'gt');
+            GlBalanceQuery::applyCostCenter($openingQuery, $costCenter, 'gt');
             GlBalanceQuery::applyGlDateOnOrBefore($openingQuery, $fromDate, 'gt');
             $openingRow = $openingQuery->selectRaw("{$debitExpr} as total_debit, {$creditExpr} as total_credit")->first();
             $openingDebit = (float) ($openingRow->total_debit ?? 0);
@@ -555,7 +555,7 @@ class GlTransRepository extends BaseRepository implements GlTransInterface
 
         $periodQuery = DB::table('gl_trans as gt')
             ->whereRaw('TRIM(gt.account) = ?', [$accountCode]);
-        GlBalanceQuery::applyDimension($periodQuery, $dimension, 'gt');
+        GlBalanceQuery::applyCostCenter($periodQuery, $costCenter, 'gt');
         if ($fromDate !== '' || $toDate !== '') {
             if ($fromDate !== '') {
                 GlBalanceQuery::applyGlPeriodAfterFromThroughTo(
@@ -614,7 +614,7 @@ class GlTransRepository extends BaseRepository implements GlTransInterface
                 'gl.reference',
                 DB::raw("{$dateCol} as date"),
                 DB::raw("CONCAT(COALESCE(cm.account_code, gl.account, ''), ' - ', COALESCE(cm.account_name, '')) as account"),
-                DB::raw('COALESCE(gl.dimension, "") as dimension'),
+                DB::raw('COALESCE(gl.cost_center_id, "") as cost_center'),
                 DB::raw("'' as personItem"),
                 DB::raw("{$debitExpr} as debit"),
                 DB::raw("{$creditExpr} as credit"),
@@ -635,8 +635,8 @@ class GlTransRepository extends BaseRepository implements GlTransInterface
             $query->whereRaw("DATE({$dateCol}) <= ?", [$to]);
         }
 
-        GlBalanceQuery::applyDimension($query, $filters['dimension'] ?? null, 'gl');
-        GlBalanceQuery::applyDimension2($query, $filters['dimension2'] ?? null, 'gl');
+        GlBalanceQuery::applyCostCenter($query, $filters['costCenter'] ?? null, 'gl');
+        GlBalanceQuery::applyCostCenter2($query, $filters['costCenter2'] ?? null, 'gl');
 
         $memo = $filters['memo'] ?? '';
         if ($memo !== '' && Schema::hasColumn('gl_trans', 'memo')) {

@@ -273,8 +273,8 @@ class BankingTransactionController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'freq' => 'required|integer|in:1,2,3,4',
             'periods' => 'required|integer|min:1',
-            'dimension_id' => 'nullable|integer|min:0',
-            'dimension2_id' => 'nullable|integer|min:0',
+            'cost_center_id' => 'nullable|integer|min:0',
+            'cost_center2_id' => 'nullable|integer|min:0',
             'memo' => 'nullable|string',
         ]);
     }

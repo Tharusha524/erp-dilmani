@@ -21,7 +21,7 @@ export const HELP_MODULES = [
   "Items and Inventory",
   "Manufacturing",
   "Fixed Assets",
-  "Dimension",
+  "CostCenter",
   "Banking and GL",
   "Setup",
 ] as const;
@@ -386,18 +386,18 @@ export const HELP_GUIDE_ENTRIES: HelpGuideEntry[] = [
     ],
   },
   {
-    id: "dimension",
-    module: "Dimension",
-    pathPrefix: "/dimension",
-    title: "Dimension",
+    id: "costCenter",
+    module: "CostCenter",
+    pathPrefix: "/costCenter",
+    title: "CostCenter",
     summary: "Analytical tagging for projects or cost centers. Enable in Company Setup.",
     sections: [
       {
         title: "Usage",
         items: [
-          "Define dimension tags in Maintenance.",
-          "Create dimensions in Dimension Entry.",
-          "Assign dimensions on transactions where supported.",
+          "Define costCenter tags in Maintenance.",
+          "Create costCenters in CostCenter Entry.",
+          "Assign costCenters on transactions where supported.",
         ],
       },
     ],

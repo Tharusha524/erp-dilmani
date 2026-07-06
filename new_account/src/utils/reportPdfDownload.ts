@@ -2,7 +2,7 @@ import api from "../api/apiClient";
 
 function normalizeReportPdfParams(params: Record<string, unknown>): Record<string, unknown> {
   const out = { ...params };
-  const dim = out.dimension;
+  const dim = out.costCenter;
   if (
     dim === "" ||
     dim === "no" ||
@@ -12,7 +12,7 @@ function normalizeReportPdfParams(params: Record<string, unknown>): Record<strin
     dim === null ||
     dim === undefined
   ) {
-    delete out.dimension;
+    delete out.costCenter;
   }
   if (out.orientation && typeof out.orientation === "string") {
     out.orientation = out.orientation.toLowerCase();

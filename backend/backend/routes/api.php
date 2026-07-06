@@ -29,8 +29,8 @@ use App\Http\Controllers\DebtorTransController;
 use App\Http\Controllers\DebtorTransDetailsController;
 use App\Http\Controllers\DepreciationPeriodController;
 use App\Http\Controllers\EntityAttachmentController;
-use App\Http\Controllers\DimensionController;
-use App\Http\Controllers\DimensionTagController;
+use App\Http\Controllers\CostCenterController;
+use App\Http\Controllers\CostCenterTagController;
 use App\Http\Controllers\ExchangeRateController;
 use App\Http\Controllers\FiscalYearController;
 use App\Http\Controllers\FaDepreciationController;
@@ -231,11 +231,11 @@ Route::apiResource("work-centres", WorkCentreController::class);
 Route::apiResource("credit-status-setup", CreditStatusSetupController::class);
 Route::apiResource("item-units", ItemUnitController::class);
 
-Route::middleware('company.module:dimensions')->group(function () {
-    Route::apiResource('dimension-tags', DimensionTagController::class);
-    Route::get('dimensions/{id}/gl-balance', [DimensionController::class, 'glBalance']);
-    Route::apiResource('dimensions', DimensionController::class);
-    Route::post('dimensions/search', [DimensionController::class, 'search']);
+Route::middleware('company.module:cost_centers')->group(function () {
+    Route::apiResource('cost-center-tags', CostCenterTagController::class);
+    Route::get('cost-centers/{id}/gl-balance', [CostCenterController::class, 'glBalance']);
+    Route::apiResource('cost-centers', CostCenterController::class);
+    Route::post('cost-centers/search', [CostCenterController::class, 'search']);
 });
 Route::middleware('company.module:fixed_assets')->group(function () {
     Route::apiResource('fixed-assets-locations', FixedAssetsLocationController::class);

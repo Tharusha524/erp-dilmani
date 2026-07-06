@@ -187,7 +187,7 @@ export default function JournalEntry() {
       id: 1,
       accountCode: "",
       accountDescription: "",
-      dimension: "",
+      costCenter: "",
       debit: "",
       credit: "",
       memo: "",
@@ -197,7 +197,7 @@ export default function JournalEntry() {
       id: 2,
       accountCode: "",
       accountDescription: "",
-      dimension: "",
+      costCenter: "",
       debit: "",
       credit: "",
       memo: "",
@@ -273,7 +273,7 @@ export default function JournalEntry() {
       id: index + 1,
       accountCode: String(line.account_code ?? ""),
       accountDescription: "",
-      dimension: line.dimension ? String(line.dimension) : "",
+      costCenter: line.costCenter ? String(line.costCenter) : "",
       debit: Number(line.debit ?? 0) !== 0 ? String(line.debit) : "",
       credit: Number(line.credit ?? 0) !== 0 ? String(line.credit) : "",
       memo: line.memo || "",
@@ -289,7 +289,7 @@ export default function JournalEntry() {
               id: loadedRows.length + 1,
               accountCode: "",
               accountDescription: "",
-              dimension: "",
+              costCenter: "",
               debit: "",
               credit: "",
               memo: "",
@@ -485,7 +485,7 @@ export default function JournalEntry() {
         id: prev.length + 1,
         accountCode: "",
         accountDescription: "",
-        dimension: "",
+        costCenter: "",
         debit: "",
         credit: "",
         memo: "",
@@ -525,7 +525,7 @@ export default function JournalEntry() {
           accountCode: r.selectedAccountCode || r.accountCode,
           selectedAccountCode: r.selectedAccountCode,
           accountDescription: r.accountDescription,
-          dimension: r.dimension,
+          costCenter: r.costCenter,
           debit,
           credit,
           memo: r.memo,
@@ -610,7 +610,7 @@ export default function JournalEntry() {
           debit: r.debit,
           credit: r.credit,
           memo: r.memo,
-          dimension: r.dimension || undefined,
+          costCenter: r.costCenter || undefined,
         })),
       };
 
@@ -641,7 +641,7 @@ export default function JournalEntry() {
           const { data } = await api.post("/trial-balance/search", {
             fromDate: trialFromDate,
             toDate: trialToDate,
-            dimension: "",
+            costCenter: "",
             noZeroValues: false,
             onlyBalance: false,
             groupTotalsOnly: false,
@@ -882,7 +882,7 @@ export default function JournalEntry() {
               <TableCell>No</TableCell>
               <TableCell>Account Code</TableCell>
               <TableCell>Account Description</TableCell>
-              <TableCell>Dimension</TableCell>
+              <TableCell>Cost Center</TableCell>
               <TableCell>Debit</TableCell>
               <TableCell>Credit</TableCell>
               <TableCell>Memo</TableCell>
@@ -983,7 +983,7 @@ export default function JournalEntry() {
                   </TextField>
                 </TableCell>
                 <TableCell>
-                  <TextField size="small" value={row.dimension} onChange={(e) => handleChange(row.id, "dimension", e.target.value)} />
+                  <TextField size="small" value={row.costCenter} onChange={(e) => handleChange(row.id, "costCenter", e.target.value)} />
                 </TableCell>
                 <TableCell>
                   <TextField

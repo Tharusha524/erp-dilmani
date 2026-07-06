@@ -28,7 +28,7 @@ import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
 import { getBranches } from "../../../../api/CustomerBranch/CustomerBranchApi";
 import { getSalesTypes } from "../../../../api/SalesMaintenance/salesService";
 import { getShippingCompanies } from "../../../../api/ShippingCompany/ShippingCompanyApi";
-// import { getDimensions } from "../../../../api/Dimension/DimensionApi";
+// import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { getItems, getItemById } from "../../../../api/Item/ItemApi";
 import { getItemUnits } from "../../../../api/ItemUnit/ItemUnitApi";
 import { getItemCategories } from "../../../../api/ItemCategories/ItemCategoriesApi";
@@ -76,7 +76,7 @@ export default function UpdateCustomerCreditNotes() {
     const [creditNoteDate, setCreditNoteDate] = useState(
         new Date().toISOString().split("T")[0]
     );
-    const [dimension, setDimension] = useState("");
+    const [costCenter, setCostCenter] = useState("");
     const [creditNoteType, setCreditNoteType] = useState("");
     const [returnLocation, setReturnLocation] = useState("");
     const [memo, setMemo] = useState("");
@@ -105,7 +105,7 @@ export default function UpdateCustomerCreditNotes() {
     const { data: branches = [] } = useQuery({ queryKey: ["branches"], queryFn: () => getBranches() });
     const { data: salesTypes = [] } = useQuery({ queryKey: ["salesTypes"], queryFn: getSalesTypes });
     const { data: shippingCompanies = [] } = useQuery({ queryKey: ["shippingCompanies"], queryFn: getShippingCompanies });
-    //   const { data: dimensions = [] } = useQuery({ queryKey: ["dimensions"], queryFn: getDimensions });
+    //   const { data: costCenters = [] } = useQuery({ queryKey: ["costCenters"], queryFn: getCostCenters });
     const { data: items = [] } = useQuery({ queryKey: ["items"], queryFn: getItems });
     const { data: itemUnits = [] } = useQuery({ queryKey: ["itemUnits"], queryFn: getItemUnits });
     const { data: categories = [] } = useQuery({ queryKey: ["itemCategories"], queryFn: () => getItemCategories() });
@@ -549,8 +549,8 @@ export default function UpdateCustomerCreditNotes() {
                 prep_amount: 0,
                 rate: 1,
                 ship_via: Number(shippingCompany),
-                dimension_id: Number(dimension) || 0,
-                dimension2_id: 0,
+                cost_center_id: Number(costCenter) || 0,
+                cost_center2_id: 0,
                 payment_terms: selectedCustomer?.payment_terms || null,
                 tax_included: selectedPriceList?.taxIncl ? 1 : 0,
             };
@@ -729,8 +729,8 @@ export default function UpdateCustomerCreditNotes() {
                 prep_amount: 0,
                 rate: 1,
                 ship_via: Number(shippingCompany),
-                dimension_id: Number(dimension) || 0,
-                dimension2_id: 0,
+                cost_center_id: Number(costCenter) || 0,
+                cost_center2_id: 0,
                 payment_terms: selectedCustomer?.payment_terms || null,
                 tax_included: selectedPriceList?.taxIncl ? 1 : 0,
             };
@@ -942,15 +942,15 @@ export default function UpdateCustomerCreditNotes() {
                             <TextField
                                 select
                                 fullWidth
-                                label="Dimension"
-                                value={dimension}
-                                onChange={(e) => setDimension(e.target.value)}
+                                label="Cost Center"
+                                value={costCenter}
+                                onChange={(e) => setCostCenter(e.target.value)}
                                 size="small"
                             >
                                 <MenuItem value="">
                                     <em>None</em>
                                 </MenuItem>
-                                {/* {dimensions.map((d: any) => (
+                                {/* {costCenters.map((d: any) => (
                     <MenuItem key={d.id} value={d.id}>
                       {d.name}
                     </MenuItem>

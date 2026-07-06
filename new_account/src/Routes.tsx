@@ -22,9 +22,9 @@ import ManufacturingTransactions from "./views/Manufacturing/Transactions/Manufa
 import ManufacturingInquiriesAndReports from "./views/Manufacturing/InquiriesAndReports/ManufacturingInquiriesAndReports";
 import ManufacturingMaintenance from "./views/Manufacturing/Maintenance/ManufacturingMaintenance";
 import FixedAssestsTransactions from "./views/FixedAssets/Transactions/FixedAssestsTransactions";
-import DimensionTransactions from "./views/Dimensions/Transactions/DimensionTransactions";
-import DimensionInquiriesAndReports from "./views/Dimensions/InquiriesAndReports/DimensionInquiriesAndReports";
-import DimensionMaintenance from "./views/Dimensions/Maintenance/DimensionMaintenance";
+import CostCenterTransactions from "./views/CostCenters/Transactions/CostCenterTransactions";
+import CostCenterInquiriesAndReports from "./views/CostCenters/InquiriesAndReports/CostCenterInquiriesAndReports";
+import CostCenterMaintenance from "./views/CostCenters/Maintenance/CostCenterMaintenance";
 import BankingTransactions from "./views/BankindAndGeneralLedger/Transactions/BankingTransactions";
 import BankingInquiriesAndReports from "./views/BankindAndGeneralLedger/InquiriesAndReports/BankingInquiriesAndReports";
 import BankingMaintenance from "./views/BankindAndGeneralLedger/Maintenance/BankingMaintenance";
@@ -172,9 +172,9 @@ import UpdateCompanyForm from "./views/Setup/Maintenance/CreateUpdateCompany/Upd
 import FixedAssetsLocationsTable from "./views/FixedAssets/Maintenance/FixedAssetsLocations/FixedAssetsLocationsTable";
 import AddFixedAssetsLocations from "./views/FixedAssets/Maintenance/FixedAssetsLocations/AddFixedAssetsLocationsForm";
 import UpdateFixedAssetsLocations from "./views/FixedAssets/Maintenance/FixedAssetsLocations/UpdateFixedAssetsLocationsForm";
-import DimensionTagsTable from "./views/Dimensions/Maintenance/DimensionTags/DimensionTagsTable";
-import AddDimensionTagsForm from "./views/Dimensions/Maintenance/DimensionTags/AddDimensionTagsForm";
-import UpdateDimensionTagsForm from "./views/Dimensions/Maintenance/DimensionTags/UpdateDimensionTagsForm";
+import CostCenterTagsTable from "./views/CostCenters/Maintenance/CostCenterTags/CostCenterTagsTable";
+import AddCostCenterTagsForm from "./views/CostCenters/Maintenance/CostCenterTags/AddCostCenterTagsForm";
+import UpdateCostCenterTagsForm from "./views/CostCenters/Maintenance/CostCenterTags/UpdateCostCenterTagsForm";
 import LanguagesTable from "./views/Setup/Maintenance/InstallUpdateLanguages/LanguagesTable";
 import AddLanguagesForm from "./views/Setup/Maintenance/InstallUpdateLanguages/AddLanguagesForm";
 import UpdateLanguagesForm from "./views/Setup/Maintenance/InstallUpdateLanguages/UpdateLanguagesForm";
@@ -322,11 +322,11 @@ import ViewSupplierInvoice from "./views/Purchases/Transactions/SupplierInvoice/
 import SupplierCreditNote from "./views/Purchases/Transactions/SupplierCreditNote/SupplierCreditNote";
 import ViewSupplierCreditNote from "./views/Purchases/Transactions/SupplierCreditNote/ViewSupplierCreditNote";
 import SupplierCreditNoteSuccess from "./views/Purchases/Transactions/SupplierCreditNote/SupplierCreditNoteSuccess";
-import DimensionEntry from "./views/Dimensions/Transactions/DimensionEntry/DimensionEntry";
-import DimensionEntrySuccess from "./views/Dimensions/Transactions/DimensionEntry/DimensionEntrySuccess";
-import OutstandingDimensions from "./views/Dimensions/Transactions/OutstandingDimensions/OutstandingDimensions";
-import DimensionInquiry from "./views/Dimensions/InquiriesAndReports/DimensionInquiry/DimensionInquiry";
-import ViewDimension from "./views/Dimensions/InquiriesAndReports/ViewDimension/ViewDimension";
+import CostCenterEntry from "./views/CostCenters/Transactions/CostCenterEntry/CostCenterEntry";
+import CostCenterEntrySuccess from "./views/CostCenters/Transactions/CostCenterEntry/CostCenterEntrySuccess";
+import OutstandingCostCenters from "./views/CostCenters/Transactions/OutstandingCostCenters/OutstandingCostCenters";
+import CostCenterInquiry from "./views/CostCenters/InquiriesAndReports/CostCenterInquiry/CostCenterInquiry";
+import ViewCostCenter from "./views/CostCenters/InquiriesAndReports/ViewCostCenter/ViewCostCenter";
 import FixedAssetsLocationTransfers from "./views/FixedAssets/Transactions/FixedAssetsLocationTransfers/FixedAssetsLocationTransfers";
 import FixedAssetsInquiry from "./views/FixedAssets/InquiriesAndReports/FixedAssetsInquiry/FixedAssetsInquiry";
 import FixedAssetsCategoriesTable from "./views/FixedAssets/Maintenance/FixedAssetsCategories/FixedAssetsCategoriesTable";
@@ -360,7 +360,7 @@ import ViewCustomerAllocations from "./views/Sales/Transactions/CustomerAllocati
 import UpdatePurchaseOrderEntry from "./views/Purchases/Transactions/PurchaseOrderEntry/UpdatePurchaseOrderEntry";
 import ViewSupplierAllocations from "./views/Purchases/Transactions/SupplierAllocations/ViewSupplierAllocations";
 import ModifySalesInvoice from "./views/BankindAndGeneralLedger/InquiriesAndReports/JournalInquiry/ModifySalesInvoice";
-import EditDimensionEntry from "./views/Dimensions/Transactions/DimensionEntry/EditDimensionEntry";
+import EditCostCenterEntry from "./views/CostCenters/Transactions/CostCenterEntry/EditCostCenterEntry";
 import CustomerPaymentEntry from "./views/BankindAndGeneralLedger/InquiriesAndReports/JournalInquiry/CustomerPaymentEntry";
 import ModifyPurchaseInvoice from "./views/BankindAndGeneralLedger/InquiriesAndReports/JournalInquiry/ModifyPurchaseInvoice";
 import UpdateSalesOrderEntrySuccess from "./views/Sales/Transactions/SalesOrderEntry/UpdateSalesOrderEntrySuccess";
@@ -3156,100 +3156,100 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/dimension/transactions"
+          path="/costCenter/transactions"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimensions']}>
-              {withLayout(MainLayout, DimensionTransactions)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenters']}>
+              {withLayout(MainLayout, CostCenterTransactions)}
             </ProtectedRoute>
           }
         />
         <Route
-          path="/dimension/transactions/dimension-entry"
+          path="/costCenter/transactions/costCenter-entry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimension entry']}>
-              {withLayout(MainLayout, DimensionEntry)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenter entry']}>
+              {withLayout(MainLayout, CostCenterEntry)}
             </ProtectedRoute>
           }
         />
         <Route
-          path="/dimension/transactions/edit-dimension-entry/:id"
+          path="/costCenter/transactions/edit-costCenter-entry/:id"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimension entry']}>
-              {withLayout(MainLayout, EditDimensionEntry)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenter entry']}>
+              {withLayout(MainLayout, EditCostCenterEntry)}
             </ProtectedRoute>
           }
         />
         <Route
-          path="/dimension/transactions/dimension-entry/success"
+          path="/costCenter/transactions/costCenter-entry/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimension entry']}>
-              {withLayout(MainLayout, DimensionEntrySuccess)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenter entry']}>
+              {withLayout(MainLayout, CostCenterEntrySuccess)}
             </ProtectedRoute>
           }
         />
         <Route
-          path="/dimension/transactions/outstanding-dimensions"
+          path="/costCenter/transactions/outstanding-costCenters"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimension view']}>
-              {withLayout(MainLayout, OutstandingDimensions)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenter view']}>
+              {withLayout(MainLayout, OutstandingCostCenters)}
             </ProtectedRoute>
           }
         />
         
         <Route
-          path="/dimension/inquiriesandreports"
+          path="/costCenter/inquiriesandreports"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimensions']}>
-              {withLayout(MainLayout, DimensionInquiriesAndReports)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenters']}>
+              {withLayout(MainLayout, CostCenterInquiriesAndReports)}
             </ProtectedRoute>
           }
         />
         <Route
-          path="/dimension/inquiriesandreports/dimension-inquiry"
+          path="/costCenter/inquiriesandreports/costCenter-inquiry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimension view']}>
-              {withLayout(MainLayout, DimensionInquiry)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenter view']}>
+              {withLayout(MainLayout, CostCenterInquiry)}
             </ProtectedRoute>
           }
         />
         <Route
-          path="/dimension/inquiriesandreports/view-dimension/:id"
+          path="/costCenter/inquiriesandreports/view-costCenter/:id"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimension view']}>
-              {withLayout(MainLayout, ViewDimension)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenter view']}>
+              {withLayout(MainLayout, ViewCostCenter)}
             </ProtectedRoute>
           }
         />
 
         <Route
-          path="/dimension/maintenance"
+          path="/costCenter/maintenance"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimensions Configuration']}>
-              {withLayout(MainLayout, DimensionMaintenance)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenters Configuration']}>
+              {withLayout(MainLayout, CostCenterMaintenance)}
             </ProtectedRoute>
           }
         />
         <Route
-          path="/dimension/maintenance/dimension-tags"
+          path="/costCenter/maintenance/costCenter-tags"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimension tags']}>
-              {withLayout(MainLayout, DimensionTagsTable)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenter tags']}>
+              {withLayout(MainLayout, CostCenterTagsTable)}
             </ProtectedRoute>
           }
         />
         <Route
-          path="/dimension/maintenance/add-dimension-tags"
+          path="/costCenter/maintenance/add-costCenter-tags"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimension tags']}>
-              {withLayout(MainLayout, AddDimensionTagsForm)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenter tags']}>
+              {withLayout(MainLayout, AddCostCenterTagsForm)}
             </ProtectedRoute>
           }
         />
         <Route
-          path="/dimension/maintenance/update-dimension-tags/:id"
+          path="/costCenter/maintenance/update-costCenter-tags/:id"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Dimension tags']}>
-              {withLayout(MainLayout, UpdateDimensionTagsForm)}
+            <ProtectedRoute required={PERMISSION_ID_MAP['CostCenter tags']}>
+              {withLayout(MainLayout, UpdateCostCenterTagsForm)}
             </ProtectedRoute>
           }
         />

@@ -6,7 +6,7 @@ export interface CompanySetupFlags {
   company_logo_on_reports: boolean;
   use_barcodes_on_stocks: boolean;
   auto_increase_of_document_references: boolean;
-  use_dimensions_on_recurrent_invoices: boolean;
+  use_cost_centers_on_recurrent_invoices: boolean;
   use_long_descriptions_on_invoices: boolean;
   company_logo_on_views: boolean;
   put_alternative_tax_include_on_docs: boolean;
@@ -14,7 +14,7 @@ export interface CompanySetupFlags {
   automatic_revaluation_currency_accounts: boolean;
   manufacturing_enabled: boolean;
   fixed_assets_enabled: boolean;
-  use_dimensions: boolean;
+  use_cost_centers: boolean;
   short_name_and_name_in_list: boolean;
   open_print_dialog_direct_on_reports: boolean;
   search_item_list: boolean;
@@ -35,7 +35,7 @@ export interface CompanySetupSettingsResponse {
   } | null;
   fiscal_year_id?: number;
   flags: CompanySetupFlags;
-  dimension_level?: number;
+  costCenter_level?: number;
 }
 
 export const getCompanySetupSettings = async (): Promise<CompanySetupSettingsResponse> => {

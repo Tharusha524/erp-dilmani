@@ -38,7 +38,7 @@ import {
 } from "../../../../utils/cashBankAccount";
 import { getSuppliers } from "../../../../api/Supplier/SupplierApi";
 import { getInventoryLocations } from "../../../../api/InventoryLocation/InventoryLocationApi";
-import { getDimensions } from "../../../../api/Dimension/DimensionApi";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { getItems } from "../../../../api/Item/ItemApi";
 import { getItemUnits } from "../../../../api/ItemUnit/ItemUnitApi";
 import { getPaymentTypes } from "../../../../api/PaymentType/PaymentTypeApi";
@@ -87,7 +87,7 @@ export default function DirectSupplierInvoice() {
   const [dueDate, setDueDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-  const [dimension, setDimension] = useState(0);
+  const [costCenter, setCostCenter] = useState(0);
   const [receiveInto, setReceiveInto] = useState(0);
   const [reference, setReference] = useState("");
   const [fixedAssetPurchase, setFixedAssetPurchase] = useState(false);
@@ -109,7 +109,7 @@ export default function DirectSupplierInvoice() {
   // API data states
   const [suppliers, setSuppliers] = useState([]);
   const [locations, setLocations] = useState([]);
-  const [dimensions, setDimensions] = useState([]);
+  const [costCenters, setCostCenters] = useState([]);
   const [items, setItems] = useState([]);
   const [itemUnits, setItemUnits] = useState([]);
   const [paymentTypes, setPaymentTypes] = useState([]);
@@ -195,10 +195,10 @@ export default function DirectSupplierInvoice() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [suppliersData, locationsData, dimensionsData, itemsData, itemUnitsData, paymentTypesData, bankAccountsData, categoriesData] = await Promise.all([
+        const [suppliersData, locationsData, costCentersData, itemsData, itemUnitsData, paymentTypesData, bankAccountsData, categoriesData] = await Promise.all([
           getSuppliers(),
           getInventoryLocations(),
-          getDimensions(),
+          getCostCenters(),
           getItems(),
           getItemUnits(),
           getPaymentTypes(),
@@ -218,7 +218,7 @@ export default function DirectSupplierInvoice() {
           if (firstId != null) setSupplier(Number(firstId));
         }
         setLocations(locationsData);
-        setDimensions(dimensionsData);
+        setCostCenters(costCentersData);
         setItems(itemsData);
         setItemUnits(itemUnitsData);
         setPaymentTypes(paymentTypesData);
@@ -551,8 +551,8 @@ export default function DirectSupplierInvoice() {
 
               <TextField label="Due Date" type="date" fullWidth size="small" value={dueDate} onChange={(e) => setDueDate(e.target.value)} InputLabelProps={{ shrink: true }} />
 
-              <TextField select fullWidth label="Dimension" size="small" value={dimension} onChange={(e) => setDimension(Number(e.target.value))}>
-                {dimensions.map((d) => (
+              <TextField select fullWidth label="Cost Center" size="small" value={costCenter} onChange={(e) => setCostCenter(Number(e.target.value))}>
+                {costCenters.map((d) => (
                   <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>
                 ))}
               </TextField>

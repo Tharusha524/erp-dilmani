@@ -33,7 +33,7 @@ import { createBranch } from "../../../../../api/CustomerBranch/CustomerBranchAp
 import ErrorModal from "../../../../../components/ErrorModal";
 import AddedConfirmationModal from "../../../../../components/AddedConfirmationModal";
 import { getPaymentTerms } from "../../../../../api/PaymentTerm/PaymentTermApi";
-import DimensionSelect from "../../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../../components/CostCenterSelect";
 import { getFriendlyApiErrorMessage } from "../../../../../utils/apiErrorMessage";
 
 interface GeneralSettingsFormProps {
@@ -72,7 +72,7 @@ export default function GeneralSettingsForm({ customerId, onCustomerAdded }: Gen
     salesPerson: "",
     discountPercent: "",
     promptPaymentDiscount: "",
-    dimension: "",
+    costCenter: "",
     creditLimit: "",
     paymentTerms: "",
     creditStatus: "",
@@ -229,8 +229,8 @@ export default function GeneralSettingsForm({ customerId, onCustomerAdded }: Gen
         pymt_discount: Number(formData.promptPaymentDiscount) || 0,
         credit_limit: Number(formData.creditLimit) || 1000,
         notes: formData.generalNotes,
-        dimension_id: Number(formData.dimension) || 0,
-        dimension2_id: 0,
+        cost_center_id: Number(formData.costCenter) || 0,
+        cost_center2_id: 0,
         inactive: 0,
       };
 
@@ -591,13 +591,13 @@ export default function GeneralSettingsForm({ customerId, onCustomerAdded }: Gen
                       : " ")}
                 </FormHelperText>
               </FormControl>
-              <DimensionSelect
-                label="Dimension 1"
-                value={formData.dimension}
-                onChange={(v) => handleChange("dimension", v)}
-                dimensionType={1}
-                error={!!errors.dimension}
-                helperText={errors.dimension || " "}
+              <CostCenterSelect
+                label="CostCenter 1"
+                value={formData.costCenter}
+                onChange={(v) => handleChange("costCenter", v)}
+                costCenterType={1}
+                error={!!errors.costCenter}
+                helperText={errors.costCenter || " "}
               />
               <TextField
                 label="General Notes"

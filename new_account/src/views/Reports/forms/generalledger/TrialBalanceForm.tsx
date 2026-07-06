@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useReportGenerate } from "../../../../hooks/useReportGenerate";
 import { useApplyFiscalYearDates } from "../../../../hooks/useApplyFiscalYearDates";
-import ReportDimensionSelect from "../../../../components/ReportDimensionSelect";
+import ReportCostCenterSelect from "../../../../components/ReportCostCenterSelect";
 import {
   Box,
   Stack,
@@ -19,7 +19,7 @@ interface TrialBalanceFormData {
   endDate: string;
   zeroValues: string;
   onlyBalances: string;
-  dimension: string;
+  costCenter: string;
   comments: string;
   orientation: string;
   destination: string;
@@ -34,7 +34,7 @@ export default function TrialBalanceForm() {
     endDate: "",
     zeroValues: "no",
     onlyBalances: "no",
-    dimension: "",
+    costCenter: "",
     comments: "",
     orientation: "Portrait",
     destination: "Print",
@@ -138,9 +138,9 @@ export default function TrialBalanceForm() {
             <MenuItem value="yes">Yes</MenuItem>
           </TextField>
 
-          <ReportDimensionSelect
-            value={formData.dimension}
-            onChange={(value) => setFormData({ ...formData, dimension: value })}
+          <ReportCostCenterSelect
+            value={formData.costCenter}
+            onChange={(value) => setFormData({ ...formData, costCenter: value })}
           />
 
           {/* Comments */}

@@ -23,7 +23,7 @@ class PostCustomerPaymentRequest extends FormRequest
             'bank_charge' => 'nullable|numeric|min:0',
             'reference' => 'nullable|string|max:60',
             'comments' => 'nullable|string',
-            'dimension_id' => 'nullable|integer',
+            'cost_center_id' => 'nullable|integer',
             'allocations' => 'nullable|array',
             'allocations.*.trans_no_to' => 'required_with:allocations|integer',
             'allocations.*.trans_type_to' => 'required_with:allocations|integer',

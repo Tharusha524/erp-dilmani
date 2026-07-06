@@ -18,14 +18,14 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useReportGenerate } from "../../../../hooks/useReportGenerate";
 import { getTransTypes } from "../../../../api/Reflines/TransTypesApi";
-import ReportDimensionSelect from "../../../../components/ReportDimensionSelect";
+import ReportCostCenterSelect from "../../../../components/ReportCostCenterSelect";
 
 interface GLAccountTransactionFormData {
   startDate: string;
   endDate: string;
   fromAccount: string;
   toAccount: string;
-  dimension: string;
+  costCenter: string;
   comments: string;
   orientation: string;
   destination: string;
@@ -40,7 +40,7 @@ export default function GLAccountTransactionsForm() {
     endDate: "",
     fromAccount: "",
     toAccount: "",
-    dimension: "",
+    costCenter: "",
     comments: "",
     orientation: "Portrait",
     destination: "Print",
@@ -264,9 +264,9 @@ export default function GLAccountTransactionsForm() {
             ))}
           </TextField>
 
-          <ReportDimensionSelect
-            value={formData.dimension}
-            onChange={(value) => setFormData({ ...formData, dimension: value })}
+          <ReportCostCenterSelect
+            value={formData.costCenter}
+            onChange={(value) => setFormData({ ...formData, costCenter: value })}
           />
 
           {/* Comments */}

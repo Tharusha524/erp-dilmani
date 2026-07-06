@@ -20,7 +20,7 @@ class TrialBalanceController extends Controller
      */
     public function search(Request $request): JsonResponse
     {
-        $filters = $request->only(['fromDate', 'toDate', 'dimension', 'noZeroValues', 'onlyBalance', 'groupTotalsOnly']);
+        $filters = $request->only(['fromDate', 'toDate', 'costCenter', 'noZeroValues', 'onlyBalance', 'groupTotalsOnly']);
         $syncGl = filter_var($request->input('syncGl', true), FILTER_VALIDATE_BOOLEAN);
 
         $glSync = $this->reportGlSync->syncBeforeReport($filters, $syncGl);

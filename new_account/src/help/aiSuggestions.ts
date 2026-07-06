@@ -403,8 +403,8 @@ const RULES: SuggestionRule[] = [
       {
         id: "je-2",
         type: "tip",
-        title: "Use dimensions",
-        message: "Add dimension tags on lines when tracking projects or cost centers.",
+        title: "Use costCenters",
+        message: "Add costCenter tags on lines when tracking projects or cost centers.",
         priority: "low",
       },
     ],

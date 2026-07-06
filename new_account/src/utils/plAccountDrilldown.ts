@@ -20,7 +20,7 @@ export interface PlAccountMeta {
 export interface PlPeriodContext {
   fromDate: string;
   toDate: string;
-  dimension?: string;
+  costCenter?: string;
 }
 
 export interface PlDrilldownTarget {
@@ -55,7 +55,7 @@ export function resolvePlAccountDrilldown(
       selectedAccount: code,
       fromDate: period.fromDate,
       toDate: period.toDate,
-      dimension: period.dimension ?? "",
+      costCenter: period.costCenter ?? "",
       autoSearch: true,
       fromPl: true,
     },

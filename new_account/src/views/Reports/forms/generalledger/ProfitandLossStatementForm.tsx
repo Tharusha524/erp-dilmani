@@ -14,13 +14,13 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useReportGenerate } from "../../../../hooks/useReportGenerate";
 import { getAccountTags } from "../../../../api/AccountTag/AccountTagsApi";
-import ReportDimensionSelect from "../../../../components/ReportDimensionSelect";
+import ReportCostCenterSelect from "../../../../components/ReportCostCenterSelect";
 
 interface ProfitandLossStatementFormData {
   startDate: string;
   endDate: string;
   compareTo: string;
-  dimension: string;
+  costCenter: string;
   accountTags: string;
   decimalValues: string;
   graphics: string;
@@ -37,7 +37,7 @@ export default function ProfitandLossStatementForm() {
     startDate: "",
     endDate: "",
     compareTo: "Accumulated",
-    dimension: "",
+    costCenter: "",
     accountTags: "",
     decimalValues: "no",
     graphics: "No Graphics",
@@ -142,9 +142,9 @@ export default function ProfitandLossStatementForm() {
             <MenuItem value="Budget">Budget</MenuItem>
           </TextField>
 
-          <ReportDimensionSelect
-            value={formData.dimension}
-            onChange={(value) => setFormData({ ...formData, dimension: value })}
+          <ReportCostCenterSelect
+            value={formData.costCenter}
+            onChange={(value) => setFormData({ ...formData, costCenter: value })}
           />
 
           {/* Account Tags dropdown */}

@@ -59,7 +59,7 @@ class BalanceSheetCalculatedReturn
     /**
      * @return array{opening: float, period: float, closing: float}
      */
-    public static function amounts(string $fromDate, string $toDate, ?string $dimension = null): array
+    public static function amounts(string $fromDate, string $toDate, ?string $costCenter = null): array
     {
         if ($fromDate === '' || $toDate === '') {
             return ['opening' => 0.0, 'period' => 0.0, 'closing' => 0.0];
@@ -69,11 +69,11 @@ class BalanceSheetCalculatedReturn
 
         $opening = $fromDate < $fyFrom
             ? 0.0
-            : self::netProfitForRange($fyFrom, $fromDate, $dimension);
+            : self::netProfitForRange($fyFrom, $fromDate, $costCenter);
 
         $closing = $toDate < $fyFrom
             ? 0.0
-            : self::netProfitForRange($fyFrom, $toDate, $dimension);
+            : self::netProfitForRange($fyFrom, $toDate, $costCenter);
 
         $period = round($closing - $opening, 2);
 
@@ -84,7 +84,7 @@ class BalanceSheetCalculatedReturn
         ];
     }
 
-    private static function netProfitForRange(string $rangeFrom, string $rangeTo, ?string $dimension): float
+    private static function netProfitForRange(string $rangeFrom, string $rangeTo, ?string $costCenter): float
     {
         if (! Schema::hasTable('gl_trans') || ! Schema::hasColumn('gl_trans', 'account')) {
             return 0.0;
@@ -97,7 +97,7 @@ class BalanceSheetCalculatedReturn
             ->leftJoin('gl_trans as gt', function ($join) {
                 $join->on(DB::raw('TRIM(cm.account_code)'), '=', DB::raw('TRIM(gt.account)'));
             });
-        GlBalanceQuery::applyDimension($query, $dimension);
+        GlBalanceQuery::applyCostCenter($query, $costCenter);
 
         $rows = $query
             ->groupBy('cm.account_code', 'cm.account_type')

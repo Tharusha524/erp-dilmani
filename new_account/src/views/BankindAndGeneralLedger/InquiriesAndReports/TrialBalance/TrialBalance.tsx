@@ -27,7 +27,7 @@ import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
 import api from "../../../../api/apiClient";
-import DimensionSelect from "../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../components/CostCenterSelect";
 import GlHomeCurrencyNotice from "../../../../components/GlHomeCurrencyNotice";
 import {
   GlReportMoneyProvider,
@@ -104,7 +104,7 @@ function TrialBalancePage() {
   // Search form state
   const [fromDate, setFromDate] = useState(navState.fromDate || "");
   const [toDate, setToDate] = useState(navState.toDate || "");
-  const [dimension, setDimension] = useState("");
+  const [costCenter, setCostCenter] = useState("");
   const [noZeroValues, setNoZeroValues] = useState(true);
   const [onlyBalance, setOnlyBalance] = useState(false);
   const [groupTotalsOnly, setGroupTotalsOnly] = useState(false);
@@ -123,13 +123,13 @@ function TrialBalancePage() {
 
   // Fetch trial balance data
   const { data: tbData, isLoading, refetch } = useQuery({
-    queryKey: ["trialBalance", fromDate, toDate, dimension, noZeroValues, onlyBalance, groupTotalsOnly],
+    queryKey: ["trialBalance", fromDate, toDate, costCenter, noZeroValues, onlyBalance, groupTotalsOnly],
     queryFn: async () => {
       try {
         const response = await api.post("/trial-balance/search", {
           fromDate,
           toDate,
-          dimension,
+          costCenter,
           noZeroValues,
           onlyBalance,
           groupTotalsOnly,
@@ -258,11 +258,11 @@ function TrialBalancePage() {
           </Grid>
 
           <Grid item xs={12} sm={4}>
-            <DimensionSelect
-              label="Dimension"
-              value={dimension}
-              onChange={setDimension}
-              emptyLabel="All dimensions"
+            <CostCenterSelect
+              label="Cost Center"
+              value={costCenter}
+              onChange={setCostCenter}
+              emptyLabel="All costCenters"
             />
           </Grid>
 

@@ -124,7 +124,7 @@ export default function Deposits() {
       id: 1,
       accountCode: "",
       accountDescription: "",
-      dimension: "",
+      costCenter: "",
       amount: "",
       memo: "",
       selectedAccountCode: "",
@@ -199,7 +199,7 @@ export default function Deposits() {
         id: prev.length + 1,
         accountCode: "",
         accountDescription: "",
-        dimension: "",
+        costCenter: "",
         amount: "",
         memo: "",
         selectedAccountCode: "",
@@ -233,7 +233,7 @@ export default function Deposits() {
         .map((r: any) => ({
           accountCode: r.selectedAccountCode || r.accountCode,
           accountDescription: r.accountDescription,
-          dimension: r.dimension,
+          costCenter: r.costCenter,
           amount: r.amount,
           memo: r.memo,
           selectedAccountCode: r.selectedAccountCode,
@@ -422,7 +422,7 @@ export default function Deposits() {
               <TableCell>No</TableCell>
               <TableCell>Account Code</TableCell>
               <TableCell>Account Description</TableCell>
-              <TableCell>Dimension</TableCell>
+              <TableCell>Cost Center</TableCell>
               <TableCell>Amount</TableCell>
               <TableCell>Memo</TableCell>
               <TableCell align="center">Action</TableCell>
@@ -491,7 +491,7 @@ export default function Deposits() {
                   </TextField>
                 </TableCell>
                 <TableCell>
-                  <TextField size="small" value={row.dimension} onChange={(e) => handleChange(row.id, "dimension", e.target.value)} />
+                  <TextField size="small" value={row.costCenter} onChange={(e) => handleChange(row.id, "costCenter", e.target.value)} />
                 </TableCell>
                 <TableCell>
                   <TextField size="small" type="number" value={row.amount} onChange={(e) => handleChange(row.id, "amount", e.target.value)} />

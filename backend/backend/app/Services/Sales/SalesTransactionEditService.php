@@ -16,10 +16,10 @@ use InvalidArgumentException;
 class SalesTransactionEditService
 {
     private const EDITABLE = [
-        10 => ['tran_date', 'due_date', 'reference', 'dimension_id', 'dimension2_id', 'ship_via', 'payment_terms'],
-        11 => ['tran_date', 'reference', 'dimension_id', 'dimension2_id'],
-        12 => ['tran_date', 'reference', 'dimension_id'],
-        13 => ['tran_date', 'due_date', 'reference', 'dimension_id', 'dimension2_id', 'ship_via'],
+        10 => ['tran_date', 'due_date', 'reference', 'cost_center_id', 'cost_center2_id', 'ship_via', 'payment_terms'],
+        11 => ['tran_date', 'reference', 'cost_center_id', 'cost_center2_id'],
+        12 => ['tran_date', 'reference', 'cost_center_id'],
+        13 => ['tran_date', 'due_date', 'reference', 'cost_center_id', 'cost_center2_id', 'ship_via'],
     ];
 
     public function __construct(private PostingsService $postings) {}

@@ -33,7 +33,7 @@ export default function ModifySalesInvoice() {
   const [reference, setReference] = useState("INV/2025/001");
   const [salesType, setSalesType] = useState("Cash");
   const [currency, setCurrency] = useState("LKR");
-  const [dimension, setDimension] = useState("");
+  const [costCenter, setCostCenter] = useState("");
   const [shippingCompany, setShippingCompany] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [dueDate, setDueDate] = useState("");
@@ -146,9 +146,9 @@ export default function ModifySalesInvoice() {
           <Grid item xs={12} sm={4}>
             <TextField
               fullWidth
-              label="Dimension"
-              value={dimension}
-              onChange={(e) => setDimension(e.target.value)}
+              label="Cost Center"
+              value={costCenter}
+              onChange={(e) => setCostCenter(e.target.value)}
               size="small"
             />
           </Grid>

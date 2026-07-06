@@ -33,8 +33,8 @@ class SuppInvoiceItemsRequest extends FormRequest
             'unit_price'         => 'required|numeric',
             'unit_tax'           => 'required|numeric',
             'memo'               => 'nullable|string',
-            'dimension_id'       => 'nullable|integer',
-            'dimension2_id'      => 'nullable|integer',
+            'cost_center_id'       => 'nullable|integer',
+            'cost_center2_id'      => 'nullable|integer',
         ];
     }
 }

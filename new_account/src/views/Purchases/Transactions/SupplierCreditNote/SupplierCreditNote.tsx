@@ -30,7 +30,7 @@ import theme from "../../../../theme";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSuppliers } from "../../../../api/Supplier/SupplierApi";
-import { getDimensions } from "../../../../api/Dimension/DimensionApi";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { getTaxGroups } from "../../../../api/Tax/taxServices";
 import { getPaymentTerms } from "../../../../api/PaymentTerm/PaymentTermApi";
 import { getChartMasters } from "../../../../api/GLAccounts/ChartMasterApi";
@@ -70,7 +70,7 @@ export default function SupplierCreditNote() {
     const [taxGroup, setTaxGroup] = useState(0);
     const [terms, setTerms] = useState(0);
     const [reference, setReference] = useState("");
-    const [dimension, setDimension] = useState(0);
+    const [costCenter, setCostCenter] = useState(0);
     const [sourceInvoices, setSourceInvoices] = useState("");
     const [supplierRef, setSupplierRef] = useState("");
     const [memo, setMemo] = useState("");
@@ -110,7 +110,7 @@ export default function SupplierCreditNote() {
 
     // API Data
     const [suppliers, setSuppliers] = useState([]);
-    const [dimensions, setDimensions] = useState([]);
+    const [costCenters, setCostCenters] = useState([]);
     const [taxGroups, setTaxGroups] = useState([]);
     const [termList, setTermList] = useState([]);
     const [chartMasters, setChartMasters] = useState([]);
@@ -211,13 +211,13 @@ export default function SupplierCreditNote() {
         const load = async () => {
             const [s, d, t, p, c] = await Promise.all([
                 getSuppliers(),
-                getDimensions(),
+                getCostCenters(),
                 getTaxGroups(),
                 getPaymentTerms(),
                 getChartMasters(),
             ]);
             setSuppliers(s);
-            setDimensions(d);
+            setCostCenters(d);
             setTaxGroups(t);
             setTermList(p);
             setChartMasters(c);
@@ -512,7 +512,7 @@ export default function SupplierCreditNote() {
             id: 1,
             account: "",
             name: "",
-            dimension: "",
+            costCenter: "",
             amount: 0,
             memo: "",
         },
@@ -525,7 +525,7 @@ export default function SupplierCreditNote() {
                 id: p.length + 1,
                 account: "",
                 name: "",
-                dimension: "",
+                costCenter: "",
                 amount: 0,
                 memo: "",
             },
@@ -538,7 +538,7 @@ export default function SupplierCreditNote() {
                 id: 1,
                 account: "",
                 name: "",
-                dimension: "",
+                costCenter: "",
                 amount: 0,
                 memo: "",
             },
@@ -568,7 +568,7 @@ export default function SupplierCreditNote() {
                     id: 1,
                     account: "",
                     name: "",
-                    dimension: "",
+                    costCenter: "",
                     amount: 0,
                     memo: "",
                 },
@@ -577,17 +577,17 @@ export default function SupplierCreditNote() {
 
         const clearingCode = prefValue(sysPrefs as any[], "grnClearingAccount", "2201");
         const payableCode = prefValue(sysPrefs as any[], "payableAccount", "1500");
-        const dimensionLabel =
-            dimensions.find((d: any) => Number(d.id) === Number(dimension))?.name ??
-            dimensions.find((d: any) => Number(d.id) === Number(dimension))?.description ??
-            String(dimension || "");
+        const costCenterLabel =
+            costCenters.find((d: any) => Number(d.id) === Number(costCenter))?.name ??
+            costCenters.find((d: any) => Number(d.id) === Number(costCenter))?.description ??
+            String(costCenter || "");
 
         return [
             {
                 id: 1,
                 account: clearingCode,
                 name: accountLabel(clearingCode),
-                dimension: dimensionLabel,
+                costCenter: costCenterLabel,
                 amount: -netTotal,
                 memo: "Reverse GRN clearing",
             },
@@ -595,7 +595,7 @@ export default function SupplierCreditNote() {
                 id: 2,
                 account: payableCode,
                 name: accountLabel(payableCode),
-                dimension: "",
+                costCenter: "",
                 amount: netTotal,
                 memo: "Reverse accounts payable",
             },
@@ -603,7 +603,7 @@ export default function SupplierCreditNote() {
                 id: 3,
                 account: "",
                 name: "",
-                dimension: "",
+                costCenter: "",
                 amount: 0,
                 memo: "",
             },
@@ -618,7 +618,7 @@ export default function SupplierCreditNote() {
                 String(r.item || "").trim() !== ""
         );
         setGlRows(buildGlRowsFromIncludedItems(crediting));
-    }, [itemRows, sysPrefs, chartMasters, dimension, dimensions]);
+    }, [itemRows, sysPrefs, chartMasters, costCenter, costCenters]);
 
     const applyQuickEntry = () => {
         const entry = (quickEntries as QuickEntry[]).find(
@@ -638,7 +638,7 @@ export default function SupplierCreditNote() {
                     id: nextId,
                     account: entry.destination_account,
                     name: accountLabel(entry.destination_account),
-                    dimension: "",
+                    costCenter: "",
                     amount,
                     memo: entry.description || entry.name || "",
                 },
@@ -646,7 +646,7 @@ export default function SupplierCreditNote() {
                     id: nextId + 1,
                     account: "",
                     name: "",
-                    dimension: "",
+                    costCenter: "",
                     amount: 0,
                     memo: "",
                 },
@@ -860,12 +860,12 @@ export default function SupplierCreditNote() {
 
                             <TextField
                                 select
-                                label="Dimension"
+                                label="Cost Center"
                                 size="small"
-                                value={dimension}
-                                onChange={(e) => setDimension(Number(e.target.value))}
+                                value={costCenter}
+                                onChange={(e) => setCostCenter(Number(e.target.value))}
                             >
-                                {dimensions.map((d) => (
+                                {costCenters.map((d) => (
                                     <MenuItem key={d.id} value={d.id}>
                                         {d.name}
                                     </MenuItem>
@@ -1058,7 +1058,7 @@ export default function SupplierCreditNote() {
                         <TableRow>
                             <TableCell>Account</TableCell>
                             <TableCell>Name</TableCell>
-                            <TableCell>Dimension</TableCell>
+                            <TableCell>Cost Center</TableCell>
                             <TableCell>Amount</TableCell>
                             <TableCell>Memo</TableCell>
                             <TableCell align="center">Action</TableCell>
@@ -1129,9 +1129,9 @@ export default function SupplierCreditNote() {
                                 <TableCell>
                                     <TextField
                                         size="small"
-                                        value={row.dimension}
+                                        value={row.costCenter}
                                         onChange={(e) =>
-                                            updateGLRow(row.id, "dimension", e.target.value)
+                                            updateGLRow(row.id, "costCenter", e.target.value)
                                         }
                                         InputProps={{ readOnly: isAutoGl }}
                                     />

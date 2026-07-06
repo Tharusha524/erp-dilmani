@@ -45,7 +45,7 @@ export default function SystemGLSetupForm() {
     exchangeVariancesAccount: "",
     bankChargesAccount: "",
     taxAlgorithm: "",
-    dimensionRequiredByAfter: "",
+    costCenterRequiredByAfter: "",
     defaultCreditLimit: "",
     invoiceIdentification: "",
     accumulateBatchShipping: "false",
@@ -166,8 +166,8 @@ export default function SystemGLSetupForm() {
         ],
       },
       right: {
-        title: "Dimension Defaults",
-        fields: [{ name: "dimensionRequiredByAfter", label: "Dimension Required By After" }],
+        title: "Cost Center Defaults",
+        fields: [{ name: "costCenterRequiredByAfter", label: "Cost Center Required By After" }],
       },
     },
     {
@@ -272,7 +272,7 @@ export default function SystemGLSetupForm() {
     requiredGlAccounts.forEach((key) => {
       if (!data[key]?.trim()) errors[key] = "Required";
     });
-    ["pastDueDaysInterval", "defaultCreditLimit", "quoteValidDays", "deliveryRequiredBy", "dimensionRequiredByAfter"].forEach((key) => {
+    ["pastDueDaysInterval", "defaultCreditLimit", "quoteValidDays", "deliveryRequiredBy", "costCenterRequiredByAfter"].forEach((key) => {
       if (data[key] && !isNumber(data[key])) errors[key] = "Must be a number";
     });
     return errors;

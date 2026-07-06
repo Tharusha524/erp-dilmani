@@ -419,7 +419,7 @@ const ENTRIES: BusinessConsultingEntry[] = [
           "Service business: Sales + Banking (minimal inventory).",
           "Factory: add Manufacturing + Inventory.",
           "Asset-heavy: enable Fixed Assets.",
-          "Project business: enable Dimensions for job costing.",
+          "Project business: enable CostCenters for job costing.",
         ],
       },
       {
@@ -428,7 +428,7 @@ const ENTRIES: BusinessConsultingEntry[] = [
         items: [
           "Retail shop: POS + Direct Invoice + daily bank deposit.",
           "Distributor: PO bulk buy + sales order fulfillment + credit control.",
-          "Contractor: Dimensions per project + accruals for WIP.",
+          "Contractor: CostCenters per project + accruals for WIP.",
           "SaaS/subscription: Recurrent Invoices + customer groups.",
         ],
       },
@@ -545,7 +545,7 @@ export const BUSINESS_MODEL_PLAYBOOK = [
   },
   {
     model: "Services / consulting",
-    setup: "Minimal inventory, recurrent invoices, dimensions per project",
+    setup: "Minimal inventory, recurrent invoices, costCenters per project",
     flow: "Quotation → invoice (milestone) → payment → accruals",
     kpi: "Billable vs collected, WIP, project margin",
   },

@@ -39,7 +39,7 @@ class SalesPaymentService
      *     bank_charge?:float,
      *     reference?:string|null,
      *     comments?:string|null,
-     *     dimension_id?:int,
+     *     cost_center_id?:int,
      *     allocations?: array<int, array{trans_no_to:int, trans_type_to:int, amt:float}>
      * }  $payload
      */
@@ -97,8 +97,8 @@ class SalesPaymentService
                 'prep_amount' => 0,
                 'rate' => CustomerExchangeRate::forDebtor($debtorNo, $tranDate),
                 'ship_via' => null,
-                'dimension_id' => (int) ($payload['dimension_id'] ?? 0),
-                'dimension2_id' => 0,
+                'cost_center_id' => (int) ($payload['cost_center_id'] ?? 0),
+                'cost_center2_id' => 0,
                 'payment_terms' => null,
                 'tax_included' => 0,
             ]);

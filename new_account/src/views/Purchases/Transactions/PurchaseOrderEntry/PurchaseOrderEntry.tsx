@@ -34,7 +34,7 @@ import { createRef } from "../../../../api/Refs/RefsApi";
 import { getFiscalYears } from "../../../../api/FiscalYear/FiscalYearApi";
 import { getCompanies } from "../../../../api/CompanySetup/CompanySetupApi";
 import { getInventoryLocations } from "../../../../api/InventoryLocation/InventoryLocationApi";
-import { getDimensions } from "../../../../api/Dimension/DimensionApi";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { getItems } from "../../../../api/Item/ItemApi";
 import { getItemUnits } from "../../../../api/ItemUnit/ItemUnitApi";
 import { getItemCategories } from "../../../../api/ItemCategories/ItemCategoriesApi";
@@ -65,7 +65,7 @@ export default function PurchaseOrderEntry() {
   const [orderDate, setOrderDate] = useState(
     new Date().toISOString().split("T")[0]
   );
-  const [dimension, setDimension] = useState("");
+  const [costCenter, setCostCenter] = useState("");
   const [receiveInto, setReceiveInto] = useState("");
   const [reference, setReference] = useState("");
 
@@ -79,7 +79,7 @@ export default function PurchaseOrderEntry() {
   // API data states
   const [suppliers, setSuppliers] = useState([]);
   const [locations, setLocations] = useState([]);
-  const [dimensions, setDimensions] = useState([]);
+  const [costCenters, setCostCenters] = useState([]);
   const [items, setItems] = useState([]);
   const [itemUnits, setItemUnits] = useState([]);
   const [categories, setCategories] = useState<{ category_id: number; description: string }[]>([]);
@@ -212,10 +212,10 @@ export default function PurchaseOrderEntry() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [suppliersData, locationsData, dimensionsData, itemsData, itemUnitsData, categoriesData] = await Promise.all([
+        const [suppliersData, locationsData, costCentersData, itemsData, itemUnitsData, categoriesData] = await Promise.all([
           getSuppliers(),
           getInventoryLocations(),
-          getDimensions(),
+          getCostCenters(),
           getItems(),
           getItemUnits(),
           getItemCategories(),
@@ -233,7 +233,7 @@ export default function PurchaseOrderEntry() {
         if ((!receiveInto || receiveInto === "") && Array.isArray(locationsData) && locationsData.length > 0) {
           setReceiveInto(String(locationsData[0].id));
         }
-        setDimensions(dimensionsData);
+        setCostCenters(costCentersData);
         setItems(itemsData);
         setItemUnits(itemUnitsData);
         setCategories(categoriesData);
@@ -578,8 +578,8 @@ export default function PurchaseOrderEntry() {
               <SupplierCurrencyField supplier={selectedSupplier} />
               <TextField label="Supplier's Reference" fullWidth size="small" value={supplierRef} onChange={(e) => setSupplierRef(e.target.value)} />
 
-              <TextField select fullWidth label="Dimension" size="small" value={dimension} onChange={(e) => setDimension(String(e.target.value))}>
-                {dimensions.map((d) => (
+              <TextField select fullWidth label="Cost Center" size="small" value={costCenter} onChange={(e) => setCostCenter(String(e.target.value))}>
+                {costCenters.map((d) => (
                   <MenuItem key={d.id} value={String(d.id)}>{d.name}</MenuItem>
                 ))}
               </TextField>

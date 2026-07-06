@@ -37,7 +37,7 @@ class BalanceSheetRepository extends BaseRepository implements BalanceSheetInter
         $noZeroValues = array_key_exists('noZeroValues', $filters)
             ? filter_var($filters['noZeroValues'], FILTER_VALIDATE_BOOLEAN)
             : true;
-        $dimension = $filters['dimension'] ?? null;
+        $costCenter = $filters['costCenter'] ?? null;
 
         $from = $fromDate !== '' ? $fromDate : null;
         $to = $toDate !== '' ? $toDate : null;
@@ -51,7 +51,7 @@ class BalanceSheetRepository extends BaseRepository implements BalanceSheetInter
             ->leftJoin('gl_trans as gt', function ($join) {
                 $join->on(DB::raw('TRIM(cm.account_code)'), '=', DB::raw('TRIM(gt.account)'));
             });
-        GlBalanceQuery::applyDimension($glSub, $dimension);
+        GlBalanceQuery::applyCostCenter($glSub, $costCenter);
         $glSub = $glSub
             ->groupBy('cm.account_code')
             ->selectRaw(
@@ -97,7 +97,7 @@ class BalanceSheetRepository extends BaseRepository implements BalanceSheetInter
         $calculatedReturn = BalanceSheetCalculatedReturn::amounts(
             (string) ($from ?? ''),
             (string) ($to ?? ''),
-            $dimension
+            $costCenter
         );
         $rows = $this->appendCalculatedReturnRow($rows, $calculatedReturn, $noZeroValues);
 

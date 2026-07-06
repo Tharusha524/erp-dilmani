@@ -193,7 +193,7 @@ class BankingTransactionService
                     'debit' => $columns['debit'],
                     'credit' => $columns['credit'],
                     'memo' => (string) ($line->memo ?? ''),
-                    'dimension' => $line->dimension ?? null,
+                    'cost_center_id' => $line->cost_center_id ?? null,
                 ];
             })->values()->all(),
         ];
@@ -585,8 +585,8 @@ class BankingTransactionService
                 $debit,
                 $credit,
                 $line['memo'] ?? ($headerMemo !== '' ? $headerMemo : 'Journal entry'),
-                $line['dimension'] ?? null,
-                $line['dimension2'] ?? $line['dimension2_id'] ?? null
+                $line['cost_center_id'] ?? null,
+                $line['cost_center2_id'] ?? null
             );
         }
 
@@ -788,7 +788,7 @@ class BankingTransactionService
                 'account_code' => (string) ($line->account ?? ''),
                 'amount' => round($amt, 2),
                 'memo' => (string) ($line->memo ?? ''),
-                'dimension' => $line->dimension ?? null,
+                'cost_center_id' => $line->cost_center_id ?? null,
             ];
         }
 
@@ -924,9 +924,9 @@ class BankingTransactionService
                 continue;
             }
             if ($creditBank) {
-                $glLines[] = $this->glLinePayload($transType, $transNo, $reference, $date, $account, $amt, 0, $line['memo'] ?? $memo, $line['dimension'] ?? null);
+                $glLines[] = $this->glLinePayload($transType, $transNo, $reference, $date, $account, $amt, 0, $line['memo'] ?? $memo, $line['cost_center_id'] ?? null);
             } else {
-                $glLines[] = $this->glLinePayload($transType, $transNo, $reference, $date, $account, 0, $amt, $line['memo'] ?? $memo, $line['dimension'] ?? null);
+                $glLines[] = $this->glLinePayload($transType, $transNo, $reference, $date, $account, 0, $amt, $line['memo'] ?? $memo, $line['cost_center_id'] ?? null);
             }
         }
 
@@ -1006,8 +1006,8 @@ class BankingTransactionService
         float $debit,
         float $credit,
         string $memo,
-        $dimension = null,
-        $dimension2 = null
+        $costCenterId = null,
+        $costCenter2Id = null
     ): array {
         $payload = [
             'type' => $type,
@@ -1018,11 +1018,11 @@ class BankingTransactionService
             'debit' => $debit,
             'credit' => $credit,
             'memo' => $memo,
-            'dimension' => $dimension,
+            'cost_center_id' => $costCenterId,
         ];
 
-        if ($dimension2 !== null && $dimension2 !== '' && (int) $dimension2 > 0) {
-            $payload['dimension2_id'] = (int) $dimension2;
+        if ($costCenter2Id !== null && $costCenter2Id !== '' && (int) $costCenter2Id > 0) {
+            $payload['cost_center2_id'] = (int) $costCenter2Id;
         }
 
         return $payload;

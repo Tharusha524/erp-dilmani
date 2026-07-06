@@ -33,7 +33,7 @@ class ProfitAndLossRepository extends BaseRepository implements ProfitAndLossInt
             return collect();
         }
 
-        $dimension = $filters['dimension'] ?? null;
+        $costCenter = $filters['costCenter'] ?? null;
         $periodDebitExpr = GlBalanceQuery::rangeDebitSumExpr('gt', $fromDate, $toDate);
         $periodCreditExpr = GlBalanceQuery::rangeCreditSumExpr('gt', $fromDate, $toDate);
 
@@ -41,7 +41,7 @@ class ProfitAndLossRepository extends BaseRepository implements ProfitAndLossInt
             ->leftJoin('gl_trans as gt', function ($join) {
                 $join->on(DB::raw('TRIM(cm.account_code)'), '=', DB::raw('TRIM(gt.account)'));
             });
-        GlBalanceQuery::applyDimension($periodSub, $dimension);
+        GlBalanceQuery::applyCostCenter($periodSub, $costCenter);
         $periodSub = $periodSub
             ->groupBy('cm.account_code')
             ->selectRaw(
@@ -50,7 +50,7 @@ class ProfitAndLossRepository extends BaseRepository implements ProfitAndLossInt
                 {$periodCreditExpr} as period_credit"
             );
 
-        $compareSub = $this->buildComparisonSubquery($compareTo, $fromDate, $toDate, $dimension);
+        $compareSub = $this->buildComparisonSubquery($compareTo, $fromDate, $toDate, $costCenter);
 
         $hasChartTypes = Schema::hasTable('chart_types');
         $query = DB::table('chart_master as cm')
@@ -130,7 +130,7 @@ class ProfitAndLossRepository extends BaseRepository implements ProfitAndLossInt
             ->values();
     }
 
-    private function buildComparisonSubquery(string $compareTo, string $fromDate, string $toDate, ?string $dimension = null)
+    private function buildComparisonSubquery(string $compareTo, string $fromDate, string $toDate, ?string $costCenter = null)
     {
         if ($compareTo === 'Period Y-1') {
             $fromDateYear = date('Y-m-d', strtotime($fromDate.' -1 year'));
@@ -153,7 +153,7 @@ class ProfitAndLossRepository extends BaseRepository implements ProfitAndLossInt
             ->leftJoin('gl_trans as gt', function ($join) {
                 $join->on(DB::raw('TRIM(cm.account_code)'), '=', DB::raw('TRIM(gt.account)'));
             });
-        GlBalanceQuery::applyDimension($q, $dimension);
+        GlBalanceQuery::applyCostCenter($q, $costCenter);
 
         return $q->groupBy('cm.account_code')->selectRaw(
             "cm.account_code, {$debitExpr} as compare_debit, {$creditExpr} as compare_credit"

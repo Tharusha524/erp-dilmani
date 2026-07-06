@@ -49,7 +49,7 @@ export const postSupplierInvoiceFromGrn = async (payload: {
   tax_included?: boolean;
   comments?: string;
   lines: Array<{ grn_item_id: number; quantity: number }>;
-  gl_lines?: Array<{ gl_code: string; amount: number; memo?: string; dimension_id?: number }>;
+  gl_lines?: Array<{ gl_code: string; amount: number; memo?: string; cost_center_id?: number }>;
 }) => {
   const response = await api.post(`${BASE}/invoice/from-grn`, payload);
   return response.data;
@@ -118,7 +118,7 @@ export const postSupplierCreditNote = async (payload: {
     po_detail_item_id?: number;
     description?: string;
   }>;
-  gl_lines?: Array<{ gl_code: string; amount: number; memo?: string; dimension_id?: number }>;
+  gl_lines?: Array<{ gl_code: string; amount: number; memo?: string; cost_center_id?: number }>;
 }) => {
   const response = await api.post(`${BASE}/credit-notes`, payload);
   return response.data;

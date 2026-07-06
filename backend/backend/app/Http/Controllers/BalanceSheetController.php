@@ -21,7 +21,7 @@ class BalanceSheetController extends Controller
     public function search(Request $request): JsonResponse
     {
         try {
-            $filters = $request->only(['asAtDate', 'fromDate', 'toDate', 'dimension', 'noZeroValues']);
+            $filters = $request->only(['asAtDate', 'fromDate', 'toDate', 'costCenter', 'noZeroValues']);
             $syncGl = filter_var($request->input('syncGl', true), FILTER_VALIDATE_BOOLEAN);
 
             $glSync = $this->reportGlSync->syncBeforeReport($filters, $syncGl);

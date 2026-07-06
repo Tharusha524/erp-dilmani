@@ -37,8 +37,8 @@ class SupplierRequest extends FormRequest
             'purchase_account' => 'nullable|exists:chart_master,account_code',
             'payment_discount_account' => 'nullable|exists:chart_master,account_code',
             'contact' => 'nullable|string|max:60',
-            'dimension_id' => 'nullable|integer|min:0',
-            'dimension2_id' => 'nullable|integer|min:0',
+            'cost_center_id' => 'nullable|integer|min:0',
+            'cost_center2_id' => 'nullable|integer|min:0',
             'mail_address' => 'nullable|string',
             'bill_address' => 'nullable|string',
             'notes' => 'nullable|string',
@@ -86,7 +86,7 @@ class SupplierRequest extends FormRequest
             $merged['credit_limit'] = 0;
         }
 
-        foreach (['dimension_id', 'dimension2_id'] as $field) {
+        foreach (['cost_center_id', 'cost_center2_id'] as $field) {
             if ($this->has($field) && ($this->input($field) === null || $this->input($field) === '')) {
                 $merged[$field] = 0;
             }
@@ -111,7 +111,7 @@ class SupplierRequest extends FormRequest
             }
         }
 
-        foreach (['dimension_id', 'dimension2_id'] as $field) {
+        foreach (['cost_center_id', 'cost_center2_id'] as $field) {
             if (array_key_exists($field, $data) && $data[$field] === null) {
                 $data[$field] = 0;
             }

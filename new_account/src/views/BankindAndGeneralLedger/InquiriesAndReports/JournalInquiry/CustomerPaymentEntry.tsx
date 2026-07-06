@@ -22,7 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
 import { getBranches } from "../../../../api/CustomerBranch/CustomerBranchApi";
 import { getBankAccounts } from "../../../../api/BankAccount/BankAccountApi";
-// import { getDimensions } from "../../../../api/Dimension/DimensionApi"; // hypothetical API
+// import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi"; // hypothetical API
 
 import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
@@ -54,7 +54,7 @@ export default function CustomerPaymentEntry() {
   );
   const [reference, setReference] = useState("");
   const [bankCharge, setBankCharge] = useState(0);
-  const [dimension, setDimension] = useState("");
+  const [costCenter, setCostCenter] = useState("");
   const [promptDiscount, setPromptDiscount] = useState(0);
   const [amountOfDiscount, setAmountOfDiscount] = useState(0);
   const [amount, setAmount] = useState(0);
@@ -133,7 +133,7 @@ export default function CustomerPaymentEntry() {
       depositDate,
       reference,
       bankCharge,
-      dimension,
+      costCenter,
       promptDiscount,
       amountOfDiscount,
       amount,
@@ -270,13 +270,13 @@ export default function CustomerPaymentEntry() {
           <Grid item xs={12} sm={4}>
             <TextField
               select
-              label="Dimension"
+              label="Cost Center"
               fullWidth
               size="small"
-              value={dimension}
-              onChange={(e) => setDimension(e.target.value)}
+              value={costCenter}
+              onChange={(e) => setCostCenter(e.target.value)}
             >
-              {/* {dimensions.map((d: any) => (
+              {/* {costCenters.map((d: any) => (
                 <MenuItem key={d.id} value={d.id}>
                   {d.name}
                 </MenuItem>

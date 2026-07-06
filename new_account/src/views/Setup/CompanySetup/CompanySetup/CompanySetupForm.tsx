@@ -47,7 +47,7 @@ interface CompanyFormData {
   company_logo_on_reports: boolean;
   use_barcodes_on_stocks: boolean;
   auto_increase_of_document_references: boolean;
-  use_dimensions_on_recurrent_invoices: boolean;
+  use_cost_centers_on_recurrent_invoices: boolean;
   use_long_descriptions_on_invoices: boolean;
   company_logo_on_views: boolean;
 
@@ -64,7 +64,7 @@ interface CompanyFormData {
   round_calculated_prices_to_nearest_cents: string;
   manufacturing_enabled: boolean;
   fixed_assets_enabled: boolean;
-  use_dimensions: boolean;
+  use_cost_centers: boolean;
   short_name_and_name_in_list: boolean;
   open_print_dialog_direct_on_reports: boolean;
   search_item_list: boolean;
@@ -92,7 +92,7 @@ export default function CompanySetupForm() {
     company_logo_on_reports: false,
     use_barcodes_on_stocks: false,
     auto_increase_of_document_references: false,
-    use_dimensions_on_recurrent_invoices: false,
+    use_cost_centers_on_recurrent_invoices: false,
     use_long_descriptions_on_invoices: false,
     company_logo_on_views: false,
     databaseSchemeVersion: "2.4.1",
@@ -107,7 +107,7 @@ export default function CompanySetupForm() {
     round_calculated_prices_to_nearest_cents: "",
     manufacturing_enabled: false,
     fixed_assets_enabled: false,
-    use_dimensions: false,
+    use_cost_centers: false,
     short_name_and_name_in_list: false,
     open_print_dialog_direct_on_reports: false,
     search_item_list: false,
@@ -425,12 +425,12 @@ export default function CompanySetupForm() {
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={formData.use_dimensions_on_recurrent_invoices}
+                    checked={formData.use_cost_centers_on_recurrent_invoices}
                     onChange={handleChange}
-                    name="use_dimensions_on_recurrent_invoices"
+                    name="use_cost_centers_on_recurrent_invoices"
                   />
                 }
-                label="Use Dimensions on Recurrent Invoices"
+                label="Use CostCenters on Recurrent Invoices"
               />
 
               <FormControlLabel
@@ -614,12 +614,12 @@ export default function CompanySetupForm() {
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={formData.use_dimensions}
+                    checked={formData.use_cost_centers}
                     onChange={handleChange}
-                    name="use_dimensions"
+                    name="use_cost_centers"
                   />
                 }
-                label="Dimension"
+                label="Cost Center"
               />
 
               <Typography variant="subtitle1" sx={{ mt: 2 }}>

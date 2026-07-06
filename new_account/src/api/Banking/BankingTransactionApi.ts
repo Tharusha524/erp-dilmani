@@ -8,7 +8,7 @@ export interface BankingLine {
   debit?: number;
   credit?: number;
   memo?: string;
-  dimension?: string;
+  costCenter?: string;
 }
 
 export interface JournalTaxLine {
@@ -142,7 +142,7 @@ export function mapFormLines(
     debit?: string;
     credit?: string;
     memo?: string;
-    dimension?: string;
+    costCenter?: string;
   }>
 ): BankingLine[] {
   return rows
@@ -153,7 +153,7 @@ export function mapFormLines(
       debit: parseFloat(String(r.debit || "0")) || undefined,
       credit: parseFloat(String(r.credit || "0")) || undefined,
       memo: r.memo,
-      dimension: r.dimension,
+      costCenter: r.costCenter,
     }))
     .filter((l) => l.account_code);
 }

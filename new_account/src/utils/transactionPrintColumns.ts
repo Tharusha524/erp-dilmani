@@ -54,7 +54,7 @@ export const GL_JOURNAL_PRINT_COLUMNS: TransactionPrintColumn[] = [
   { id: "date", label: "Date", width: "11%" },
   { id: "account", label: "Account", width: "11%" },
   { id: "description", label: "Account Name" },
-  { id: "dimension", label: "Dimension", width: "10%" },
+  { id: "costCenter", label: "CostCenter", width: "10%" },
   { id: "debit", label: "Debit", align: "right", width: "11%" },
   { id: "credit", label: "Credit", align: "right", width: "11%" },
   { id: "memo", label: "Memo", width: "14%" },

@@ -123,13 +123,13 @@ export const PERMISSION_ID_MAP: Record<string, number> = {
   "Work order bulk reports": 2703,
   "Bill of materials reports": 2704,
 
-  "Dimensions Configuration": 2800,
-  "Dimension tags": 2801,
+  "CostCenters Configuration": 2800,
+  "CostCenter tags": 2801,
 
-  "Dimensions": 2900,
-  "Dimension view": 2901,
-  "Dimension entry": 2902,
-  "Dimension reports": 2903,
+  "CostCenters": 2900,
+  "CostCenter view": 2901,
+  "CostCenter entry": 2902,
+  "CostCenter reports": 2903,
 
   "Banking & GL Configuration": 3000,
   "Item tax type definitions": 3001,

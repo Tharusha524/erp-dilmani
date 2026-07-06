@@ -43,7 +43,7 @@ class SupplierCreditNoteService
      *     source_invoice_trans_no?:int|null,
      *     allocations?: array<int, array{trans_no_to:int, trans_type_to:int, amt:float}>,
      *     lines?: array<int, array{stock_id?:string, quantity:float, unit_price:float, grn_item_id?:int|null, po_detail_item_id?:int|null, description?:string|null}>,
-     *     gl_lines?: array<int, array{gl_code:string, amount:float, memo?:string|null, dimension_id?:int|null}>
+     *     gl_lines?: array<int, array{gl_code:string, amount:float, memo?:string|null, cost_center_id?:int|null}>
      * }  $payload
      */
     public function create(array $payload): array
@@ -101,8 +101,8 @@ class SupplierCreditNoteService
                     'unit_price' => $price,
                     'unit_tax' => 0,
                     'memo' => '',
-                    'dimension_id' => 0,
-                    'dimension2_id' => 0,
+                    'cost_center_id' => 0,
+                    'cost_center2_id' => 0,
                 ];
             }
 
@@ -124,8 +124,8 @@ class SupplierCreditNoteService
                     'unit_price' => $amount,
                     'unit_tax' => 0,
                     'memo' => (string) ($glLine['memo'] ?? ''),
-                    'dimension_id' => (int) ($glLine['dimension_id'] ?? 0),
-                    'dimension2_id' => 0,
+                    'cost_center_id' => (int) ($glLine['cost_center_id'] ?? 0),
+                    'cost_center2_id' => 0,
                 ];
             }
 

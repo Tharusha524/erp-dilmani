@@ -57,8 +57,8 @@ class AccrualsService
                             'debit' => $row['amount'],
                             'credit' => 0,
                             'memo' => $memo,
-                            'dimension' => (int) ($data['dimension_id'] ?? 0) ?: null,
-                            'dimension2' => (int) ($data['dimension2_id'] ?? 0) ?: null,
+                            'cost_center_id' => (int) ($data['cost_center_id'] ?? 0) ?: null,
+                            'cost_center2_id' => (int) ($data['cost_center2_id'] ?? 0) ?: null,
                         ],
                     ],
                 ]);

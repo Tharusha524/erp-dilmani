@@ -23,7 +23,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
 import { getBranches } from "../../../../api/CustomerBranch/CustomerBranchApi";
 import { getBankAccounts } from "../../../../api/BankAccount/BankAccountApi";
-import DimensionSelect from "../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../components/CostCenterSelect";
 import { createCustomerPayment } from "../../../../api/SalesPayment/SalesPaymentApi";
 import { getDebtorTrans } from "../../../../api/DebtorTrans/DebtorTransApi";
 import { getFiscalYears } from "../../../../api/FiscalYear/FiscalYearApi";
@@ -76,7 +76,7 @@ export default function CustomerPayments() {
   );
   const [reference, setReference] = useState("");
   const [bankCharge, setBankCharge] = useState(0);
-  const [dimension, setDimension] = useState("");
+  const [costCenter, setCostCenter] = useState("");
   const [promptDiscount, setPromptDiscount] = useState(0);
   const [amountOfDiscount, setAmountOfDiscount] = useState(0);
   const [amount, setAmount] = useState(0);
@@ -402,7 +402,7 @@ export default function CustomerPayments() {
         bank_charge: Number(bankCharge) || 0,
         reference: reference || undefined,
         comments: memo || undefined,
-        dimension_id: Number(dimension) || 0,
+        cost_center_id: Number(costCenter) || 0,
         allocations: allocationsToApply.length > 0 ? allocationsToApply : undefined,
       });
 
@@ -568,11 +568,11 @@ export default function CustomerPayments() {
                 value={bankCharge}
                 onChange={(e) => setBankCharge(Number(e.target.value))}
               />
-              <DimensionSelect
-                label="Dimension"
-                value={dimension}
-                onChange={setDimension}
-                dimensionType={1}
+              <CostCenterSelect
+                label="Cost Center"
+                value={costCenter}
+                onChange={setCostCenter}
+                costCenterType={1}
               />
             </Stack>
           </Grid>

@@ -21,7 +21,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
-import DimensionSelect from "../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../components/CostCenterSelect";
 import theme from "../../../../theme";
 import { useCompanySetupSettings } from "../../../../hooks/useCompanySetupSettings";
 import {
@@ -41,7 +41,7 @@ const FREQ_OPTIONS = [
 
 export default function RevenueCostAccruals() {
   const navigate = useNavigate();
-  const { dimensionLevel, useDimensions } = useCompanySetupSettings();
+  const { costCenterLevel, useCostCenters } = useCompanySetupSettings();
 
   const { data: chartMasters = [] } = useQuery({
     queryKey: ["chartMasters"],
@@ -56,8 +56,8 @@ export default function RevenueCostAccruals() {
     amount: "",
     freq: "3",
     periods: "1",
-    dimension_id: "",
-    dimension2_id: "",
+    cost_center_id: "",
+    cost_center2_id: "",
     memo: "",
   });
 
@@ -81,8 +81,8 @@ export default function RevenueCostAccruals() {
     amount: Number(form.amount),
     freq: Number(form.freq),
     periods: Number(form.periods),
-    dimension_id: form.dimension_id ? Number(form.dimension_id) : 0,
-    dimension2_id: form.dimension2_id ? Number(form.dimension2_id) : 0,
+    cost_center_id: form.cost_center_id ? Number(form.cost_center_id) : 0,
+    cost_center2_id: form.cost_center2_id ? Number(form.cost_center2_id) : 0,
     memo: form.memo || undefined,
   });
 
@@ -203,27 +203,27 @@ export default function RevenueCostAccruals() {
             </TextField>
           </Grid>
 
-          {useDimensions && (
+          {useCostCenters && (
             <Grid item xs={12} sm={4}>
-              <DimensionSelect
-                value={form.dimension_id}
-                onChange={(v) => setForm({ ...form, dimension_id: v })}
-                dimensionType={1}
+              <CostCenterSelect
+                value={form.cost_center_id}
+                onChange={(v) => setForm({ ...form, cost_center_id: v })}
+                costCenterType={1}
                 allowEmpty
-                emptyLabel="No dimension"
-                label="Dimension 1"
+                emptyLabel="No costCenter"
+                label="CostCenter 1"
               />
             </Grid>
           )}
-          {useDimensions && dimensionLevel >= 2 && (
+          {useCostCenters && costCenterLevel >= 2 && (
             <Grid item xs={12} sm={4}>
-              <DimensionSelect
-                value={form.dimension2_id}
-                onChange={(v) => setForm({ ...form, dimension2_id: v })}
-                dimensionType={2}
+              <CostCenterSelect
+                value={form.cost_center2_id}
+                onChange={(v) => setForm({ ...form, cost_center2_id: v })}
+                costCenterType={2}
                 allowEmpty
-                emptyLabel="No dimension 2"
-                label="Dimension 2"
+                emptyLabel="No costCenter 2"
+                label="CostCenter 2"
               />
             </Grid>
           )}

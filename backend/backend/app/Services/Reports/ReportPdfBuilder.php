@@ -3,7 +3,7 @@
 namespace App\Services\Reports;
 
 use App\Repositories\All\BalanceSheet\BalanceSheetInterface;
-use App\Repositories\All\Dimension\DimensionInterface;
+use App\Repositories\All\CostCenter\CostCenterInterface;
 use App\Repositories\All\GlTrans\GlTransInterface;
 use App\Repositories\All\Journal\JournalInterface;
 use App\Repositories\All\ProfitAndLoss\ProfitAndLossInterface;
@@ -13,7 +13,7 @@ use App\Repositories\All\TrialBalance\TrialBalanceInterface;
 use App\Services\CompanyReportHeader;
 use App\Support\ActiveFiscalYear;
 use App\Support\ChartAccountMetadata;
-use App\Support\DimensionGlBalance;
+use App\Support\CostCenterGlBalance;
 use App\Support\ProfitAndLossStatementBuilder;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -31,8 +31,9 @@ class ReportPdfBuilder
         private GlTransInterface $glTrans,
         private JournalInterface $journal,
         private TaxInquiryInterface $taxInquiry,
-        private DimensionInterface $dimensions,
-    ) {}
+        private CostCenterInterface $costCenters,
+    ) {
+    }
 
     private function normalizeRows(mixed $data): Collection
     {
@@ -52,26 +53,26 @@ class ReportPdfBuilder
         return collect();
     }
 
-    private function normalizeDimension(mixed $dimension): ?string
+    private function normalizeCostCenter(mixed $costCenter): ?string
     {
-        if ($dimension === null || $dimension === '' || $dimension === '0') {
+        if ($costCenter === null || $costCenter === '' || $costCenter === '0') {
             return null;
         }
-        $value = strtolower(trim((string) $dimension));
+        $value = strtolower(trim((string) $costCenter));
         if (in_array($value, ['all', 'nofilter', 'no', 'none'], true)) {
             return null;
         }
 
-        return (string) $dimension;
+        return (string) $costCenter;
     }
 
-    /** @return array{fromDate: string, toDate: string, dimension: ?string} */
+    /** @return array{fromDate: string, toDate: string, costCenter: ?string} */
     private function reportDates(Request $request): array
     {
         return [
             'fromDate' => (string) ($request->input('startDate', $request->input('fromDate', ''))),
             'toDate' => (string) ($request->input('endDate', $request->input('toDate', ''))),
-            'dimension' => $this->normalizeDimension($request->input('dimension')),
+            'costCenter' => $this->normalizeCostCenter($request->input('costCenter')),
         ];
     }
 
@@ -85,7 +86,7 @@ class ReportPdfBuilder
             'inventory-module-report' => $this->moduleSnapshot($request, $title, 'inventory'),
             'manufacturing-module-report' => $this->moduleSnapshot($request, $title, 'manufacturing'),
             'fixed-assets-module-report' => $this->moduleSnapshot($request, $title, 'fixed-assets'),
-            'dimensions-module-report' => $this->moduleSnapshot($request, $title, 'dimensions'),
+            'cost-centers-module-report' => $this->moduleSnapshot($request, $title, 'cost-centers'),
             'banking-module-report' => $this->moduleSnapshot($request, $title, 'banking'),
             'general-ledger-module-report' => $this->moduleSnapshot($request, $title, 'general-ledger'),
             'customer-balances' => $this->customerBalances($request, $title),
@@ -104,7 +105,7 @@ class ReportPdfBuilder
             'tax-report' => $this->taxReport($request, $title),
             'audit-trail' => $this->auditTrailReport($request, $title),
             'annual-expense-breakdown' => $this->annualExpenseBreakdown($request, $title),
-            'dimension-summary' => $this->dimensionSummary($request, $title),
+            'cost-center-summary' => $this->costCenterSummary($request, $title),
             'bank-statement' => $this->bankStatement($request, $title, false),
             'bank-statement-w-reconcile' => $this->bankStatement($request, $title, true),
             'fixed-assets-valuation' => $this->fixedAssetsValuation($request, $title),
@@ -197,7 +198,7 @@ class ReportPdfBuilder
             return '';
         }
 
-        if (! is_numeric($val)) {
+        if (!is_numeric($val)) {
             return (string) $val;
         }
 
@@ -206,10 +207,12 @@ class ReportPdfBuilder
             return trim((string) $val);
         }
 
-        if (preg_match(
-            '/(?:debit|credit|amount|balance|total|price|value|cost|period|opening|closing|charges|credits|allocated|depreciation|book_value|net_|tax_|sales_value|unit_price|standard_cost|cost_value|turnover|broughtforward|thisperiod|compare|qty|quantity|reorder|on_hand|provision)/i',
-            $key
-        )) {
+        if (
+            preg_match(
+                '/(?:debit|credit|amount|balance|total|price|value|cost|period|opening|closing|charges|credits|allocated|depreciation|book_value|net_|tax_|sales_value|unit_price|standard_cost|cost_value|turnover|broughtforward|thisperiod|compare|qty|quantity|reorder|on_hand|provision)/i',
+                $key
+            )
+        ) {
             return number_format((float) $val, 2);
         }
 
@@ -342,7 +345,7 @@ class ReportPdfBuilder
             'supplier_id' => 'Supplier #',
             'name' => 'Name',
             'balance' => 'Balance',
-        ], $data, $request, 'As at: '.$date);
+        ], $data, $request, 'As at: ' . $date);
     }
 
     private function supplierAged(Request $request, string $title): array
@@ -358,7 +361,7 @@ class ReportPdfBuilder
             'age2' => '31-60',
             'age3' => '60+',
             'balance' => 'Total',
-        ], $data, $request, 'As at: '.$request->input('endDate', now()->format('Y-m-d')));
+        ], $data, $request, 'As at: ' . $request->input('endDate', now()->format('Y-m-d')));
     }
 
     private function trialBalanceReport(Request $request, string $title): array
@@ -367,7 +370,7 @@ class ReportPdfBuilder
         $data = $this->trialBalance->search([
             'fromDate' => $dates['fromDate'],
             'toDate' => $dates['toDate'],
-            'dimension' => $dates['dimension'],
+            'costCenter' => $dates['costCenter'],
             'noZeroValues' => ($request->input('zeroValues', 'no') === 'yes'),
             'onlyBalance' => ($request->input('onlyBalances', 'no') === 'yes'),
         ]);
@@ -391,7 +394,7 @@ class ReportPdfBuilder
             'asAtDate' => $request->input('asAtDate', $dates['toDate']),
             'fromDate' => $dates['fromDate'],
             'toDate' => $dates['toDate'],
-            'dimension' => $dates['dimension'],
+            'costCenter' => $dates['costCenter'],
         ]);
 
         $rows = collect($result['rows'] ?? []);
@@ -403,13 +406,13 @@ class ReportPdfBuilder
             $typeName = (string) ($r['typeName'] ?? $r['type'] ?? 'General');
             $classId = (string) ($r['classId'] ?? $r['class_id'] ?? '');
 
-            if (! isset($grouped[$className])) {
+            if (!isset($grouped[$className])) {
                 $grouped[$className] = [
                     '_meta' => ['classId' => $classId],
                 ];
             }
 
-            if (! isset($grouped[$className][$typeName])) {
+            if (!isset($grouped[$className][$typeName])) {
                 $grouped[$className][$typeName] = [];
             }
 
@@ -434,7 +437,7 @@ class ReportPdfBuilder
             'fromDate' => $dates['fromDate'],
             'toDate' => $dates['toDate'],
             'compareTo' => $compareTo,
-            'dimension' => $dates['dimension'],
+            'costCenter' => $dates['costCenter'],
         ]);
 
         $statement = (new ProfitAndLossStatementBuilder)->build(
@@ -442,7 +445,7 @@ class ReportPdfBuilder
             $dates['fromDate'],
             $dates['toDate'],
             $compareTo,
-            $dates['dimension']
+            $dates['costCenter']
         );
 
         $fyRange = ActiveFiscalYear::range($dates['toDate'] ?: null);
@@ -482,7 +485,7 @@ class ReportPdfBuilder
             'selectedAccount' => $request->input('account', $request->input('selectedAccount')),
             'fromDate' => $dates['fromDate'],
             'toDate' => $dates['toDate'],
-            'dimension' => $dates['dimension'],
+            'costCenter' => $dates['costCenter'],
             'memo' => $request->input('memo'),
         ]);
 
@@ -532,21 +535,21 @@ class ReportPdfBuilder
         ], $this->normalizeRows($data), $request, $this->periodSubtitle($dates['fromDate'], $dates['toDate']));
     }
 
-    private function dimensionSummary(Request $request, string $title): array
+    private function costCenterSummary(Request $request, string $title): array
     {
-        $fromId = (int) $request->input('fromDimension');
-        $toId = (int) $request->input('toDimension');
+        $fromId = (int) $request->input('fromCostCenter');
+        $toId = (int) $request->input('toCostCenter');
         $showBalance = strtolower((string) $request->input('showBalance', 'no')) === 'yes';
 
         if ($fromId <= 0 || $toId <= 0) {
-            return $this->pack($title, ['message' => 'From and To dimension are required'], collect(), $request);
+            return $this->pack($title, ['message' => 'From and To cost center are required'], collect(), $request);
         }
 
         if ($fromId > $toId) {
             [$fromId, $toId] = [$toId, $fromId];
         }
 
-        $data = $this->dimensions->search([
+        $data = $this->costCenters->search([
             'fromId' => $fromId,
             'toId' => $toId,
         ])->values();
@@ -572,14 +575,14 @@ class ReportPdfBuilder
             $row = [
                 'reference' => $dim->reference,
                 'name' => $dim->name,
-                'type' => (int) $dim->type === 2 ? 'Dimension 2' : 'Dimension 1',
+                'type' => (int) $dim->type === 2 ? 'Cost Center 2' : 'Cost Center 1',
                 'start_date' => $dim->start_date,
                 'date_required_by' => $dim->date_required_by,
                 'closed' => $dim->closed ? 'Yes' : 'No',
             ];
 
             if ($showBalance) {
-                $row['balance'] = DimensionGlBalance::sum((int) $dim->id, $ytdFrom, $ytdTo);
+                $row['balance'] = CostCenterGlBalance::sum((int) $dim->id, $ytdFrom, $ytdTo);
             }
 
             return $row;
@@ -729,7 +732,7 @@ class ReportPdfBuilder
 
     private function priceListing(Request $request, string $title): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('sales_prices')) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('sales_prices')) {
             return $this->pack($title, ['message' => 'Info'], collect([['message' => 'Price list table not available']]), $request);
         }
 
@@ -756,7 +759,7 @@ class ReportPdfBuilder
     private function orderStatusListing(Request $request, string $title): array
     {
         $dates = $this->reportDates($request);
-        if (! \Illuminate\Support\Facades\Schema::hasTable('sales_orders')) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('sales_orders')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -791,7 +794,7 @@ class ReportPdfBuilder
 
     private function salesmanListing(Request $request, string $title): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('salesman')) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('salesman')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -831,7 +834,7 @@ class ReportPdfBuilder
             'debtor_no' => 'Customer #',
             'customer' => 'Customer',
             'balance' => 'Balance',
-        ], $query->get(), $request, 'As at: '.($dates['toDate'] ?: now()->toDateString()));
+        ], $query->get(), $request, 'As at: ' . ($dates['toDate'] ?: now()->toDateString()));
     }
 
     private function printSalesQuotations(Request $request, string $title): array
@@ -889,7 +892,7 @@ class ReportPdfBuilder
 
     private function outstandingGrnsReport(Request $request, string $title): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('grn_batch')) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('grn_batch')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -942,13 +945,13 @@ class ReportPdfBuilder
 
     private function inventoryPlanning(Request $request, string $title): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('loc_stock')) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('loc_stock')) {
             return $this->inventoryValuation($request, $title);
         }
 
         $data = DB::table('stock_master as sm')
             ->leftJoinSub(
-                DB::table('loc_stock')->select('stock_id', DB::raw('SUM(quantity) as qty'))->groupBy('stock_id'),
+                DB::table('loc_stock')->select('stock_id', DB::raw('SUM(quantity) as qty'), DB::raw('SUM(reorder_level) as reorder_level'))->groupBy('stock_id'),
                 'ls',
                 'sm.stock_id',
                 '=',
@@ -958,7 +961,7 @@ class ReportPdfBuilder
                 'sm.stock_id',
                 'sm.description',
                 DB::raw('COALESCE(ls.qty, 0) as on_hand'),
-                'sm.reorder_level'
+                DB::raw('COALESCE(ls.reorder_level, 0) as reorder_level')
             )
             ->orderBy('sm.stock_id')
             ->get();
@@ -973,7 +976,7 @@ class ReportPdfBuilder
 
     private function stockCheckSheets(Request $request, string $title): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('loc_stock')) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('loc_stock')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -1023,7 +1026,7 @@ class ReportPdfBuilder
 
     private function grnValuationReport(Request $request, string $title): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('grn_items')) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('grn_items')) {
             return $this->outstandingGrnsReport($request, $title);
         }
 
@@ -1031,13 +1034,14 @@ class ReportPdfBuilder
         $query = DB::table('grn_items as gi')
             ->join('grn_batch as gb', 'gi.grn_batch_id', '=', 'gb.id')
             ->join('stock_master as sm', 'gi.item_code', '=', 'sm.stock_id')
+            ->leftJoin('purch_order_details as pod', 'gi.po_detail_item', '=', 'pod.po_detail_item')
             ->select(
                 'gb.delivery_date as date',
                 'gi.item_code as stock_id',
                 'sm.description',
                 'gi.qty_recd',
-                'gi.unit_price',
-                DB::raw('gi.qty_recd * gi.unit_price as value')
+                'pod.unit_price',
+                DB::raw('gi.qty_recd * pod.unit_price as value')
             )
             ->orderByDesc('gb.delivery_date');
 
@@ -1117,7 +1121,7 @@ class ReportPdfBuilder
     private function itemSalesSummaryReport(Request $request, string $title): array
     {
         $dates = $this->reportDates($request);
-        if (! \Illuminate\Support\Facades\Schema::hasTable('debtor_trans_details')) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('debtor_trans_details')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -1171,7 +1175,7 @@ class ReportPdfBuilder
 
     private function billOfMaterialListing(Request $request, string $title): array
     {
-        if (! \Illuminate\Support\Facades\Schema::hasTable('bom')) {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('bom')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -1273,7 +1277,7 @@ class ReportPdfBuilder
             'cost' => 'Cost',
             'depreciation' => 'Depreciation',
             'book_value' => 'Book Value',
-        ], $query->get(), $request, 'As at: '.$asAt);
+        ], $query->get(), $request, 'As at: ' . $asAt);
     }
 
     private function inventoryValuation(Request $request, string $title): array
@@ -1316,7 +1320,7 @@ class ReportPdfBuilder
             'qty' => 'Qty',
             'unit_cost' => 'Unit Cost',
             'value' => 'Value',
-        ], $query->get(), $request, $asAt !== '' ? 'As at: '.$asAt : null);
+        ], $query->get(), $request, $asAt !== '' ? 'As at: ' . $asAt : null);
     }
 
     private function debtorTransReport(Request $request, string $title, array $types, string $label): array
@@ -1485,13 +1489,13 @@ class ReportPdfBuilder
 
             'fixed-assets', 'fixedassets' => $this->fixedAssetsValuation($request, $title),
 
-            'dimensions' => $this->pack($title, [
+            'cost-centers' => $this->pack($title, [
                 'reference' => 'Reference',
                 'name' => 'Name',
                 'type' => 'Type',
                 'start_date' => 'Start Date',
                 'date_required_by' => 'Required By',
-            ], $this->dimensionsModuleData($startDate, $endDate), $request, $this->periodSubtitle($startDate, $endDate)),
+            ], $this->costCentersModuleData($startDate, $endDate), $request, $this->periodSubtitle($startDate, $endDate)),
 
             'banking' => $this->pack($title, [
                 'date' => 'Date',
@@ -1511,7 +1515,7 @@ class ReportPdfBuilder
 
             default => $this->pack($title, [
                 'message' => 'Message',
-            ], collect([['message' => 'Unknown module key: '.$module]]), $request),
+            ], collect([['message' => 'Unknown module key: ' . $module]]), $request),
         };
     }
 
@@ -1521,10 +1525,10 @@ class ReportPdfBuilder
             return $this->formatReportPeriod($startDate, $endDate);
         }
         if ($startDate) {
-            return 'From '.$this->formatReportDate($startDate);
+            return 'From ' . $this->formatReportDate($startDate);
         }
         if ($endDate) {
-            return 'Up to '.$this->formatReportDate($endDate);
+            return 'Up to ' . $this->formatReportDate($endDate);
         }
 
         return null;
@@ -1532,7 +1536,7 @@ class ReportPdfBuilder
 
     private function formatReportDate(?string $date): string
     {
-        if (! $date) {
+        if (!$date) {
             return '';
         }
 
@@ -1546,7 +1550,7 @@ class ReportPdfBuilder
     private function formatReportPeriod(?string $startDate, ?string $endDate): ?string
     {
         if ($startDate && $endDate) {
-            return $this->formatReportDate($startDate).' - '.$this->formatReportDate($endDate);
+            return $this->formatReportDate($startDate) . ' - ' . $this->formatReportDate($endDate);
         }
 
         return null;
@@ -1707,9 +1711,9 @@ class ReportPdfBuilder
             ->get();
     }
 
-    private function dimensionsModuleData(?string $startDate, ?string $endDate): Collection
+    private function costCentersModuleData(?string $startDate, ?string $endDate): Collection
     {
-        $query = DB::table('dimensions')
+        $query = DB::table('cost_centers')
             ->select('reference', 'name', 'type', 'start_date', 'date_required_by')
             ->orderByDesc('start_date');
 

@@ -45,8 +45,8 @@ const permissionList = [
   "Manufacturing Configuration",
   "Manufacturing Transactions",
   "Manufacturing Analytics",
-  "Dimensions Configuration",
-  "Dimensions",
+  "CostCenters Configuration",
+  "CostCenters",
   "Banking & GL Configuration",
   "Banking & GL Transactions",
   "Banking & GL Analytics",
@@ -193,14 +193,14 @@ const manufacturingAnalyticsNested = [
   "Bill of materials reports"
 ];
 
-const dimensionsConfigurationNested = [
-  "Dimension tags"
+const costCentersConfigurationNested = [
+  "CostCenter tags"
 ];
 
-const dimensionsNested = [
-  "Dimension view",
-  "Dimension entry",
-  "Dimension reports"
+const costCentersNested = [
+  "CostCenter view",
+  "CostCenter entry",
+  "CostCenter reports"
 ];
 
 const bankingGLConfigurationNested = [
@@ -267,8 +267,8 @@ const PERMISSION_ID_MAP: Record<string, number> = {
   "Manufacturing Configuration": 2500,
   "Manufacturing Transactions": 2600,
   "Manufacturing Analytics": 2700,
-  "Dimensions Configuration": 2800,
-  "Dimensions": 2900,
+  "CostCenters Configuration": 2800,
+  "CostCenters": 2900,
   "Banking & GL Configuration": 3000,
   "Banking & GL Transactions": 3100,
   "Banking & GL Analytics": 3200,
@@ -395,13 +395,13 @@ const PERMISSION_ID_MAP: Record<string, number> = {
   "Work order bulk reports": 2703,
   "Bill of materials reports": 2704,
 
-  // Dimensions Configuration nested
-  "Dimension tags": 2801,
+  // CostCenters Configuration nested
+  "CostCenter tags": 2801,
 
-  // Dimensions nested
-  "Dimension view": 2901,
-  "Dimension entry": 2902,
-  "Dimension reports": 2903,
+  // CostCenters nested
+  "CostCenter view": 2901,
+  "CostCenter entry": 2902,
+  "CostCenter reports": 2903,
 
   // Banking & GL Configuration nested
   "Item tax type definitions": 3001,
@@ -1127,10 +1127,10 @@ export default function AddUserAccessForm() {
                     )
                   }
 
-                  {perm === "Dimensions Configuration" &&
-                    formData.permissions.includes("Dimensions Configuration") && (
+                  {perm === "CostCenters Configuration" &&
+                    formData.permissions.includes("CostCenters Configuration") && (
                       <Box sx={{ pl: 4 }}>
-                        {dimensionsConfigurationNested.map((nested) => (
+                        {costCentersConfigurationNested.map((nested) => (
                           <FormControlLabel
                             key={nested}
                             control={
@@ -1146,10 +1146,10 @@ export default function AddUserAccessForm() {
                     )
                   }
 
-                  {perm === "Dimensions" &&
-                    formData.permissions.includes("Dimensions") && (
+                  {perm === "CostCenters" &&
+                    formData.permissions.includes("CostCenters") && (
                       <Box sx={{ pl: 4 }}>
-                        {dimensionsNested.map((nested) => (
+                        {costCentersNested.map((nested) => (
                           <FormControlLabel
                             key={nested}
                             control={

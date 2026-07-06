@@ -38,7 +38,7 @@ class PostSupplierCreditNoteRequest extends FormRequest
             'gl_lines.*.gl_code' => 'required|string|max:15',
             'gl_lines.*.amount' => 'required|numeric',
             'gl_lines.*.memo' => 'nullable|string',
-            'gl_lines.*.dimension_id' => 'nullable|integer',
+            'gl_lines.*.cost_center_id' => 'nullable|integer',
         ];
     }
 

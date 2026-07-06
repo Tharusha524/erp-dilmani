@@ -28,7 +28,7 @@ import AddedConfirmationModal from "../../../../../components/AddedConfirmationM
 import { getPaymentTerms } from "../../../../../api/PaymentTerm/PaymentTermApi";
 import { createCrmContact } from "../../../../../api/CrmContact/CrmContact";
 import { getContactCategories } from "../../../../../api/ContactCategory/ContactCategoryApi";
-import DimensionSelect from "../../../../../components/DimensionSelect";
+import CostCenterSelect from "../../../../../components/CostCenterSelect";
 import { getFriendlyApiErrorMessage } from "../../../../../utils/apiErrorMessage";
 
 interface SupplierGeneralSettingProps {
@@ -57,7 +57,7 @@ export default function SupplierGeneralSettingsForm({ supplierId, onSupplierAdde
     secondaryPhone: "",
     fax: "",
     email: "",
-    dimension: "",
+    costCenter: "",
     documentLanguage: "",
     mailingAddress: "",
     physicalAddress: "",
@@ -184,8 +184,8 @@ export default function SupplierGeneralSettingsForm({ supplierId, onSupplierAdde
         purchase_account: formData.purchaseAccount || null,
         payment_discount_account: formData.purchaseDiscountAccount || null,
         contact: formData.contactPerson || formData.supplierName,
-        dimension_id: Number(formData.dimension) || 0,
-        dimension2_id: 0,
+        cost_center_id: Number(formData.costCenter) || 0,
+        cost_center2_id: 0,
         mail_address: formData.mailingAddress || "",
         bill_address: formData.physicalAddress || formData.mailingAddress || "",
         notes: formData.generalNotes || "",
@@ -243,7 +243,7 @@ export default function SupplierGeneralSettingsForm({ supplierId, onSupplierAdde
         fax: "",
         email: "",
         documentLanguage: "",
-        dimension: "",
+        costCenter: "",
         mailingAddress: "",
         physicalAddress: "",
         generalNotes: "",
@@ -641,18 +641,18 @@ export default function SupplierGeneralSettingsForm({ supplierId, onSupplierAdde
             </Stack>
           </Grid>
 
-          {/* Dimension */}
+          {/* CostCenter */}
           <Grid item xs={12} md={6}>
             <Stack spacing={2}>
-              <Typography variant="subtitle1">Dimension</Typography>
+              <Typography variant="subtitle1">Cost Center</Typography>
               <Divider />
-              <DimensionSelect
-                label="Dimension 1"
-                value={formData.dimension}
-                onChange={(v) => handleChange("dimension", v)}
-                dimensionType={1}
-                error={!!errors.dimension}
-                helperText={errors.dimension || " "}
+              <CostCenterSelect
+                label="CostCenter 1"
+                value={formData.costCenter}
+                onChange={(v) => handleChange("costCenter", v)}
+                costCenterType={1}
+                error={!!errors.costCenter}
+                helperText={errors.costCenter || " "}
               />
             </Stack>
           </Grid>

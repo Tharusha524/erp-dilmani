@@ -76,7 +76,7 @@ const moduleLinks = [
   { title: 'Items & Inventory', description: 'Stock, transfers & adjustments', href: '/itemsandinventory/transactions', icon: <FolderIcon />, color: '#ed6c02' },
   { title: 'Manufacturing', description: 'Work orders & production', href: '/manufacturing/transactions', icon: <ScienceIcon />, color: '#7b1fa2' },
   { title: 'Fixed Assets', description: 'Asset register & depreciation', href: '/fixedassets/transactions', icon: <EmergencyIcon />, color: '#c62828' },
-  { title: 'Dimension', description: 'Cost centres & projects', href: '/dimension/transactions', icon: <ChangeHistoryIcon />, color: '#00838f' },
+  { title: 'CostCenter', description: 'Cost centres & projects', href: '/costCenter/transactions', icon: <ChangeHistoryIcon />, color: '#00838f' },
   { title: 'Banking & GL', description: 'Payments, journals & accounts', href: '/bankingandgeneralledger/transactions', icon: <PeopleAltIcon />, color: PRIMARY },
   { title: 'Setup', description: 'Company, users & chart of accounts', href: '/setup/companysetup', icon: <SettingsOutlinedIcon />, color: '#546e7a' },
 ];

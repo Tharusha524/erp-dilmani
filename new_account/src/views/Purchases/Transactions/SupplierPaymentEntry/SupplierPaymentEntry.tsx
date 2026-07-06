@@ -26,7 +26,7 @@ import PageTitle from "../../../../components/PageTitle";
 
 // APIs
 import { getSuppliers } from "../../../../api/Supplier/SupplierApi";
-import { getDimensions } from "../../../../api/Dimension/DimensionApi";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { getBankAccounts } from "../../../../api/BankAccount/BankAccountApi";
 import { getSuppTrans } from "../../../../api/SuppTrans/SuppTransApi";
 import { getSuppInvoiceItems } from "../../../../api/SuppInvoiceItems/SuppInvoiceItemsApi";
@@ -70,7 +70,7 @@ export default function SupplierPaymentEntry() {
   const { data: bankBalanceData } = useBankBalance(bankAccount || null);
   const bankBalance = bankBalanceData?.book_balance ?? 0;
   const [reference, setReference] = useState("");
-  const [dimension, setDimension] = useState(0);
+  const [costCenter, setCostCenter] = useState(0);
 
   const [datePaidError, setDatePaidError] = useState("");
 
@@ -80,7 +80,7 @@ export default function SupplierPaymentEntry() {
 
   // ================== API STATES ==================
   const [suppliers, setSuppliers] = useState([]);
-  const [dimensions, setDimensions] = useState([]);
+  const [costCenters, setCostCenters] = useState([]);
   const { data: bankAccountsRaw = [] } = useQuery({
     queryKey: ["bankAccounts"],
     queryFn: getBankAccounts,
@@ -267,14 +267,14 @@ export default function SupplierPaymentEntry() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [suppliersData, dimensionsData, suppTransData] = await Promise.all([
+        const [suppliersData, costCentersData, suppTransData] = await Promise.all([
           getSuppliers(),
-          getDimensions(),
+          getCostCenters(),
           getSuppTrans(),
         ]);
 
         setSuppliers(suppliersData);
-        setDimensions(dimensionsData);
+        setCostCenters(costCentersData);
         setSuppTrans(Array.isArray(suppTransData) ? suppTransData : (suppTransData?.data ?? []));
 
         if ((!supplier || supplier === 0) && Array.isArray(suppliersData) && suppliersData.length > 0) {
@@ -659,7 +659,7 @@ export default function SupplierPaymentEntry() {
             </Stack>
           </Grid>
 
-          {/* Column 3: Bank Charge, Dimension */}
+          {/* Column 3: Bank Charge, CostCenter */}
           <Grid item xs={12} md={4}>
             <Stack spacing={2}>
               <TextField
@@ -674,11 +674,11 @@ export default function SupplierPaymentEntry() {
                 select
                 fullWidth
                 size="small"
-                label="Dimension"
-                value={dimension}
-                onChange={(e) => setDimension(Number(e.target.value))}
+                label="Cost Center"
+                value={costCenter}
+                onChange={(e) => setCostCenter(Number(e.target.value))}
               >
-                {dimensions.map((d) => (
+                {costCenters.map((d) => (
                   <MenuItem key={d.id} value={d.id}>
                     {d.name}
                   </MenuItem>

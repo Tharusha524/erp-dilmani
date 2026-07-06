@@ -28,7 +28,7 @@ const REPORT_CLASS_PERMISSIONS: Record<string, number> = {
   Inventory: PERMISSION_ID_MAP["Inventory Analytics"],
   Manufacturing: PERMISSION_ID_MAP["Manufacturing Analytics"],
   FixedAssets: PERMISSION_ID_MAP["Fixed Asset analytical reports and inquiries"],
-  Dimensions: PERMISSION_ID_MAP["Dimension reports"],
+  CostCenters: PERMISSION_ID_MAP["CostCenter reports"],
   Banking: PERMISSION_ID_MAP["Banking & GL Analytics"],
   GeneralLedger: PERMISSION_ID_MAP["GL reports and inquiries"],
 };

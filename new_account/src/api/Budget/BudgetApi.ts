@@ -8,8 +8,8 @@ export interface BudgetPeriodRow {
 export const getBudgetTrans = async (params: {
   fiscal_year_id: number;
   account: string;
-  dimension_id?: number;
-  dimension2_id?: number;
+  cost_center_id?: number;
+  cost_center2_id?: number;
 }) => {
   const { data } = await api.get("/budget-trans", { params });
   return data as { tran_date: string; amount: number }[];
@@ -18,8 +18,8 @@ export const getBudgetTrans = async (params: {
 export const saveBudgetTrans = async (payload: {
   fiscal_year_id: number;
   account: string;
-  dimension_id?: number;
-  dimension2_id?: number;
+  cost_center_id?: number;
+  cost_center2_id?: number;
   periods: BudgetPeriodRow[];
 }) => {
   const { data } = await api.post("/budget-trans", payload);
@@ -29,8 +29,8 @@ export const saveBudgetTrans = async (payload: {
 export const deleteBudgetTrans = async (params: {
   fiscal_year_id: number;
   account: string;
-  dimension_id?: number;
-  dimension2_id?: number;
+  cost_center_id?: number;
+  cost_center2_id?: number;
 }) => {
   const { data } = await api.delete("/budget-trans", { params });
   return data;

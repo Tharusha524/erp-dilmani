@@ -60,7 +60,7 @@ class CompanySetupSettings
             return [
                 'configured' => false,
                 'flags' => self::flags(),
-                'dimension_level' => 0,
+                'cost_center_level' => 0,
             ];
         }
 
@@ -79,7 +79,7 @@ class CompanySetupSettings
             ] : null,
             'fiscal_year_id' => $company->fiscal_year_id,
             'flags' => self::flags(),
-            'dimension_level' => self::dimensionLevel(),
+            'cost_center_level' => self::costCenterLevel(),
             'tax_periods' => $company->tax_periods,
             'tax_last_period' => $company->tax_last_period,
             'add_price_from_std_cost' => $company->add_price_from_std_cost,
@@ -104,20 +104,20 @@ class CompanySetupSettings
         return self::flag('fixed_assets_enabled', false);
     }
 
-    public static function dimensionsEnabled(): bool
+    public static function costCentersEnabled(): bool
     {
-        return self::flag('use_dimensions', false);
+        return self::flag('use_cost_centers', false);
     }
 
-    /** FA use_dimension: 0=off, 1=dim1 only, 2=dim1+dim2 */
-    public static function dimensionLevel(): int
+    /** use_cost_centers: 0=off, 1=level1 only, 2=level1+level2 */
+    public static function costCenterLevel(): int
     {
-        if (! self::dimensionsEnabled()) {
+        if (! self::costCentersEnabled()) {
             return 0;
         }
 
-        if (Schema::hasTable('dimensions')
-            && DB::table('dimensions')->where('type', 2)->exists()) {
+        if (Schema::hasTable('cost_centers')
+            && DB::table('cost_centers')->where('type', 2)->exists()) {
             return 2;
         }
 
@@ -209,7 +209,7 @@ class CompanySetupSettings
             'company_logo_on_reports',
             'use_barcodes_on_stocks',
             'auto_increase_of_document_references',
-            'use_dimensions_on_recurrent_invoices',
+            'use_cost_centers_on_recurrent_invoices',
             'use_long_descriptions_on_invoices',
             'company_logo_on_views',
             'put_alternative_tax_include_on_docs',
@@ -217,7 +217,7 @@ class CompanySetupSettings
             'automatic_revaluation_currency_accounts',
             'manufacturing_enabled',
             'fixed_assets_enabled',
-            'use_dimensions',
+            'use_cost_centers',
             'short_name_and_name_in_list',
             'open_print_dialog_direct_on_reports',
             'search_item_list',

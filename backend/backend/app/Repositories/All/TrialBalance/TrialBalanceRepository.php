@@ -32,7 +32,7 @@ class TrialBalanceRepository extends BaseRepository implements TrialBalanceInter
 
         $debitExpr = GlBalanceQuery::debitSumExpr('gt');
         $creditExpr = GlBalanceQuery::creditSumExpr('gt');
-        $dimension = $filters['dimension'] ?? null;
+        $costCenter = $filters['costCenter'] ?? null;
 
         // Brought forward: GL on or before report start (includes opening journal on From date).
         $bfSub = DB::table('chart_master as cm')
@@ -42,7 +42,7 @@ class TrialBalanceRepository extends BaseRepository implements TrialBalanceInter
         if ($fromDate) {
             GlBalanceQuery::applyGlDateOnOrBefore($bfSub, $fromDate);
         }
-        GlBalanceQuery::applyDimension($bfSub, $dimension);
+        GlBalanceQuery::applyCostCenter($bfSub, $costCenter);
         $bfSub = $bfSub
             ->groupBy('cm.account_code')
             ->selectRaw("cm.account_code, {$debitExpr} as bf_debit, {$creditExpr} as bf_credit");
@@ -53,7 +53,7 @@ class TrialBalanceRepository extends BaseRepository implements TrialBalanceInter
                 $join->on(DB::raw('TRIM(cm.account_code)'), '=', DB::raw('TRIM(gt.account)'));
             });
         GlBalanceQuery::applyGlPeriodAfterFromThroughTo($periodSub, $fromDate ?: null, $toDate ?: null);
-        GlBalanceQuery::applyDimension($periodSub, $dimension);
+        GlBalanceQuery::applyCostCenter($periodSub, $costCenter);
         $periodSub = $periodSub
             ->groupBy('cm.account_code')
             ->selectRaw("cm.account_code, {$debitExpr} as period_debit, {$creditExpr} as period_credit");

@@ -330,29 +330,21 @@ class GlBalanceQuery
         return $query;
     }
 
-    public static function applyDimension(Builder $query, $dimension, string $glAlias = 'gt'): Builder
+    public static function applyCostCenter(Builder $query, $costCenter, string $glAlias = 'gt'): Builder
     {
-        if ($dimension === null || $dimension === '' || ! Schema::hasTable('gl_trans')) {
+        if ($costCenter === null || $costCenter === '' || ! Schema::hasColumn('gl_trans', 'cost_center_id')) {
             return $query;
         }
 
-        $col = Schema::hasColumn('gl_trans', 'dimension_id')
-            ? $glAlias.'.dimension_id'
-            : (Schema::hasColumn('gl_trans', 'dimension') ? $glAlias.'.dimension' : null);
-
-        if ($col === null) {
-            return $query;
-        }
-
-        return $query->where($col, $dimension);
+        return $query->where($glAlias.'.cost_center_id', $costCenter);
     }
 
-    public static function applyDimension2(Builder $query, $dimension2, string $glAlias = 'gt'): Builder
+    public static function applyCostCenter2(Builder $query, $costCenter2, string $glAlias = 'gt'): Builder
     {
-        if ($dimension2 === null || $dimension2 === '' || ! Schema::hasColumn('gl_trans', 'dimension2_id')) {
+        if ($costCenter2 === null || $costCenter2 === '' || ! Schema::hasColumn('gl_trans', 'cost_center2_id')) {
             return $query;
         }
 
-        return $query->where($glAlias.'.dimension2_id', $dimension2);
+        return $query->where($glAlias.'.cost_center2_id', $costCenter2);
     }
 }

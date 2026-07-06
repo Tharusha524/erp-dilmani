@@ -24,7 +24,7 @@ import { getItemTaxTypes } from "../../../../api/ItemTaxType/ItemTaxTypeApi";
 import { updateItemCategory } from "../../../../api/ItemCategories/ItemCategoriesApi";
 import { getItemCategoryById } from "../../../../api/ItemCategories/ItemCategoriesApi";
 import { useParams } from "react-router-dom";
-import { getDimensions } from "../../../../api/Dimension/DimensionApi";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import UpdateConfirmationModal from "../../../../components/UpdateConfirmationModal";
@@ -39,7 +39,7 @@ interface ItemCategoriesFormData {
   inventoryAccount: string;
   cogsAccount: string;
   inventoryAdjustmentAccount: string;
-  dimension: string;
+  costCenter: string;
 }
 
 export default function UpdateFixedAssetsCategories() {
@@ -60,7 +60,7 @@ export default function UpdateFixedAssetsCategories() {
     inventoryAccount: "",
     cogsAccount: "",
     inventoryAdjustmentAccount: "",
-    dimension: "",
+    costCenter: "",
   });
 
   const accountTypeMap: { [key: number]: string } = {
@@ -82,7 +82,7 @@ export default function UpdateFixedAssetsCategories() {
   const [chartMasters, setChartMasters] = useState<any[]>([]);
   const [itemTaxTypes, setItemTaxTypes] = useState<any[]>([]);
   const [unitsOfMeasure, setUnitsOfMeasure] = useState<any[]>([]);
-  const [dimensions, setDimensions] = useState<any[]>([]);
+  const [costCenters, setCostCenters] = useState<any[]>([]);
   const [errors, setErrors] = useState<Partial<ItemCategoriesFormData>>({});
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
@@ -92,11 +92,11 @@ export default function UpdateFixedAssetsCategories() {
     const fetchData = async () => {
       try {
         // Fetch all data in parallel
-        const [chartMastersRes, taxTypesRes, unitsRes, dimensionsRes] = await Promise.all([
+        const [chartMastersRes, taxTypesRes, unitsRes, costCentersRes] = await Promise.all([
           getChartMasters(),
           getItemTaxTypes(),
           getItemUnits(),
-          getDimensions(),
+          getCostCenters(),
         ]);
 
         const filteredTaxTypes = (taxTypesRes || []).filter((type) => !type.inactive);
@@ -105,7 +105,7 @@ export default function UpdateFixedAssetsCategories() {
         setChartMasters(chartMastersRes || []);
         setItemTaxTypes(filteredTaxTypes);
         setUnitsOfMeasure(filteredUnits);
-        setDimensions(dimensionsRes || []);
+        setCostCenters(costCentersRes || []);
 
         // If editing, fetch the category and populate form
         if (category_id) {
@@ -119,7 +119,7 @@ export default function UpdateFixedAssetsCategories() {
             inventoryAccount: cat.dflt_inventory_act || "",
             cogsAccount: cat.dflt_cogs_act || "",
             inventoryAdjustmentAccount: cat.dflt_adjustment_act || "",
-            dimension: cat.dflt_dim1 ? String(cat.dflt_dim1) : "",
+            costCenter: cat.dflt_dim1 ? String(cat.dflt_dim1) : "",
           });
         } else {
           // Set default values for dropdowns
@@ -185,7 +185,7 @@ export default function UpdateFixedAssetsCategories() {
       dflt_cogs_act: formData.cogsAccount,
       dflt_adjustment_act: formData.inventoryAdjustmentAccount,
       dflt_wip_act: '1530',
-      dflt_dim1: formData.dimension ? parseInt(formData.dimension) : null,
+      dflt_dim1: formData.costCenter ? parseInt(formData.costCenter) : null,
       dflt_dim2: null,
       inactive: 0,
       dflt_no_sale: 0,
@@ -284,17 +284,17 @@ export default function UpdateFixedAssetsCategories() {
           />
 
           <FormControl size="small" fullWidth>
-            <InputLabel>Dimension</InputLabel>
+            <InputLabel>Cost Center</InputLabel>
             <Select
-              name="dimension"
-              value={formData.dimension}
+              name="costCenter"
+              value={formData.costCenter}
               onChange={handleSelectChange}
-              label="Dimension"
+              label="Cost Center"
             >
               <MenuItem value="">
                 <em>None</em>
               </MenuItem>
-              {dimensions.map((dim: any) => (
+              {costCenters.map((dim: any) => (
                 <MenuItem key={dim.id} value={String(dim.id)}>
                   {dim.name}
                 </MenuItem>

@@ -22,7 +22,7 @@ class ProfitAndLossController extends Controller
     public function search(Request $request): JsonResponse
     {
         try {
-            $filters = $request->only(['fromDate', 'toDate', 'compareTo', 'dimension']);
+            $filters = $request->only(['fromDate', 'toDate', 'compareTo', 'costCenter']);
             $syncGl = filter_var($request->input('syncGl', true), FILTER_VALIDATE_BOOLEAN);
 
             $glSync = $this->reportGlSync->syncBeforeReport($filters, $syncGl);
@@ -35,7 +35,7 @@ class ProfitAndLossController extends Controller
                     (string) ($filters['fromDate'] ?? ''),
                     (string) ($filters['toDate'] ?? ''),
                     (string) ($filters['compareTo'] ?? 'Accumulated'),
-                    $filters['dimension'] ?? null
+                    $filters['costCenter'] ?? null
                 ),
             ];
 

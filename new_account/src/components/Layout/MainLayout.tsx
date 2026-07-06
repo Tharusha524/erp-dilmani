@@ -409,7 +409,7 @@ const DrawerContent = ({
     }
   }, [user]);
 
-  const { manufacturingEnabled, fixedAssetsEnabled, useDimensions } =
+  const { manufacturingEnabled, fixedAssetsEnabled, useCostCenters } =
     useCompanySetupSettings();
 
   const sidebarItems = useMemo(
@@ -417,9 +417,9 @@ const DrawerContent = ({
       getSidebarItems(user?.role, {
         manufacturingEnabled,
         fixedAssetsEnabled,
-        useDimensions,
+        useCostCenters,
       }),
-    [user?.role, manufacturingEnabled, fixedAssetsEnabled, useDimensions]
+    [user?.role, manufacturingEnabled, fixedAssetsEnabled, useCostCenters]
   );
 
   React.useEffect(() => {
