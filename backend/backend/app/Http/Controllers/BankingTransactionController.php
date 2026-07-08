@@ -99,6 +99,7 @@ class BankingTransactionController extends Controller
             'reference' => 'nullable|string|max:60',
             'bank_charge' => 'nullable|numeric|min:0',
             'memo' => 'nullable|string',
+            'cost_center_id' => 'nullable|integer',
         ]);
 
         return response()->json($this->service->postTransfer($validated), 201);

@@ -430,6 +430,7 @@ export default function DirectSupplierInvoice() {
             delivery_address: deliverTo || "",
             tax_included: taxIncludedForSupplier,
             fixed_asset: fixedAssetPurchase,
+            cost_center_id: Number(costCenter) || undefined,
             comments: memo || undefined,
             lines: invoiceLines,
           })

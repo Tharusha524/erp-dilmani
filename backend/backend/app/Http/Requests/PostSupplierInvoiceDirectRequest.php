@@ -23,6 +23,7 @@ class PostSupplierInvoiceDirectRequest extends FormRequest
             'delivery_address' => 'nullable|string',
             'tax_included' => 'boolean',
             'fixed_asset' => 'boolean',
+            'cost_center_id' => 'nullable|integer',
             'comments' => 'nullable|string',
             'lines' => 'required|array|min:1',
             'lines.*.item_code' => 'required|string|exists:stock_master,stock_id',

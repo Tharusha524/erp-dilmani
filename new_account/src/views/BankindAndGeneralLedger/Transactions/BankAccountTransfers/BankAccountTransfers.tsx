@@ -202,7 +202,8 @@ export default function BankAccountTransfers() {
         trans_date: transferDate,
         reference,
         bank_charge: parseFloat(bankCharge) || 0,
-        memo: memo || costCenter,
+        memo: memo || undefined,
+        cost_center_id: Number(costCenter) || undefined,
       });
 
       navigate("/bankingandgeneralledger/transactions/bank-account-transfers/success", {

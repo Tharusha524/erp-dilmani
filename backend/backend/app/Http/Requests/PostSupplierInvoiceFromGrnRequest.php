@@ -22,6 +22,7 @@ class PostSupplierInvoiceFromGrnRequest extends FormRequest
             'due_date' => 'nullable|date',
             'tax_included' => 'boolean',
             'comments' => 'nullable|string',
+            'cost_center_id' => 'nullable|integer',
             'lines' => 'nullable|array',
             'lines.*.grn_item_id' => 'required_with:lines|integer',
             'lines.*.quantity' => 'required_with:lines|numeric|min:0.0001',

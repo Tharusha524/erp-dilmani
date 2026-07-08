@@ -19,6 +19,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class ReportPdfBuilder
@@ -732,7 +733,7 @@ class ReportPdfBuilder
 
     private function priceListing(Request $request, string $title): array
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('sales_prices')) {
+        if (!Schema::hasTable('sales_prices')) {
             return $this->pack($title, ['message' => 'Info'], collect([['message' => 'Price list table not available']]), $request);
         }
 
@@ -759,7 +760,7 @@ class ReportPdfBuilder
     private function orderStatusListing(Request $request, string $title): array
     {
         $dates = $this->reportDates($request);
-        if (!\Illuminate\Support\Facades\Schema::hasTable('sales_orders')) {
+        if (!Schema::hasTable('sales_orders')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -794,7 +795,7 @@ class ReportPdfBuilder
 
     private function salesmanListing(Request $request, string $title): array
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('salesman')) {
+        if (!Schema::hasTable('salesman')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -892,7 +893,7 @@ class ReportPdfBuilder
 
     private function outstandingGrnsReport(Request $request, string $title): array
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('grn_batch')) {
+        if (!Schema::hasTable('grn_batch')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -945,7 +946,7 @@ class ReportPdfBuilder
 
     private function inventoryPlanning(Request $request, string $title): array
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('loc_stock')) {
+        if (!Schema::hasTable('loc_stock')) {
             return $this->inventoryValuation($request, $title);
         }
 
@@ -976,7 +977,7 @@ class ReportPdfBuilder
 
     private function stockCheckSheets(Request $request, string $title): array
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('loc_stock')) {
+        if (!Schema::hasTable('loc_stock')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -1026,7 +1027,7 @@ class ReportPdfBuilder
 
     private function grnValuationReport(Request $request, string $title): array
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('grn_items')) {
+        if (!Schema::hasTable('grn_items')) {
             return $this->outstandingGrnsReport($request, $title);
         }
 
@@ -1121,7 +1122,7 @@ class ReportPdfBuilder
     private function itemSalesSummaryReport(Request $request, string $title): array
     {
         $dates = $this->reportDates($request);
-        if (!\Illuminate\Support\Facades\Schema::hasTable('debtor_trans_details')) {
+        if (!Schema::hasTable('debtor_trans_details')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -1175,7 +1176,7 @@ class ReportPdfBuilder
 
     private function billOfMaterialListing(Request $request, string $title): array
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('bom')) {
+        if (!Schema::hasTable('bom')) {
             return $this->pack($title, ['message' => 'Info'], collect([]), $request);
         }
 
@@ -1231,7 +1232,7 @@ class ReportPdfBuilder
         $query = DB::table('stock_master as sm')
             ->leftJoin('stock_fa_class as fc', 'sm.fa_class_id', '=', 'fc.fa_class_id');
 
-        $hasDep = \Illuminate\Support\Facades\Schema::hasTable('fa_depreciation_lines');
+        $hasDep = Schema::hasTable('fa_depreciation_lines');
         if ($hasDep) {
             $depSub = DB::table('fa_depreciation_lines')
                 ->select('stock_id', DB::raw('SUM(amount) as total_dep'))
@@ -1557,7 +1558,7 @@ class ReportPdfBuilder
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, object>  $rows
+     * @param  Collection<int, object>  $rows
      * @return array<string, array<string, float>>
      */
     private function computePlTotals(Collection $rows): array

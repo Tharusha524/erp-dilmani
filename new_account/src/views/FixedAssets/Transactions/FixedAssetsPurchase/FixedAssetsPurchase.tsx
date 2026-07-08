@@ -297,6 +297,7 @@ export default function FixedAssetsPurchase() {
         supp_reference: supplierRef,
         trans_date: orderDate,
         due_date: dueDate,
+        cost_center_id: Number(costCenter) || undefined,
         lines,
       });
       const successState = {

@@ -92,6 +92,8 @@ class SupplierPaymentService
                 'tax_included' => (bool) ($payload['tax_included'] ?? false),
             ]);
 
+            $costCenterId = (int) ($payload['cost_center_id'] ?? 0);
+
             $bankAmount = round(-1 * ($amount - $bankCharge), 2);
             if (Schema::hasTable('bank_trans')) {
                 DB::table('bank_trans')->insert([
@@ -103,6 +105,7 @@ class SupplierPaymentService
                     'amount' => $bankAmount,
                     'person_type_id' => 3,
                     'person_id' => $supplierId,
+                    'cost_center_id' => $costCenterId ?: null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -115,6 +118,7 @@ class SupplierPaymentService
                 'ref' => $reference,
                 'trans_date' => $tranDate,
                 'amount' => $bankAmount,
+                'cost_center_id' => $costCenterId ?: null,
             ];
 
             $run = GlPostingRunner::run(fn () => $this->postings->repostBankPayment($bankRow));

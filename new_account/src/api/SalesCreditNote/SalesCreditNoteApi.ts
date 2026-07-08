@@ -21,6 +21,7 @@ export interface CreateSalesCreditNotePayload {
   source_invoice_trans_no?: number | null;
   comments?: string;
   reference?: string;
+  cost_center_id?: number;
   lines: SalesCreditNoteLine[];
 }
 

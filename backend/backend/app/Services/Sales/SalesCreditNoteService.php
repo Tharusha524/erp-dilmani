@@ -123,7 +123,7 @@ class SalesCreditNoteService
                 'prep_amount' => 0,
                 'rate' => CustomerExchangeRate::forDebtor($debtorNo, $tranDate),
                 'ship_via' => (int) ($payload['ship_via'] ?? 1),
-                'cost_center_id' => 0,
+                'cost_center_id' => (int) ($payload['cost_center_id'] ?? 0),
                 'cost_center2_id' => 0,
                 'payment_terms' => null,
                 'tax_included' => $amounts['tax_included'],

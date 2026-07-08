@@ -276,7 +276,7 @@ export default function ViewCustomerAllocations() {
           <PageTitle title={isCredit ? "Allocate Customer Credit Note" : "Allocate Customer Payment"} />
           <Breadcrumb
             breadcrumbs={[
-              { title: "Sales", href: "/sales" },
+              { title: "Sales", href: "/sales/transactions" },
               { title: "Customer Allocations" },
             ]}
           />

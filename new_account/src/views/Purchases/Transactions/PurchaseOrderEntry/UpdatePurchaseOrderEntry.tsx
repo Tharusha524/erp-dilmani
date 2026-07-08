@@ -401,6 +401,7 @@ export default function UpdatePurchaseOrderEntry() {
             prep_amount: 0,
             alloc: 0,
             tax_included: taxIncludedForSupplier,
+            cost_center_id: Number(costCenter) || 0,
           },
           lines,
           delete_detail_ids: deletedDetailIds.map(Number).filter((id) => id > 0),

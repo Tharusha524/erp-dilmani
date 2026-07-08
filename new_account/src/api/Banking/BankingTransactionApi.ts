@@ -82,6 +82,7 @@ export const postBankingTransfer = async (payload: {
   reference?: string;
   bank_charge?: number;
   memo?: string;
+  cost_center_id?: number;
 }) => {
   const { data } = await api.post("/banking/transfer", payload);
   return data;

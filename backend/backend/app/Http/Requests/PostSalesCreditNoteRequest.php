@@ -25,6 +25,7 @@ class PostSalesCreditNoteRequest extends FormRequest
             'source_invoice_trans_no' => 'nullable|integer|min:1',
             'comments' => 'nullable|string',
             'reference' => 'nullable|string|max:60',
+            'cost_center_id' => 'nullable|integer',
             'lines' => 'required|array|min:1',
             'lines.*.stock_id' => 'required|string|max:20',
             'lines.*.quantity' => 'required|numeric|min:0.0001',

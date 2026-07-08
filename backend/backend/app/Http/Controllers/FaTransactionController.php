@@ -29,6 +29,7 @@ class FaTransactionController extends Controller
             'supp_reference' => 'nullable|string|max:60',
             'trans_date' => 'nullable|date',
             'due_date' => 'nullable|date',
+            'cost_center_id' => 'nullable|integer',
             'lines' => 'required|array|min:1',
             'lines.*.stock_id' => 'required|string',
             'lines.*.quantity' => 'required|numeric|min:0.0001',
@@ -37,7 +38,7 @@ class FaTransactionController extends Controller
 
         try {
             return response()->json($this->faTransactions->purchase(
-                $request->only(['supplier_id', 'loc_code', 'reference', 'supp_reference', 'trans_date', 'due_date']),
+                $request->only(['supplier_id', 'loc_code', 'reference', 'supp_reference', 'trans_date', 'due_date', 'cost_center_id']),
                 $validated['lines']
             ));
         } catch (\InvalidArgumentException $e) {

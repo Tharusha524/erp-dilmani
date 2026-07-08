@@ -249,7 +249,7 @@ export default function ModifyPurchaseInvoice() {
     };
 
     const breadcrumbItems = [
-        { title: "Banking & GL", href: "/banking" },
+        { title: "Banking & GL", href: "/bankingandgeneralledger/transactions" },
         { title: "Modify Purchase Invoice" },
     ];
 

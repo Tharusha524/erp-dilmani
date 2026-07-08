@@ -7,6 +7,7 @@ export const postFaPurchase = async (payload: {
   supp_reference?: string;
   trans_date?: string;
   due_date?: string;
+  cost_center_id?: number;
   lines: { stock_id: string; quantity: number; price: number }[];
 }) => {
   const { data } = await api.post("/fixed-assets/purchase", payload);

@@ -48,6 +48,7 @@ export const postSupplierInvoiceFromGrn = async (payload: {
   due_date?: string;
   tax_included?: boolean;
   comments?: string;
+  cost_center_id?: number;
   lines: Array<{ grn_item_id: number; quantity: number }>;
   gl_lines?: Array<{ gl_code: string; amount: number; memo?: string; cost_center_id?: number }>;
 }) => {
@@ -94,6 +95,7 @@ export const postSupplierPayment = async (payload: {
   reference?: string;
   comments?: string;
   tax_included?: boolean;
+  cost_center_id?: number;
   allocations?: Array<{ trans_no_to: number; trans_type_to: number; amt: number }>;
 }) => {
   const response = await api.post(`${BASE}/payments`, payload);
@@ -109,6 +111,7 @@ export const postSupplierCreditNote = async (payload: {
   tax_included?: boolean;
   comments?: string;
   source_invoice_trans_no?: number;
+  cost_center_id?: number;
   allocations?: Array<{ trans_no_to: number; trans_type_to: number; amt: number }>;
   lines?: Array<{
     stock_id: string;

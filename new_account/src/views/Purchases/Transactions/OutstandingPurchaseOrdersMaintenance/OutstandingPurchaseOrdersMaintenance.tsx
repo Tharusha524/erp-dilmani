@@ -91,7 +91,7 @@ export default function OutstandingPurchaseOrdersMaintenance() {
         : {}),
       ...(fromDate ? { from_date: fromDate } : {}),
       ...(toDate ? { to_date: toDate } : {}),
-      ...(numberText ? { reference: numberText } : {}),
+      ...(numberText ? { order_no: Number(numberText) || undefined } : {}),
       ...(location !== "ALL_LOCATIONS" ? { into_stock_location: location } : {}),
       ...(itemCode ? { item_code: itemCode } : {}),
     }),

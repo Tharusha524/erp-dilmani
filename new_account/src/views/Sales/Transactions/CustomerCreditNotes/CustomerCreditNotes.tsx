@@ -455,6 +455,7 @@ export default function CustomerCreditNotes() {
                 write_off_account: creditNoteType === "Allowance" ? glAccount : undefined,
                 comments: memo || undefined,
                 reference: reference || undefined,
+                cost_center_id: Number(costCenter) || 0,
                 lines: rows
                     .filter((r) => r.selectedItemId && r.quantity > 0)
                     .map((r) => ({

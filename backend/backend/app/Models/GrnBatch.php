@@ -20,7 +20,8 @@ class GrnBatch extends Model
         'reference',
         'delivery_date',
         'loc_code',
-        'rate'
+        'rate',
+        'cost_center_id'
     ];
 
     public function supplier()

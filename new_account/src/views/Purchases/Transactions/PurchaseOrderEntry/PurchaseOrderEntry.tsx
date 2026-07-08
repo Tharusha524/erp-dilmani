@@ -435,6 +435,7 @@ export default function PurchaseOrderEntry() {
               prep_amount: 0,
               alloc: 0,
               tax_included: taxIncludedForSupplier,
+              cost_center_id: Number(costCenter) || 0,
             },
             lines,
           })

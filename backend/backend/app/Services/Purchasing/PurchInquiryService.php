@@ -39,6 +39,12 @@ class PurchInquiryService
         if (! empty($filters['order_no'])) {
             $q->where('po.order_no', (int) $filters['order_no']);
         }
+        if (! empty($filters['search_text'])) {
+            $q->where(function ($query) use ($filters) {
+                $query->where('po.reference', 'like', '%'.$filters['search_text'].'%')
+                      ->orWhere('po.order_no', 'like', '%'.$filters['search_text'].'%');
+            });
+        }
         if (($filters['outstanding'] ?? false) && Schema::hasTable('purch_order_details')) {
             $q->whereExists(function ($sub) {
                 $sub->select(DB::raw(1))

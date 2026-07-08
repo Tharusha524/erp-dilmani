@@ -183,7 +183,7 @@ export default function AddPurchasingPricingForm2({ itemId }: AddPurchasingPrici
 
           {/* Price */}
           <TextField
-            label="Price (USD)"
+            label="Price"
             name="price"
             size="small"
             fullWidth

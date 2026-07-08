@@ -291,7 +291,7 @@ class PostingsService
                 $apDebit,
                 0,
                 'Supplier payment',
-                null,
+                $bankTrans->cost_center_id ?? null,
                 $rate
             );
 
@@ -307,7 +307,7 @@ class PostingsService
                         $discount,
                         0,
                         'Supplier payment discount',
-                        null,
+                        $bankTrans->cost_center_id ?? null,
                         $rate
                     );
                 }
@@ -325,7 +325,7 @@ class PostingsService
                         $bankCharge,
                         0,
                         'Bank charge',
-                        null,
+                        $bankTrans->cost_center_id ?? null,
                         $rate
                     );
                 }
@@ -454,6 +454,10 @@ class PostingsService
                 ->get()
             : collect();
 
+        $headerCostCenter = $items->isNotEmpty()
+            ? ((int) ($items->first()->cost_center_id ?? 0) ?: null)
+            : null;
+
         if ($items->isNotEmpty()) {
             $clearingTotal = 0.0;
             $expenseTotal = 0.0;
@@ -474,6 +478,8 @@ class PostingsService
                     continue;
                 }
 
+                $itemCostCenter = (int) ($item->cost_center_id ?? 0) ?: $headerCostCenter;
+
                 if (! empty($item->grn_item_id) && $clearing) {
                     $clearingTotal += $netAmount;
                 } elseif ($netAmount >= 0.001) {
@@ -481,35 +487,35 @@ class PostingsService
                     if ($account === '') {
                         continue;
                     }
-                    $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $account, $netAmount, 0, 'Supplier invoice '.($item->stock_id ?? ''), null, $rate);
+                    $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $account, $netAmount, 0, 'Supplier invoice '.($item->stock_id ?? ''), $itemCostCenter, $rate);
                     $expenseTotal += $netAmount;
                 }
             }
 
             if ($clearingTotal > 0.001 && $clearing) {
-                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $clearing, $clearingTotal, 0, 'Clear GRN clearing', null, $rate);
+                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $clearing, $clearingTotal, 0, 'Clear GRN clearing', $headerCostCenter, $rate);
             }
 
             $headerTax = round((float) ($suppTrans->ov_gst ?? 0), 2);
             $taxToPost = $headerTax > 0.001 ? $headerTax : $lineTaxTotal;
             if ($taxToPost > 0.001) {
-                $this->appendPurchaseTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $taxToPost, false, $rate);
+                $this->appendPurchaseTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $taxToPost, false, $rate, $headerCostCenter);
             }
 
             $apAmount = $headerTotal > 0.001 ? $headerTotal : round($clearingTotal + $expenseTotal + $taxToPost, 2);
             $postedDebits = $clearingTotal + $expenseTotal + $taxToPost;
             if ($apAmount > $postedDebits + 0.01 && $purchase) {
-                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $purchase, round($apAmount - $postedDebits, 2), 0, 'Supplier invoice', null, $rate);
+                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $purchase, round($apAmount - $postedDebits, 2), 0, 'Supplier invoice', $headerCostCenter, $rate);
             }
         } else {
             $netAmount = round((float) ($suppTrans->ov_amount ?? 0), 2);
             $headerTax = round((float) ($suppTrans->ov_gst ?? 0), 2);
 
             if ($purchase && $netAmount > 0.001) {
-                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $purchase, $netAmount, 0, 'Supplier invoice', null, $rate);
+                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $purchase, $netAmount, 0, 'Supplier invoice', $headerCostCenter, $rate);
             }
             if ($headerTax > 0.001) {
-                $this->appendPurchaseTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $headerTax, false, $rate);
+                $this->appendPurchaseTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $headerTax, false, $rate, $headerCostCenter);
             }
             $apAmount = $headerTotal;
         }
@@ -519,7 +525,7 @@ class PostingsService
         }
 
         if ($payable && ($apAmount ?? $headerTotal) > 0.001) {
-            $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $payable, 0, $apAmount ?? $headerTotal, 'Accounts payable', null, $rate);
+            $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $payable, 0, $apAmount ?? $headerTotal, 'Accounts payable', $headerCostCenter, $rate);
         }
 
         $tradeDiscount = abs(round((float) ($suppTrans->ov_discount ?? 0), 2));
@@ -527,7 +533,7 @@ class PostingsService
         $totalDiscount = round($tradeDiscount + $lineDiscount, 2);
         $discountAccount = $this->resolvedPref('purchaseDiscountAccount');
         if ($totalDiscount > 0.001 && $discountAccount) {
-            $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $discountAccount, 0, $totalDiscount, 'Purchase discount', null, $rate);
+            $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $discountAccount, 0, $totalDiscount, 'Purchase discount', $headerCostCenter, $rate);
         }
 
         $this->insertBalancedLines($lines, 'Supplier invoice GL is not balanced. Check purchase, tax, and payable accounts.');
@@ -562,6 +568,10 @@ class PostingsService
                 ->get()
             : collect();
 
+        $headerCostCenter = $items->isNotEmpty()
+            ? ((int) ($items->first()->cost_center_id ?? 0) ?: null)
+            : null;
+
         if ($items->isNotEmpty()) {
             $clearingTotal = 0.0;
             $expenseTotal = 0.0;
@@ -585,6 +595,8 @@ class PostingsService
                     continue;
                 }
 
+                $itemCostCenter = (int) ($item->cost_center_id ?? 0) ?: $headerCostCenter;
+
                 if (! empty($item->grn_item_id) && $clearing) {
                     $clearingTotal += $netAmount;
                 } elseif ($netAmount >= 0.001) {
@@ -592,44 +604,44 @@ class PostingsService
                     if ($account === '' || $account === '0') {
                         continue;
                     }
-                    $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $account, 0, $netAmount, 'Supplier credit '.($item->stock_id ?? $account), null, $rate);
+                    $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $account, 0, $netAmount, 'Supplier credit '.($item->stock_id ?? $account), $itemCostCenter, $rate);
                     $expenseTotal += $netAmount;
                 }
             }
 
             if ($clearingTotal > 0.001 && $clearing) {
-                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $clearing, 0, $clearingTotal, 'Reverse GRN clearing', null, $rate);
+                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $clearing, 0, $clearingTotal, 'Reverse GRN clearing', $headerCostCenter, $rate);
             }
 
             $headerTax = round(abs((float) ($suppTrans->ov_gst ?? 0)), 2);
             $taxToPost = $headerTax > 0.001 ? $headerTax : $lineTaxTotal;
             if ($taxToPost > 0.001) {
-                $this->appendPurchaseTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $taxToPost, true, $rate);
+                $this->appendPurchaseTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $taxToPost, true, $rate, $headerCostCenter);
             }
 
             $apAmount = $headerTotal > 0.001 ? $headerTotal : round($clearingTotal + $expenseTotal + $taxToPost, 2);
             $postedCredits = $clearingTotal + $expenseTotal + $taxToPost;
             if ($apAmount > $postedCredits + 0.01 && $purchase) {
-                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $purchase, 0, round($apAmount - $postedCredits, 2), 'Supplier credit note', null, $rate);
+                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $purchase, 0, round($apAmount - $postedCredits, 2), 'Supplier credit note', $headerCostCenter, $rate);
             }
         } else {
             $netAmount = round(abs((float) ($suppTrans->ov_amount ?? 0)), 2);
             $taxAmount = round(abs((float) ($suppTrans->ov_gst ?? 0)), 2);
 
             if ($clearing && $netAmount > 0.001) {
-                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $clearing, 0, $netAmount, 'Reverse GRN clearing', null, $rate);
+                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $clearing, 0, $netAmount, 'Reverse GRN clearing', $headerCostCenter, $rate);
             } elseif ($purchase && $netAmount > 0.001) {
-                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $purchase, 0, $netAmount, 'Supplier credit note', null, $rate);
+                $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $purchase, 0, $netAmount, 'Supplier credit note', $headerCostCenter, $rate);
             }
 
             if ($taxAmount > 0.001) {
-                $this->appendPurchaseTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $taxAmount, true, $rate);
+                $this->appendPurchaseTaxLines($lines, $transType, $typeNo, $reference, $tranDate, $taxAmount, true, $rate, $headerCostCenter);
             }
 
             $apAmount = $headerTotal;
         }
 
-        $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $payable, $apAmount ?? $headerTotal, 0, 'Reverse accounts payable', null, $rate);
+        $lines[] = $this->line($transType, $typeNo, $reference, $tranDate, $payable, $apAmount ?? $headerTotal, 0, 'Reverse accounts payable', $headerCostCenter, $rate);
 
         $this->insertBalancedLines($lines, 'Supplier credit note GL is not balanced.');
     }
@@ -2603,7 +2615,8 @@ class PostingsService
         $tranDate,
         float $headerTax,
         bool $reverse = false,
-        float $rate = 1.0
+        float $rate = 1.0,
+        $costCenter = null
     ): void {
         $byType = $this->taxAmountsFromRegister($transType, $typeNo, false);
 
@@ -2621,7 +2634,7 @@ class PostingsService
                 $reverse ? 0 : $headerTax,
                 $reverse ? $headerTax : 0,
                 'Input tax',
-                null,
+                $costCenter,
                 $rate
             );
 
@@ -2645,7 +2658,7 @@ class PostingsService
                 $reverse ? 0 : $amount,
                 $reverse ? $amount : 0,
                 'Input tax type '.$taxTypeId,
-                null,
+                $costCenter,
                 $rate
             );
         }

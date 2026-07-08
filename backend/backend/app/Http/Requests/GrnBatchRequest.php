@@ -27,7 +27,8 @@ class GrnBatchRequest extends FormRequest
             'reference' => 'required|string|max:60',
             'delivery_date' => 'required|date',
             'loc_code' => 'nullable|string|exists:inventory_locations,loc_code',
-            'rate' => 'nullable|numeric'
+            'rate' => 'nullable|numeric',
+            'cost_center_id' => 'nullable|integer'
         ];
     }
 }

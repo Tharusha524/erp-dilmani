@@ -64,6 +64,7 @@ class BankingTransactionService
             $date = $data['trans_date'] ?? now()->toDateString();
             $reference = $data['reference'] ?? ('TRF-'.time());
             $memo = $data['memo'] ?? '';
+            $costCenterId = (int) ($data['cost_center_id'] ?? 0) ?: null;
 
             if ($fromId <= 0 || $toId <= 0 || $amount <= 0) {
                 throw new \InvalidArgumentException('From account, to account, and amount are required.');
@@ -79,6 +80,7 @@ class BankingTransactionService
                 'ref' => $reference,
                 'trans_date' => $date,
                 'amount' => -$amount,
+                'cost_center_id' => $costCenterId,
             ]);
 
             $in = $this->insertBankTrans([
@@ -88,6 +90,7 @@ class BankingTransactionService
                 'ref' => $reference,
                 'trans_date' => $date,
                 'amount' => $amount,
+                'cost_center_id' => $costCenterId,
             ]);
 
             $fromGl = $this->bankGlCode($fromId);
@@ -95,11 +98,11 @@ class BankingTransactionService
             $chargeGl = $this->pref('bank_charge_act') ?? $fromGl;
 
             if ($fromGl && $toGl) {
-                $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $toGl, $amount, 0, $memo ?: 'Transfer in');
-                $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $fromGl, 0, $amount, $memo ?: 'Transfer out');
+                $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $toGl, $amount, 0, $memo ?: 'Transfer in', $costCenterId);
+                $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $fromGl, 0, $amount, $memo ?: 'Transfer out', $costCenterId);
                 if ($charge > 0 && $chargeGl) {
-                    $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $chargeGl, $charge, 0, 'Bank charge');
-                    $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $fromGl, 0, $charge, 'Bank charge');
+                    $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $chargeGl, $charge, 0, 'Bank charge', $costCenterId);
+                    $this->postGlLine(self::TYPE_TRANSFER, $transNo, $reference, $date, $fromGl, 0, $charge, 'Bank charge', $costCenterId);
                 }
             }
 
@@ -990,10 +993,11 @@ class BankingTransactionService
         string $account,
         float $debit,
         float $credit,
-        string $memo
+        string $memo,
+        $costCenterId = null
     ): void {
         GlTransHelper::insertLines([
-            $this->glLinePayload($type, $typeNo, $reference, $date, $account, $debit, $credit, $memo),
+            $this->glLinePayload($type, $typeNo, $reference, $date, $account, $debit, $credit, $memo, $costCenterId),
         ]);
     }
 
@@ -1037,6 +1041,7 @@ class BankingTransactionService
             'ref' => $row['ref'] ?? '',
             'trans_date' => $row['trans_date'],
             'amount' => $row['amount'],
+            'cost_center_id' => $row['cost_center_id'] ?? null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

@@ -22,6 +22,7 @@ class PostGrnDirectRequest extends FormRequest
             'tax_included' => 'boolean',
             'comments' => 'nullable|string',
             'total' => 'nullable|numeric',
+            'cost_center_id' => 'nullable|integer',
             'lines' => 'required|array|min:1',
             'lines.*.item_code' => 'required|string|exists:stock_master,stock_id',
             'lines.*.description' => 'nullable|string',

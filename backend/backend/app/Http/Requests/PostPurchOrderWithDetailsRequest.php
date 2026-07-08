@@ -30,6 +30,7 @@ class PostPurchOrderWithDetailsRequest extends FormRequest
             'header.prep_amount' => 'numeric',
             'header.alloc' => 'numeric',
             'header.tax_included' => 'boolean',
+            'header.cost_center_id' => 'nullable|integer',
             'lines' => 'required|array|min:1',
             'lines.*.item_code' => 'required|string|exists:stock_master,stock_id',
             'lines.*.description' => 'nullable|string',

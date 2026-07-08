@@ -33,7 +33,8 @@ class PurchOrdersRequest extends FormRequest
             'total' => 'numeric',
             'prep_amount' => 'numeric',
             'alloc' => 'numeric',
-            'tax_included' => 'boolean'
+            'tax_included' => 'boolean',
+            'cost_center_id' => 'nullable|integer'
         ];
     }
 }

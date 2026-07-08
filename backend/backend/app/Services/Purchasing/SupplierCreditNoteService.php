@@ -101,7 +101,7 @@ class SupplierCreditNoteService
                     'unit_price' => $price,
                     'unit_tax' => 0,
                     'memo' => '',
-                    'cost_center_id' => 0,
+                    'cost_center_id' => (int) ($payload['cost_center_id'] ?? 0),
                     'cost_center2_id' => 0,
                 ];
             }

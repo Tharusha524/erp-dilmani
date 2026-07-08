@@ -26,7 +26,8 @@ class PurchOrder extends Model
         'total',
         'prep_amount',
         'alloc',
-        'tax_included'
+        'tax_included',
+        'cost_center_id'
     ];
 
     protected $casts = [

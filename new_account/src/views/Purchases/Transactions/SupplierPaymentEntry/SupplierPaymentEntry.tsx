@@ -500,6 +500,7 @@ export default function SupplierPaymentEntry() {
           bank_charge: Math.abs(bankChargeVal),
           reference: reference || undefined,
           tax_included: Boolean(taxIncludedForSupplier),
+          cost_center_id: Number(costCenter) || undefined,
           allocations: allocations.length > 0 ? allocations : undefined,
         })
       );

@@ -137,7 +137,7 @@ class SupplierInvoiceService
                     'discount_percent' => $discountPercent,
                     'unit_tax' => 0,
                     'memo' => '',
-                    'cost_center_id' => 0,
+                    'cost_center_id' => (int) ($payload['cost_center_id'] ?? 0),
                     'cost_center2_id' => 0,
                 ];
             }
@@ -261,6 +261,7 @@ class SupplierInvoiceService
                 'tax_included' => $payload['tax_included'] ?? false,
                 'comments' => $payload['comments'] ?? null,
                 'fixed_asset' => $fixedAsset,
+                'cost_center_id' => (int) ($payload['cost_center_id'] ?? 0),
                 'lines' => $lines,
             ]);
 
@@ -279,6 +280,7 @@ class SupplierInvoiceService
                 'trans_date' => $payload['trans_date'] ?? now()->toDateString(),
                 'due_date' => $payload['due_date'] ?? $payload['trans_date'] ?? now()->toDateString(),
                 'tax_included' => $payload['tax_included'] ?? false,
+                'cost_center_id' => (int) ($payload['cost_center_id'] ?? 0),
                 'comments' => $payload['comments'] ?? null,
                 'lines' => $grnItemIds,
             ]);
@@ -374,7 +376,7 @@ class SupplierInvoiceService
     {
         foreach ($lines as $line) {
             $stockId = (string) ($line['item_code'] ?? '');
-            if ($stockId === '' || ! \Illuminate\Support\Facades\Schema::hasTable('stock_master')) {
+            if ($stockId === '' || ! Schema::hasTable('stock_master')) {
                 throw new InvalidArgumentException('Fixed asset purchase requires valid asset items.');
             }
             $mbFlag = (int) DB::table('stock_master')->where('stock_id', $stockId)->value('mb_flag');

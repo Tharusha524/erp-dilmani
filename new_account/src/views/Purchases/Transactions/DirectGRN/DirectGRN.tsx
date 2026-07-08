@@ -426,6 +426,7 @@ export default function DirectGRN() {
             tax_included: taxIncludedForSupplier,
             comments: memo || undefined,
             total: Number(subTotal) || 0,
+            cost_center_id: Number(costCenter) || 0,
             lines: grnLines,
           })
         );

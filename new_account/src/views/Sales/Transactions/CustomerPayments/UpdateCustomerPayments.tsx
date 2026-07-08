@@ -22,7 +22,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
 import { getBranches } from "../../../../api/CustomerBranch/CustomerBranchApi";
 import { getBankAccounts } from "../../../../api/BankAccount/BankAccountApi";
-// import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi"; // hypothetical API
+import CostCenterSelect from "../../../../components/CostCenterSelect";
 import { getDebtorTrans, createDebtorTran, updateDebtorTran } from "../../../../api/DebtorTrans/DebtorTransApi";
 import { buildCustomerPaymentAllocationRows } from "../../../../utils/customerPaymentAllocation";
 import CustomerCurrencyField from "../../../../components/CustomerCurrencyField";
@@ -237,6 +237,7 @@ export default function UpdateCustomerPayments() {
       setReference(editTransaction.reference);
       setAmount(editTransaction.ov_amount);
       setMemo(editTransaction.memo || "");
+      setCostCenter(editTransaction.cost_center_id ? String(editTransaction.cost_center_id) : "");
       // Find bank account from bankTrans
       const bankTransRecord = bankTrans.find((b: any) => b.trans_no == editTransaction.trans_no && b.type == 12);
       if (bankTransRecord) {
@@ -310,6 +311,7 @@ export default function UpdateCustomerPayments() {
           branch_code: branch ? Number(branch) : editTransaction.branch_code,
           alloc: totalAllocated,
           version: (Number(editTransaction.version) || 0) + 1,
+          cost_center_id: Number(costCenter) || 0,
         });
 
         const bankTransRecord = bankTrans.find(
@@ -376,7 +378,7 @@ export default function UpdateCustomerPayments() {
         prep_amount: 0,
         rate: 1,
         ship_via: null,
-        cost_center_id: 0,
+        cost_center_id: Number(costCenter) || 0,
         cost_center2_id: 0,
         payment_terms: null,
         tax_included: 0,
@@ -629,19 +631,11 @@ export default function UpdateCustomerPayments() {
                 value={bankCharge}
                 onChange={(e) => setBankCharge(Number(e.target.value))}
               />
-              <TextField
-                label="Cost Center"
-                fullWidth
-                size="small"
+              <CostCenterSelect
                 value={costCenter}
-                onChange={(e) => setCostCenter(e.target.value)}
-              >
-                {/* {costCenters.map((d: any) => (
-                  <MenuItem key={d.id} value={d.id}>
-                    {d.name}
-                  </MenuItem>
-                ))} */}
-              </TextField>
+                onChange={setCostCenter}
+                costCenterType={1}
+              />
             </Stack>
           </Grid>
         </Grid>

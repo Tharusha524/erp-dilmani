@@ -23,6 +23,7 @@ class PostSupplierPaymentRequest extends FormRequest
             'reference' => 'nullable|string|max:60',
             'comments' => 'nullable|string',
             'tax_included' => 'boolean',
+            'cost_center_id' => 'nullable|integer',
             'allocations' => 'nullable|array',
             'allocations.*.trans_no_to' => 'required_with:allocations|integer',
             'allocations.*.trans_type_to' => 'required_with:allocations|integer',

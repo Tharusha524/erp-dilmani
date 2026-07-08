@@ -698,6 +698,7 @@ export default function SupplierCreditNote() {
                     supp_reference: supplierRef || undefined,
                     tax_included: taxIncludedForSupplier,
                     comments: memo || undefined,
+                    cost_center_id: Number(costCenter) || undefined,
                     source_invoice_trans_no:
                         Number.isFinite(sourceInvoiceNo) && sourceInvoiceNo > 0
                             ? sourceInvoiceNo

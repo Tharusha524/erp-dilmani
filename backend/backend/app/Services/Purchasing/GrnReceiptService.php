@@ -79,7 +79,8 @@ class GrnReceiptService
                 $orderNo,
                 $reference,
                 $deliveryDate,
-                $locCode
+                $locCode,
+                $order->cost_center_id
             );
 
             $grnItems = [];
@@ -250,10 +251,11 @@ class GrnReceiptService
                 'prep_amount' => 0,
                 'alloc' => 0,
                 'tax_included' => (bool) ($payload['tax_included'] ?? false),
+                'cost_center_id' => (int) ($payload['cost_center_id'] ?? 0),
             ], $poLines);
 
             $grnRef = $reference;
-            $batchId = $this->createGrnBatch($supplierId, $orderNo, $grnRef, $deliveryDate, $locCode);
+            $batchId = $this->createGrnBatch($supplierId, $orderNo, $grnRef, $deliveryDate, $locCode, (int) ($payload['cost_center_id'] ?? 0));
 
             $grnItems = [];
             foreach ($poResult['lines'] as $detail) {
@@ -296,7 +298,8 @@ class GrnReceiptService
         int $orderNo,
         string $reference,
         string $deliveryDate,
-        string $locCode
+        string $locCode,
+        ?int $costCenterId = null
     ): int {
         return (int) DB::table('grn_batch')->insertGetId([
             'supplier_id' => $supplierId,
@@ -304,6 +307,7 @@ class GrnReceiptService
             'reference' => $reference,
             'delivery_date' => $deliveryDate,
             'loc_code' => $locCode,
+            'cost_center_id' => $costCenterId ?? 0,
             'rate' => SupplierExchangeRate::forSupplier($supplierId, $deliveryDate),
             'created_at' => now(),
             'updated_at' => now(),
@@ -421,7 +425,7 @@ class GrnReceiptService
 
     public function void(int $batchId, ?string $memo = null): array
     {
-        return DB::transaction(function () use ($batchId) {
+        return DB::transaction(function () use ($batchId, $memo) {
             if ($batchId <= 0 || ! Schema::hasTable('grn_batch')) {
                 throw new InvalidArgumentException('GRN batch not found.');
             }

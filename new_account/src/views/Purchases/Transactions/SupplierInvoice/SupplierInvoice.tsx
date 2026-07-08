@@ -809,6 +809,7 @@ export default function SupplierInvoice() {
                     due_date: dueDate || invoiceDate || new Date().toISOString().split("T")[0],
                     tax_included: taxIncludedForSupplier,
                     comments: memo || undefined,
+                    cost_center_id: Number(costCenter) || undefined,
                     lines: invoiceLines,
                     gl_lines: glLines.length > 0 ? glLines : undefined,
                 })

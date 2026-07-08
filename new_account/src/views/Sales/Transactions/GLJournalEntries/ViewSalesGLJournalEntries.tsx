@@ -213,7 +213,7 @@ export default function ViewSalesGLJournalEntries() {
   return (
     <GLJournalEntriesPage
       breadcrumbs={[
-        { title: "Sales", href: "/sales" },
+        { title: "Sales", href: "/sales/transactions" },
         { title: "Transactions", href: "/sales/transactions" },
         { title: "GL Journal Entries" },
       ]}

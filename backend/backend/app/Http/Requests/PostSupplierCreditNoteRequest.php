@@ -22,6 +22,7 @@ class PostSupplierCreditNoteRequest extends FormRequest
             'supp_reference' => 'nullable|string|max:60',
             'tax_included' => 'boolean',
             'comments' => 'nullable|string',
+            'cost_center_id' => 'nullable|integer',
             'source_invoice_trans_no' => 'nullable|integer|min:1',
             'allocations' => 'nullable|array',
             'allocations.*.trans_no_to' => 'required_with:allocations|integer',
