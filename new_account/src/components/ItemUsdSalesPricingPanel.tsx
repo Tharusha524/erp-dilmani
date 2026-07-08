@@ -164,7 +164,7 @@ export default function ItemUsdSalesPricingPanel({
     return (
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          Loading USD pricing…
+          Loading pricing…
         </Typography>
       </Paper>
     );
@@ -197,7 +197,7 @@ export default function ItemUsdSalesPricingPanel({
               fullWidth
               size="small"
               type="number"
-              label="USD Retail Price"
+              label="Retail Price"
               value={retailPrice}
               onChange={(e) => setRetailPrice(e.target.value)}
               inputProps={{ min: 0, step: 0.01 }}
@@ -208,7 +208,7 @@ export default function ItemUsdSalesPricingPanel({
               fullWidth
               size="small"
               type="number"
-              label="USD Wholesale Price"
+              label="Wholesale Price"
               value={wholesalePrice}
               onChange={(e) => setWholesalePrice(e.target.value)}
               inputProps={{ min: 0, step: 0.01 }}

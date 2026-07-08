@@ -34,6 +34,7 @@ import {
   glAccountsFromCategory,
   resolveItemGlAccounts,
 } from "../../../../../utils/stockMasterDefaults";
+import ProfileImage from "../../../../../components/ProfileImageComponent";
 interface ItemGeneralSettingProps {
   itemId?: string | number;
 }
@@ -637,18 +638,25 @@ export default function ItemsGeneralSettingsForm({ itemId }: ItemGeneralSettingP
               <Stack spacing={2}>
                 <Typography variant="subtitle1">Other</Typography>
                 <Divider />
-                <Button
-                  variant="outlined"
-                  component="label"
-                >
-                  Upload Image (.jpg)
-                  <input
-                    type="file"
-                    hidden
-                    accept=".jpg"
-                    onChange={(e) => handleChange("imageFile", e.target.files ? e.target.files[0] : null)}
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <ProfileImage
+                    name={formData.itemName}
+                    files={formData.imageFile ? [formData.imageFile] : undefined}
+                    size="4rem"
                   />
-                </Button>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                  >
+                    Upload Image (.jpg)
+                    <input
+                      type="file"
+                      hidden
+                      accept=".jpg"
+                      onChange={(e) => handleChange("imageFile", e.target.files ? e.target.files[0] : null)}
+                    />
+                  </Button>
+                </Stack>
                 <FormControl size="small" fullWidth>
                   <InputLabel>Item Status</InputLabel>
                   <Select

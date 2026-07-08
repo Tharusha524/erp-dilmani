@@ -33,6 +33,7 @@ import {
 } from "../../../../../utils/stockMasterDefaults";
 import UpdateConfirmationModal from "../../../../../components/UpdateConfirmationModal";
 import DeleteConfirmationModal from "../../../../../components/DeleteConfirmationModal";
+import ProfileImage from "../../../../../components/ProfileImageComponent";
 interface ItemGeneralSettingProps {
   itemId: string | number; //  always required now
 }
@@ -277,7 +278,7 @@ export default function ItemsGeneralSettingsForm({ itemId }: ItemGeneralSettingP
       no_sale: formData.excludedFromSales ? 1 : 0,
       no_purchase: formData.excludedFromPurchases ? 1 : 0,
 
-      // imageFile handling can be added here if API supports itpurchase_cost: 0,
+      imageFile: formData.imageFile,
       purchase_cost: 0,
       material_cost: 0,
       labour_cost: 0,
@@ -720,18 +721,26 @@ export default function ItemsGeneralSettingsForm({ itemId }: ItemGeneralSettingP
               <Stack spacing={2}>
                 <Typography variant="subtitle1">Other</Typography>
                 <Divider />
-                <Button
-                  variant="outlined"
-                  component="label"
-                >
-                  Upload Image (.jpg)
-                  <input
-                    type="file"
-                    hidden
-                    accept=".jpg"
-                    onChange={(e) => handleChange("imageFile", e.target.files ? e.target.files[0] : null)}
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <ProfileImage
+                    name={formData.itemName}
+                    imageUrl={(itemData as any)?.image_url}
+                    files={formData.imageFile ? [formData.imageFile] : undefined}
+                    size="4rem"
                   />
-                </Button>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                  >
+                    Upload Image (.jpg)
+                    <input
+                      type="file"
+                      hidden
+                      accept=".jpg"
+                      onChange={(e) => handleChange("imageFile", e.target.files ? e.target.files[0] : null)}
+                    />
+                  </Button>
+                </Stack>
                 <FormControl size="small" fullWidth>
                   <InputLabel>Item Status</InputLabel>
                   <Select

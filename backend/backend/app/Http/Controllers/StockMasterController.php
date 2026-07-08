@@ -6,6 +6,7 @@ use App\Http\Requests\StockMasterRequest;
 use App\Models\StockMaster;
 use App\Repositories\All\StockMaster\StockMasterInterface;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class StockMasterController extends Controller
 {
@@ -49,7 +50,21 @@ class StockMasterController extends Controller
 
     public function update(StockMasterRequest $request, string $id)
     {
-        $updated = $this->stockMasterRepo->update($id, $request->validated());
+        $stockMaster = $this->stockMasterRepo->find($id);
+        if (!$stockMaster) {
+            return response()->json(['message' => 'Stock Master not found'], 404);
+        }
+
+        $data = $request->validated();
+
+        if ($request->hasFile('image')) {
+            if ($stockMaster->image) {
+                Storage::disk('public')->delete($stockMaster->image);
+            }
+            $data['image'] = $request->file('image')->store('stock_images', 'public');
+        }
+
+        $updated = $this->stockMasterRepo->update($id, $data);
         if (!$updated) {
             return response()->json(['message' => 'Stock Master not found'], 404);
         }

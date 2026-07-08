@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -13,6 +14,7 @@ class StockMaster extends Model
     protected $primaryKey = 'stock_id';
     public $incrementing = false; // because stock_id is a string, not auto-increment
     protected $keyType = 'string';
+    protected $appends = ['image_url'];
 
     protected $fillable = [
         'stock_id',
@@ -156,5 +158,12 @@ class StockMaster extends Model
     public function purchData()
     {
         return $this->hasMany(PurchData::class, 'stock_id', 'stock_id');
+    }
+
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, array $attributes) => !empty($attributes['image']) ? asset('storage/' . $attributes['image']) : null,
+        );
     }
 }

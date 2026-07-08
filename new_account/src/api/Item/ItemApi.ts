@@ -23,6 +23,21 @@ export const getItemById = async (id: string | number) => {
   }
 };
 
+function toStockMasterFormData(
+  payload: Record<string, unknown>,
+  imageFile: unknown
+): FormData {
+  const formData = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === null || value === undefined) return;
+    formData.append(key, String(value));
+  });
+  if (imageFile instanceof File) {
+    formData.append("image", imageFile);
+  }
+  return formData;
+}
+
 export const createItem = async (
   data: Record<string, unknown>,
   options?: {
@@ -36,6 +51,14 @@ export const createItem = async (
       options?.chartMasters ?? [],
       options?.category
     );
+    const imageFile = data.imageFile;
+    if (imageFile instanceof File) {
+      const formData = toStockMasterFormData(payload, imageFile);
+      const response = await api.post(API_URL, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return response.data;
+    }
     const response = await api.post(API_URL, payload);
     return response.data;
   } catch (error: unknown) {
@@ -58,6 +81,15 @@ export const updateItem = async (
       options?.chartMasters ?? [],
       options?.category
     );
+    const imageFile = data.imageFile;
+    if (imageFile instanceof File) {
+      const formData = toStockMasterFormData(payload, imageFile);
+      formData.append("_method", "PUT");
+      const response = await api.post(`${API_URL}/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return response.data;
+    }
     const response = await api.put(`${API_URL}/${id}`, payload);
     return response.data;
   } catch (error: unknown) {
