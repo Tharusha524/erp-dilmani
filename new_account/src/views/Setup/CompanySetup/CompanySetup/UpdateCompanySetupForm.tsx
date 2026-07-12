@@ -162,9 +162,13 @@ export default function UpdateCompanySetupForm() {
         // console.log('Loaded companies data:', data);
         if (data && data.length > 0) {
           const company = normalizeCompanySetupFromApi(data[0] as Record<string, unknown>);
+          const sanitizedCompany = Object.fromEntries(
+            Object.entries(company).map(([k, v]) => [k, v === null || v === undefined ? "" : v])
+          ) as Partial<CompanyFormData>;
+          
           setFormData((prev) => ({
             ...prev,
-            ...company,
+            ...sanitizedCompany,
             databaseSchemeVersion: prev.databaseSchemeVersion,
             new_company_logo: null,
           }));

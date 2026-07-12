@@ -26,13 +26,7 @@ class AuthRepository extends BaseRepository implements AuthInterface
         $throttle = app(LoginThrottleService::class);
         $email = $credentials['email'] ?? '';
 
-        if ($throttle->isLocked($request, $email)) {
-            $seconds = $throttle->secondsUntilUnlock($request, $email);
-            $minutes = max(1, (int) ceil($seconds / 60));
-            throw ValidationException::withMessages([
-                'email' => ["Too many failed login attempts. Please try again in about {$minutes} minute(s)."],
-            ]);
-        }
+
 
         $user = $this->model->where('email', $email)->first();
 

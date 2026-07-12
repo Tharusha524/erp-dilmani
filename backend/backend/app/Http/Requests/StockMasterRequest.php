@@ -24,10 +24,12 @@ class StockMasterRequest extends FormRequest
 
         return [
 
-            'stock_id' => 'required',
-            'string',
-            'max:255',
-            Rule::unique('stock_master', 'stock_id')->ignore($id),
+            'stock_id' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('stock_master', 'stock_id')->ignore($id)
+            ],
 
             'category_id' => 'required|integer|exists:item_category,category_id',
             'tax_type_id' => 'required|integer|exists:item_tax_types,id',

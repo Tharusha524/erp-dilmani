@@ -63,9 +63,9 @@ const [open, setOpen] = useState(false);
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
   const queryClient = useQueryClient();
 
-  const { data: accountTypes = [] } = useQuery({ queryKey: ["accountTypes"], queryFn: () => getAccountTypes() });
-  const { data: currencies = [] } = useQuery({ queryKey: ["currencies"], queryFn: () => getCurrencies() });
-  const { data: chartMaster = [] } = useQuery<ChartMaster[]>({ queryKey: ["chartMaster"], queryFn: () => getChartMasters() });
+  const { data: accountTypes = [], isLoading: isLoadingAccountTypes } = useQuery({ queryKey: ["accountTypes"], queryFn: () => getAccountTypes() });
+  const { data: currencies = [], isLoading: isLoadingCurrencies } = useQuery({ queryKey: ["currencies"], queryFn: () => getCurrencies() });
+  const { data: chartMaster = [], isLoading: isLoadingChartMaster } = useQuery<ChartMaster[]>({ queryKey: ["chartMaster"], queryFn: () => getChartMasters() });
 
   const mutation = useMutation({
     mutationFn: createBankAccount,
@@ -118,7 +118,7 @@ const [open, setOpen] = useState(false);
     }
   };
 
-  if (!accountTypes.length || !currencies.length || !chartMaster.length) {
+  if (isLoadingAccountTypes || isLoadingCurrencies || isLoadingChartMaster) {
     return (
       <Stack alignItems="center" sx={{ mt: 4 }}>
         <CircularProgress />

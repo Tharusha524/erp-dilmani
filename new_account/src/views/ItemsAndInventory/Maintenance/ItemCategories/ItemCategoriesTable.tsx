@@ -240,7 +240,7 @@ function ItemCategoriesTable() {
             <TableBody>
               {paginatedCategories.length > 0 ? (
                 paginatedCategories.map((item, index) => (
-                  <TableRow key={item.id} hover>
+                  <TableRow key={item.category_id} hover>
                     <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                     <TableCell>{item.description}</TableCell>
                     <TableCell>{taxTypeMap[item.dflt_tax_type] || item.dflt_tax_type} </TableCell>
