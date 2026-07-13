@@ -18,6 +18,7 @@ import theme from "../../../../theme";
 import { createQuickEntry } from "../../../../api/QuickEntry/QuickEntryApi";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 interface QuickEntryFormData {
   name: string;
@@ -161,11 +162,10 @@ export default function AddQuickEntriesForm() {
             helperText={errors.baseAmountDescription || " "}
           />
 
-          <TextField
+          <FormattedNumberField
             label="Default Base Amount"
             name="defaultBaseAmount"
             size="small"
-            type="number"
             fullWidth
             value={formData.defaultBaseAmount}
             onChange={handleInputChange}

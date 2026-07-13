@@ -22,6 +22,7 @@ import { getPaymentTerm, updatePaymentTerm } from "../../../../api/PaymentTerm/P
 import { getPaymentTypes } from "../../../../api/PaymentType/PaymentTypeApi";
 import ErrorModal from "../../../../components/ErrorModal";
 import UpdateConfirmationModal from "../../../../components/UpdateConfirmationModal";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 interface PaymentTermsFormData {
   termsDescription: string;
@@ -206,7 +207,7 @@ export default function UpdatePaymentTermsForm() {
           </FormControl>
 
           {showDaysField && (
-            <TextField
+            <FormattedNumberField
               label={
                 paymentTypes.find((pt) => pt.name === formData.paymentType)?.id === AFTER_NO_OF_DAYS_ID
                   ? "Days"
@@ -217,7 +218,6 @@ export default function UpdatePaymentTermsForm() {
               fullWidth
               value={additionalDays}
               onChange={handleAdditionalDaysChange}
-              type="number"
             />
           )}
         </Stack>

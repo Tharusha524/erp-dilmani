@@ -29,6 +29,7 @@ import {
   processSupplierAllocations,
   AllocationTargetRow,
 } from "../../../../api/Allocation/AllocationApi";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 type RowState = AllocationTargetRow & { this_allocation: number };
 
@@ -354,9 +355,8 @@ export default function ViewSupplierAllocations() {
                   <TableCell align="right">{r.other_allocations.toFixed(2)}</TableCell>
                   <TableCell align="right">{r.left_to_allocate.toFixed(2)}</TableCell>
                   <TableCell>
-                    <TextField
+                    <FormattedNumberField
                       size="small"
-                      type="number"
                       value={r.this_allocation || ""}
                       onChange={(e) => setAlloc(idx, Number(e.target.value) || 0)}
                       sx={{ width: 100 }}

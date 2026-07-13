@@ -30,6 +30,8 @@ import { getItemTypes } from "../../../../../api/ItemType/ItemType";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import UpdateConfirmationModal from "../../../../../components/UpdateConfirmationModal";
 import ErrorModal from "../../../../../components/ErrorModal";
+import FormattedNumberField from "../../../../../components/FormattedNumberField";
+
 interface ItemGeneralSettingProps {
   itemId: string | number; //  always required now
 }
@@ -556,25 +558,23 @@ export default function UpdateFixedAssetsGeneralSettingsForm({ itemId }: ItemGen
               </FormControl>
 
               {!isNoneMethod(formData.depreciationMethod) && (
-                <TextField
+                <FormattedNumberField
                   label={(isOtherMethod(formData.depreciationMethod) || isStraightLineMethod(formData.depreciationMethod)) ? "Depreciation Rate" : "Base Rate"}
                   value={formData.baseRate}
                   onChange={(e) => handleChange("baseRate", e.target.value)}
                   size="small"
                   fullWidth
-                  type="number"
                   disabled={isOtherMethod(formData.depreciationMethod)}
                 />
               )}
 
               {!(isStraightLineMethod(formData.depreciationMethod) || isOtherMethod(formData.depreciationMethod) || isNoneMethod(formData.depreciationMethod)) && (
-                <TextField
+                <FormattedNumberField
                   label="Rate Multiplier"
                   value={formData.rateMultiplier}
                   onChange={(e) => handleChange("rateMultiplier", e.target.value)}
                   size="small"
                   fullWidth
-                  type="number"
                 />
               )}
 
@@ -585,13 +585,12 @@ export default function UpdateFixedAssetsGeneralSettingsForm({ itemId }: ItemGen
               />
 
               {isNoneMethod(formData.depreciationMethod) && (
-                <TextField
+                <FormattedNumberField
                   label="Depreciation Years"
                   value={formData.depreciationYears}
                   onChange={(e) => handleChange("depreciationYears", e.target.value)}
                   size="small"
                   fullWidth
-                  type="number"
                 />
               )}
 

@@ -20,6 +20,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
 import ErrorModal from "../../../../components/ErrorModal";
 import { createStockFaClass } from "../../../../api/StockFaClass/StockFaClassesApi";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 interface FixedAssetClassForm {
   parentClass: string;
@@ -156,10 +157,9 @@ export default function AddFixedAssetClasses() {
           />
 
           {/* Depreciation Rate */}
-          <TextField
+          <FormattedNumberField
             label="Basic Depreciation Rate (%)"
             name="depreciationRate"
-            type="number"
             size="small"
             fullWidth
             value={formData.depreciationRate}

@@ -26,6 +26,8 @@ import {
 import theme from "../../../../theme";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
 import ErrorModal from "../../../../components/ErrorModal";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
+
 interface ForeignItemFormData {
   upcCode: string;
   quantity: string;
@@ -237,12 +239,11 @@ export default function AddForeignItemCodesForm() {
             helperText={errors.upcCode || " "}
           />
 
-          <TextField
+          <FormattedNumberField
             label="Quantity"
             name="quantity"
             size="small"
             fullWidth
-            type="number"
             value={formData.quantity}
             onChange={handleInputChange}
             error={!!errors.quantity}

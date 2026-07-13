@@ -56,6 +56,7 @@ import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
 import { getSuppTrans } from "../../../../api/SuppTrans/SuppTransApi";
 import { getInventoryLocations } from "../../../../api/InventoryLocation/InventoryLocationApi";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function SupplierInvoice() {
     const navigate = useNavigate();
@@ -1104,9 +1105,8 @@ export default function SupplierInvoice() {
                                 <TableCell>{row.qtyInvoiced}</TableCell>
 
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.qtyYet}
                                         onChange={(e) =>
                                             updateItemRow(row.id, "qtyYet", Number(e.target.value))
@@ -1186,10 +1186,9 @@ export default function SupplierInvoice() {
                             </MenuItem>
                         ))}
                     </TextField>
-                    <TextField
+                    <FormattedNumberField
                         label="Amount"
                         size="small"
-                        type="number"
                         sx={{ width: 150 }}
                         value={quickEntryAmount}
                         onChange={(e) => setQuickEntryAmount(e.target.value)}
@@ -1273,9 +1272,8 @@ export default function SupplierInvoice() {
                                 </TableCell>
 
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.amount}
                                         onChange={(e) =>
                                             updateGLRow(row.id, "amount", Number(e.target.value))

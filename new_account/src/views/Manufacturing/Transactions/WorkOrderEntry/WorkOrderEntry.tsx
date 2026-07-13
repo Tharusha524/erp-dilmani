@@ -28,6 +28,7 @@ import { getBomsByParent } from "../../../../api/Bom/BomApi";
 import { postWorkOrderEntry } from "../../../../api/Manufacturing/ManufacturingApi";
 import { runTransactionSave, assertPersistedResponse } from "../../../../utils/transactionSave";
 import ItemSearchSelect from "../../../../components/ItemSearchSelect";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function WorkOrderEntry() {
   const navigate = useNavigate();
@@ -571,11 +572,10 @@ export default function WorkOrderEntry() {
           {Number(type) === 2 ? (
             <>
               <Grid item xs={12} sm={6}>
-                <TextField
+                <FormattedNumberField
                   label="Quantity Required"
                   fullWidth
                   size="small"
-                  type="number"
                   inputProps={{ min: 0 }}
                   value={quantity}
                   onChange={(e) => {
@@ -627,11 +627,10 @@ export default function WorkOrderEntry() {
           ) : (
             <>
               <Grid item xs={12} sm={6}>
-                <TextField
+                <FormattedNumberField
                   label="Quantity"
                   fullWidth
                   size="small"
-                  type="number"
                   inputProps={{ min: 0 }}
                   value={quantity}
                   onChange={(e) => {
@@ -657,11 +656,10 @@ export default function WorkOrderEntry() {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <TextField
+                <FormattedNumberField
                   label="Labour Cost"
                   fullWidth
                   size="small"
-                  type="number"
                   value={labourCost}
                   onChange={(e) => setLabourCost(e.target.value)}
                 />
@@ -716,11 +714,10 @@ export default function WorkOrderEntry() {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <TextField
+                <FormattedNumberField
                   label="Overhead Cost"
                   fullWidth
                   size="small"
-                  type="number"
                   value={overheadCost}
                   onChange={(e) => setOverheadCost(e.target.value)}
                 />

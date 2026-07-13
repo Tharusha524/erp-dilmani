@@ -60,6 +60,7 @@ import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import PageLoader from "../../../../components/PageLoader";
 import theme from "../../../../theme";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 // TabPanel helper
 function TabPanel({ children, value, index }: { children: React.ReactNode; value: number; index: number }) {
@@ -986,9 +987,8 @@ export default function JournalEntry() {
                   <TextField size="small" value={row.costCenter} onChange={(e) => handleChange(row.id, "costCenter", e.target.value)} />
                 </TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     inputProps={{ step: "0.01" }}
                     placeholder="0.00"
                     value={row.debit}
@@ -996,9 +996,8 @@ export default function JournalEntry() {
                   />
                 </TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     inputProps={{ step: "0.01" }}
                     placeholder="0.00"
                     value={row.credit}
@@ -1179,9 +1178,8 @@ export default function JournalEntry() {
                       {tax.description} ({rate}%)
                     </TableCell>
                     <TableCell>
-                      <TextField
+                      <FormattedNumberField
                         size="small"
-                        type="number"
                         inputProps={{ step: "0.01", min: 0 }}
                         placeholder="0.00"
                         value={row.inputTax}
@@ -1191,9 +1189,8 @@ export default function JournalEntry() {
                       />
                     </TableCell>
                     <TableCell>
-                      <TextField
+                      <FormattedNumberField
                         size="small"
-                        type="number"
                         inputProps={{ step: "0.01", min: 0 }}
                         placeholder="0.00"
                         value={row.outputTax}
@@ -1203,9 +1200,8 @@ export default function JournalEntry() {
                       />
                     </TableCell>
                     <TableCell>
-                      <TextField
+                      <FormattedNumberField
                         size="small"
-                        type="number"
                         inputProps={{ step: "0.01", min: 0 }}
                         placeholder="0.00"
                         value={row.netAmount}

@@ -39,6 +39,7 @@ import { getSalesOrders, updateSalesOrder } from "../../../../api/SalesOrders/Sa
 import { getCompanies } from "../../../../api/CompanySetup/CompanySetupApi";
 import { useCustomerCredit } from "../../../../hooks/useCustomerCredit";
 import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSummaryFields";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function UpdateCustomerDeliveryInvoice() {
   const navigate = useNavigate();
@@ -488,9 +489,8 @@ export default function UpdateCustomerDeliveryInvoice() {
                 <TableCell>{row.units}</TableCell>
                 <TableCell>{row.invoice}</TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.deliveryQty}
                     error={!!row.deliveryError}
                     helperText={row.deliveryError}
@@ -527,9 +527,8 @@ export default function UpdateCustomerDeliveryInvoice() {
             <TableRow>
               <TableCell colSpan={10}>Shipping Cost</TableCell>
               <TableCell>
-                <TextField
+                <FormattedNumberField
                   size="small"
-                  type="number"
                   value={shippingCost}
                   onChange={(e) => setShippingCost(Number(e.target.value))}
                 />

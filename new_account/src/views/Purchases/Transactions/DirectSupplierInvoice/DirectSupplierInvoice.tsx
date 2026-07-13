@@ -60,6 +60,7 @@ import { resolvePurchaseItemPrice } from "../../../../utils/resolvePurchaseItemP
 import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
 import { useCompanySetupSettings } from "../../../../hooks/useCompanySetupSettings";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 const FA_MB_FLAG = 4;
 
@@ -671,7 +672,7 @@ export default function DirectSupplierInvoice() {
 
                 {/* Quantity */}
                 <TableCell>
-                  <TextField size="small" type="number" value={row.quantity} disabled={!row.isEditing} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
+                  <FormattedNumberField size="small" value={row.quantity} disabled={!row.isEditing} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
                 </TableCell>
 
                 {/* Unit */}
@@ -691,9 +692,8 @@ export default function DirectSupplierInvoice() {
                 </TableCell>
 
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.discount ?? 0}
                     disabled={!row.isEditing}
                     onChange={(e) => handleChange(row.id, "discount", Number(e.target.value))}

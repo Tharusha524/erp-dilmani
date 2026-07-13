@@ -27,6 +27,7 @@ import { getItemTypes } from "../../../../api/ItemType/ItemType";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import UpdateConfirmationModal from "../../../../components/UpdateConfirmationModal";
 import ErrorModal from "../../../../components/ErrorModal";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 interface ItemStandardCostProps {
   itemId?: string | number;
@@ -277,12 +278,11 @@ export default function ViewAddStandardCostForm({ itemId }: ItemStandardCostProp
           }}
         >
           <Stack spacing={2}>
-            <TextField
+            <FormattedNumberField
               label="Unit Cost"
               name="unitCost"
               size="small"
               fullWidth
-              type="number"
               value={formData.unitCost}
               onChange={handleInputChange}
               error={!!errors.unitCost}
@@ -291,12 +291,11 @@ export default function ViewAddStandardCostForm({ itemId }: ItemStandardCostProp
             />
 
             {isManufacture && (
-              <TextField
+              <FormattedNumberField
                 label="Standard Labour Cost Per Unit"
                 name="standardLabourCost"
                 size="small"
                 fullWidth
-                type="number"
                 value={formData.standardLabourCost}
                 onChange={handleInputChange}
                 error={!!errors.standardLabourCost}
@@ -306,12 +305,11 @@ export default function ViewAddStandardCostForm({ itemId }: ItemStandardCostProp
             )}
 
             {isManufacture && (
-              <TextField
+              <FormattedNumberField
                 label="Standard Overhead Cost Per Unit"
                 name="standardOverheadCost"
                 size="small"
                 fullWidth
-                type="number"
                 value={formData.standardOverheadCost}
                 onChange={handleInputChange}
                 error={!!errors.standardOverheadCost}

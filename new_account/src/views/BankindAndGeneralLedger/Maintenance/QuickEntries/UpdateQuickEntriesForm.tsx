@@ -18,6 +18,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import theme from "../../../../theme";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 interface QuickEntryFormData {
   name: string;
@@ -176,11 +177,10 @@ export default function UpdateQuickEntriesForm() {
             helperText={errors.baseAmountDescription || " "}
           />
 
-          <TextField
+          <FormattedNumberField
             label="Default Base Amount"
             name="defaultBaseAmount"
             size="small"
-            type="number"
             fullWidth
             value={formData.defaultBaseAmount}
             onChange={handleInputChange}

@@ -43,6 +43,7 @@ import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import UpdateConfirmationModal from "../../../../components/UpdateConfirmationModal"
 import ErrorModal from "../../../../components/ErrorModal";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 interface EditQuantityData {
   id: string;
@@ -491,12 +492,11 @@ export default function EditSalesKitsForm() {
                     <FormHelperText>{addErrors.component || " "}</FormHelperText>
                   </FormControl>
 
-                  <TextField
+                  <FormattedNumberField
                     label="Quantity"
                     name="quantity"
                     size="small"
                     fullWidth
-                    type="number"
                     value={addComponentData.quantity}
                     onChange={handleAddInputChange}
                     error={!!addErrors.quantity}
@@ -521,9 +521,8 @@ export default function EditSalesKitsForm() {
         <Dialog open={editQuantityDialog} onClose={() => setEditQuantityDialog(false)}>
           <DialogTitle>Edit Quantity</DialogTitle>
           <DialogContent>
-            <TextField
+            <FormattedNumberField
               label="Quantity"
-              type="number"
               fullWidth
               value={editQuantityData.quantity}
               onChange={(e) => setEditQuantityData({ ...editQuantityData, quantity: e.target.value })}

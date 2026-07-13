@@ -46,6 +46,7 @@ import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
 import { getFriendlyApiErrorMessage } from "../../../../utils/apiErrorMessage";
 import { runTransactionSave } from "../../../../utils/transactionSave";
 import { useMessageDialog } from "../../../../context/MessageDialogContext";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 function findDeliveryNote(
   debtorTrans: any[],
@@ -569,9 +570,8 @@ export default function DeliveyNoteInvoice() {
                 <TableCell>{row.units}</TableCell>
                 <TableCell>{row.invoiced}</TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.thisInvoice}
                     onChange={(e) => {
                       let value = Number(e.target.value);
@@ -603,9 +603,8 @@ export default function DeliveyNoteInvoice() {
             <TableRow>
               <TableCell colSpan={10}>Shipping Cost</TableCell>
               <TableCell>
-                <TextField
+                <FormattedNumberField
                   size="small"
-                  type="number"
                   value={shippingCost}
                   onChange={(e) => setShippingCost(Number(e.target.value))}
                 />

@@ -46,6 +46,7 @@ import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSu
 import { relationId, bankAccountLabel, sortCashBankAccounts } from "../../../../utils/cashBankAccount";
 import { isCashSalePaymentTerm } from "../../../../utils/customerCredit";
 import { getStockQoh } from "../../../../api/Inventory/StockQuantityApi";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 function faLocationCode(loc: { locationCode?: string; loc_code?: string }): string {
     return String(loc.locationCode ?? loc.loc_code ?? "").toUpperCase();
@@ -687,9 +688,8 @@ export default function FixedAssetsSale() {
                                     </Typography>
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.quantity}
                                         inputProps={{
                                             min: 0,
@@ -722,17 +722,15 @@ export default function FixedAssetsSale() {
                                     <TextField size="small" value={row.unit} InputProps={{ readOnly: true }} />
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.priceAfterTax}
                                         onChange={(e) => handleChange(row.id, "priceAfterTax", Number(e.target.value))}
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.discount}
                                         InputProps={{ readOnly: true }}
                                     />
@@ -785,9 +783,8 @@ export default function FixedAssetsSale() {
                          <TableRow>
                             <TableCell colSpan={8}>Shipping Charge</TableCell>
                             <TableCell>
-                                <TextField
+                                <FormattedNumberField
                                     size="small"
-                                    type="number"
                                     value={shippingCharge}
                                     onChange={(e) => setShippingCharge(Number(e.target.value))}
                                 />

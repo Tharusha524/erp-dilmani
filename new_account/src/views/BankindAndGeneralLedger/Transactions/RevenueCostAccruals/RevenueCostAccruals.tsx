@@ -31,6 +31,7 @@ import {
 } from "../../../../api/Banking/BankingTransactionApi";
 import { getFriendlyApiErrorMessage } from "../../../../utils/apiErrorMessage";
 import { notify } from "../../../../services/notificationService";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 const FREQ_OPTIONS = [
   { value: "1", label: "Weekly" },
@@ -229,11 +230,10 @@ export default function RevenueCostAccruals() {
           )}
 
           <Grid item xs={12} sm={4}>
-            <TextField
+            <FormattedNumberField
               fullWidth
               size="small"
               label="Amount"
-              type="number"
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
             />
@@ -255,11 +255,10 @@ export default function RevenueCostAccruals() {
             </TextField>
           </Grid>
           <Grid item xs={12} sm={4}>
-            <TextField
+            <FormattedNumberField
               fullWidth
               size="small"
               label="Periods"
-              type="number"
               inputProps={{ min: 1 }}
               value={form.periods}
               onChange={(e) => setForm({ ...form, periods: e.target.value })}

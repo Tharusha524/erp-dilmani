@@ -32,6 +32,7 @@ import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { getTaxGroups } from "../../../../api/Tax/taxServices";
 import { getPaymentTerms } from "../../../../api/PaymentTerm/PaymentTermApi";
 import { getChartMasters } from "../../../../api/GLAccounts/ChartMasterApi";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function ModifyPurchaseInvoice() {
     const navigate = useNavigate();
@@ -370,10 +371,9 @@ export default function ModifyPurchaseInvoice() {
                                 InputProps={{ readOnly: true }}
                             />
 
-                            <TextField
+                            <FormattedNumberField
                                 label="Current Credit"
                                 size="small"
-                                type="number"
                                 value={credit}
                                 onChange={(e) => setCredit(Number(e.target.value))}
                             />
@@ -464,9 +464,8 @@ export default function ModifyPurchaseInvoice() {
                                 </TableCell>
 
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.qtyReceived}
                                         onChange={(e) =>
                                             updateItemRow(row.id, "qtyReceived", Number(e.target.value))
@@ -475,9 +474,8 @@ export default function ModifyPurchaseInvoice() {
                                 </TableCell>
 
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.qtyInvoiced}
                                         onChange={(e) =>
                                             updateItemRow(row.id, "qtyInvoiced", Number(e.target.value))
@@ -486,9 +484,8 @@ export default function ModifyPurchaseInvoice() {
                                 </TableCell>
 
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.qtyYet}
                                         onChange={(e) =>
                                             updateItemRow(row.id, "qtyYet", Number(e.target.value))
@@ -497,9 +494,8 @@ export default function ModifyPurchaseInvoice() {
                                 </TableCell>
 
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.price}
                                         onChange={(e) =>
                                             updateItemRow(row.id, "price", Number(e.target.value))
@@ -550,7 +546,7 @@ export default function ModifyPurchaseInvoice() {
                     <TextField select label="Quick entry" size="small" sx={{ width: "150px" }}>
                         <MenuItem value="">Select</MenuItem>
                     </TextField>
-                    <TextField label="Amount" size="small" sx={{ width: "150px" }} type="number" />
+                    <FormattedNumberField label="Amount" size="small" sx={{ width: "150px" }} />
                     <Button variant="contained">GO</Button>
                 </Stack>
             </Box>
@@ -628,9 +624,8 @@ export default function ModifyPurchaseInvoice() {
                                 </TableCell>
 
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.amount}
                                         onChange={(e) =>
                                             updateGLRow(row.id, "amount", Number(e.target.value))

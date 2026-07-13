@@ -29,6 +29,7 @@ import { getCompanies } from "../../../../api/CompanySetup/CompanySetupApi";
 import useCurrentUser from "../../../../hooks/useCurrentUser";
 import PageTitle from "../../../../components/PageTitle";
 import Breadcrumb from "../../../../components/BreadCrumb";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function UpdateWorkOrderEntry() {
   const navigate = useNavigate();
@@ -380,7 +381,7 @@ export default function UpdateWorkOrderEntry() {
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField label="Quantity Required" fullWidth size="small" type="number" inputProps={{ min: 0 }} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+            <FormattedNumberField label="Quantity Required" fullWidth size="small" inputProps={{ min: 0 }} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </Grid>
 
           {Number(woRecord?.released ?? woRecord?.released_flag ?? 0) === 1 && (

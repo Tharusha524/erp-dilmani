@@ -54,6 +54,7 @@ import { resolveSupplierTransactionCurrencyCode } from "../../../../utils/relati
 import { resolvePurchaseItemPrice } from "../../../../utils/resolvePurchaseItemPrice";
 import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function UpdatePurchaseOrderEntry() {
   const navigate = useNavigate();
@@ -606,7 +607,7 @@ export default function UpdatePurchaseOrderEntry() {
 
                 {/* Quantity */}
                 <TableCell>
-                  <TextField size="small" type="number" value={row.quantity} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
+                  <FormattedNumberField size="small" value={row.quantity} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
                 </TableCell>
 
                 {/* Unit */}

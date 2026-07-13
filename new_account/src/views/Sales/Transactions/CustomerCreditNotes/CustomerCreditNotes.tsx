@@ -52,6 +52,7 @@ import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
 import CustomerCurrencyField from "../../../../components/CustomerCurrencyField";
 import CurrencyAmountInput from "../../../../components/CurrencyAmountInput";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 interface ChartMaster {
     account_code: string;
@@ -711,9 +712,8 @@ export default function CustomerCreditNotes() {
                                     </TextField>
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.quantity}
                                         onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))}
                                     />
@@ -729,7 +729,7 @@ export default function CustomerCreditNotes() {
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <TextField size="small" type="number" value={row.discount} InputProps={{ readOnly: true }} />
+                                    <FormattedNumberField size="small" value={row.discount} InputProps={{ readOnly: true }} />
                                 </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
                                 <TableCell>
@@ -775,9 +775,8 @@ export default function CustomerCreditNotes() {
                                 Shipping
                             </TableCell>
                             <TableCell sx={{ fontWeight: 600 }}>
-                                <TextField
+                                <FormattedNumberField
                                     size="small"
-                                    type="number"
                                     value={shipping}
                                     onChange={(e) => setShipping(Number(e.target.value) || 0)}
                                     sx={{ width: 100 }}

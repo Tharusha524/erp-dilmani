@@ -36,6 +36,7 @@ import {
   autoAllocateCustomerRows,
   AllocationRowState,
 } from "../../../../utils/customerAllocation";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 type RowState = AllocationRowState;
 
@@ -378,9 +379,8 @@ export default function ViewCustomerAllocations() {
                   <TableCell align="right">{formatMoney(r.other_allocations)}</TableCell>
                   <TableCell align="right">{formatMoney(r.left_to_allocate)}</TableCell>
                   <TableCell>
-                    <TextField
+                    <FormattedNumberField
                       size="small"
-                      type="number"
                       value={r.this_allocation || ""}
                       onChange={(e) => setAlloc(idx, Number(e.target.value) || 0)}
                       inputProps={{ min: 0, step: 0.01 }}

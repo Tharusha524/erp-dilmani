@@ -50,6 +50,7 @@ import PageTitle from "../../../../components/PageTitle";
 import PageLoader from "../../../../components/PageLoader";
 import BankPayerModeBar from "../../../../components/BankPayerModeBar";
 import theme from "../../../../theme";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function Payments() {
   const navigate = useNavigate();
@@ -599,7 +600,7 @@ export default function Payments() {
                   <TextField size="small" value={row.costCenter} onChange={(e) => handleChange(row.id, "costCenter", e.target.value)} />
                 </TableCell>
                 <TableCell>
-                  <TextField size="small" type="number" value={row.amount} onChange={(e) => handleChange(row.id, "amount", e.target.value)} />
+                  <FormattedNumberField size="small" value={row.amount} onChange={(e) => handleChange(row.id, "amount", e.target.value)} />
                 </TableCell>
                 <TableCell>
                   <TextField size="small" value={row.memo} onChange={(e) => handleChange(row.id, "memo", e.target.value)} />

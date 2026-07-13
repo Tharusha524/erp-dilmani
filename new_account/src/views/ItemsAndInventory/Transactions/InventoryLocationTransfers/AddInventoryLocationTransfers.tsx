@@ -39,6 +39,7 @@ import theme from "../../../../theme";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
 import ErrorModal from "../../../../components/ErrorModal";
 import ItemSearchSelect, { type ItemSearchOption } from "../../../../components/ItemSearchSelect";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function AddInventoryLocationTransfers() {
   const navigate = useNavigate();
@@ -519,9 +520,8 @@ export default function AddInventoryLocationTransfers() {
                   />
                 </TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.quantity}
                     onChange={(e) =>
                       handleChange(row.id, "quantity", Number(e.target.value))

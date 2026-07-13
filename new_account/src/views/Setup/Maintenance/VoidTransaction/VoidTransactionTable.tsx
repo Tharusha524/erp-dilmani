@@ -35,6 +35,7 @@ import {
   getVoidTransactionOptions,
   type VoidTransactionOption,
 } from "../../../../api/VoidTransaction/VoidTransactionApi";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 function formatDate(value?: string): string {
   if (!value) return "—";
@@ -173,10 +174,9 @@ export default function VoidTransactionTable() {
           </Select>
         </FormControl>
 
-        <TextField
+        <FormattedNumberField
           label="From #"
           size="small"
-          type="number"
           value={fromRef}
           onChange={(e) => {
             setFromRef(e.target.value);
@@ -185,10 +185,9 @@ export default function VoidTransactionTable() {
           sx={{ width: 120 }}
         />
 
-        <TextField
+        <FormattedNumberField
           label="To #"
           size="small"
-          type="number"
           value={toRef}
           onChange={(e) => {
             setToRef(e.target.value);

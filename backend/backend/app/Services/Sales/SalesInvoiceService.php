@@ -35,7 +35,8 @@ class SalesInvoiceService
         private SalesTaxCalculator $taxCalculator,
         private PostingsService $postings,
         private SalesDeliveryService $deliveryService,
-    ) {}
+    ) {
+    }
 
     /**
      * FrontAccounting customer_invoice.php → write_sales_invoice() from delivery.
@@ -66,7 +67,7 @@ class SalesInvoiceService
                 ->where('trans_no', $deliveryNo)
                 ->first();
 
-            if (! $delivery) {
+            if (!$delivery) {
                 throw new InvalidArgumentException("Delivery note #{$deliveryNo} not found.");
             }
 
@@ -99,7 +100,7 @@ class SalesInvoiceService
                 }
 
                 $detail = $deliveryDetails->get($detailId);
-                if (! $detail) {
+                if (!$detail) {
                     throw new InvalidArgumentException("Delivery line {$detailId} not found.");
                 }
 
@@ -203,7 +204,7 @@ class SalesInvoiceService
                 DB::table('debtor_trans_details')
                     ->where('id', $detail->id)
                     ->update([
-                        'qty_done' => DB::raw('qty_done + '.(float) $qty),
+                        'qty_done' => DB::raw('qty_done + ' . (float) $qty),
                         'updated_at' => now(),
                     ]);
             }
@@ -214,7 +215,7 @@ class SalesInvoiceService
             $this->bumpSalesOrderVersion((int) ($delivery->order_no ?? 0));
 
             $glWarning = null;
-            $run = GlPostingRunner::run(fn () => $this->postings->repostDebtorTrans($debtorTrans->fresh()));
+            $run = GlPostingRunner::run(fn() => $this->postings->repostDebtorTrans($debtorTrans->fresh()));
             $glWarning = $run['gl_warning'];
 
             $result = [
@@ -273,13 +274,13 @@ class SalesInvoiceService
             }
 
             $branch = DB::table('cust_branch')->where('branch_code', $branchCode)->first();
-            if (! $branch) {
+            if (!$branch) {
                 throw new InvalidArgumentException('Customer branch not found.');
             }
 
             $orderType = (int) ($payload['order_type'] ?? 0);
             $salesType = DB::table('sales_types')->where('id', $orderType)->first();
-            if (! $salesType) {
+            if (!$salesType) {
                 throw new InvalidArgumentException('Invalid or missing price list (sales type). Please select a valid price list.');
             }
             $taxIncluded = (bool) ($salesType->taxIncl ?? $salesType->tax_incl ?? true);
@@ -318,7 +319,7 @@ class SalesInvoiceService
             );
 
             $isCashSale = (bool) ($payload['cash_sale'] ?? false);
-            if (! $isCashSale) {
+            if (!$isCashSale) {
                 $this->customerCredit->assertCanExtendCredit($debtorNo, $documentTotal);
             }
 
@@ -333,7 +334,7 @@ class SalesInvoiceService
             $orderNo = $this->createAutoSalesOrder($payload, $calcLines, $amounts, $documentTotal);
 
             $soDetails = DB::table('sales_order_details')->where('order_no', $orderNo)->get();
-            $deliveryLines = $soDetails->map(fn ($detail) => [
+            $deliveryLines = $soDetails->map(fn($detail) => [
                 'sales_order_detail_id' => (int) $detail->id,
                 'quantity' => (float) $detail->quantity,
             ])->all();
@@ -358,7 +359,7 @@ class SalesInvoiceService
                 ->where('debtor_trans_no', $deliveryNo)
                 ->get();
 
-            $invoiceLines = $deliveryDetails->map(fn ($detail) => [
+            $invoiceLines = $deliveryDetails->map(fn($detail) => [
                 'delivery_detail_id' => (int) $detail->id,
                 'quantity' => (float) $detail->quantity,
             ])->all();
@@ -416,7 +417,7 @@ class SalesInvoiceService
                 ->where('trans_no', $transNo)
                 ->first();
 
-            if (! $header) {
+            if (!$header) {
                 throw new InvalidArgumentException('Sales invoice not found.');
             }
 
@@ -431,7 +432,7 @@ class SalesInvoiceService
                         ->where('id', $detail->src_id)
                         ->where('debtor_trans_type', self::TYPE_DELIVERY)
                         ->update([
-                            'qty_done' => DB::raw('GREATEST(0, qty_done - '.(float) $detail->quantity.')'),
+                            'qty_done' => DB::raw('GREATEST(0, qty_done - ' . (float) $detail->quantity . ')'),
                             'updated_at' => now(),
                         ]);
                 }
@@ -490,7 +491,7 @@ class SalesInvoiceService
         $orderNo = max(1, (int) DB::table('sales_orders')->lockForUpdate()->max('order_no') + 1);
 
         $orderType = (int) ($payload['order_type'] ?? 0);
-        if ($orderType <= 0 || ! DB::table('sales_types')->where('id', $orderType)->exists()) {
+        if ($orderType <= 0 || !DB::table('sales_types')->where('id', $orderType)->exists()) {
             throw new InvalidArgumentException('Invalid or missing price list (sales type). Please select a valid price list.');
         }
 
@@ -553,7 +554,7 @@ class SalesInvoiceService
 
         $paymentNo = DebtorTransSequence::nextTransNo(self::TYPE_PAYMENT);
         $refData = $this->references->next(self::TYPE_PAYMENT, $tranDate);
-        $paymentRef = (string) ($refData['reference'] ?? 'PAY-'.$paymentNo);
+        $paymentRef = (string) ($refData['reference'] ?? 'PAY-' . $paymentNo);
 
         DebtorTrans::query()->create([
             'trans_no' => $paymentNo,
@@ -603,7 +604,7 @@ class SalesInvoiceService
                 'trans_date' => $tranDate,
                 'amount' => $amount,
             ];
-            GlPostingRunner::run(fn () => $this->postings->repostBankPayment($bankRow));
+            GlPostingRunner::run(fn() => $this->postings->repostBankPayment($bankRow));
         }
 
         if (Schema::hasTable('cust_allocations')) {
@@ -628,7 +629,7 @@ class SalesInvoiceService
      */
     private function persistTaxDetails(int $transNo, string $tranDate, string $reference, array $amounts): void
     {
-        if (! Schema::hasTable('trans_tax_details')) {
+        if (!Schema::hasTable('trans_tax_details')) {
             return;
         }
 
@@ -656,7 +657,7 @@ class SalesInvoiceService
 
     private function addComment(int $type, int $transNo, string $date, string $memo): void
     {
-        if ($memo === '' || ! Schema::hasTable('comments')) {
+        if ($memo === '' || !Schema::hasTable('comments')) {
             return;
         }
 
@@ -672,7 +673,7 @@ class SalesInvoiceService
 
     private function addAuditTrail(int $type, int $transNo, string $glDate, string $description): void
     {
-        if (! Schema::hasTable('audit_trail')) {
+        if (!Schema::hasTable('audit_trail')) {
             return;
         }
 
@@ -691,7 +692,7 @@ class SalesInvoiceService
 
     private function bumpSalesOrderVersion(int $orderNo): void
     {
-        if ($orderNo <= 0 || ! Schema::hasTable('sales_orders') || ! Schema::hasColumn('sales_orders', 'version')) {
+        if ($orderNo <= 0 || !Schema::hasTable('sales_orders') || !Schema::hasColumn('sales_orders', 'version')) {
             return;
         }
 
@@ -704,7 +705,7 @@ class SalesInvoiceService
     public function directInvoiceFromTemplate(int $templateOrderNo, array $overrides = []): array
     {
         $template = DB::table('sales_orders')->where('order_no', $templateOrderNo)->first();
-        if (! $template || (int) ($template->type ?? 0) !== 1) {
+        if (!$template || (int) ($template->type ?? 0) !== 1) {
             throw new InvalidArgumentException('Template sales order not found.');
         }
 
@@ -719,7 +720,7 @@ class SalesInvoiceService
             $fromStkLoc = trim((string) ($branch->inventory_location ?? ''));
         }
 
-        $lines = $details->map(fn ($d) => [
+        $lines = $details->map(fn($d) => [
             'stock_id' => (string) $d->stk_code,
             'quantity' => (float) $d->quantity,
             'unit_price' => (float) $d->unit_price,
@@ -749,7 +750,7 @@ class SalesInvoiceService
     {
         $order = DB::table('sales_orders')->where('order_no', $orderNo)->first();
         $prepRequired = SalesOrderPrepAmount::resolve($order ?? []);
-        if (! $order || $prepRequired <= 0) {
+        if (!$order || $prepRequired <= 0) {
             throw new InvalidArgumentException('Prepaid sales order not found.');
         }
 
@@ -766,7 +767,7 @@ class SalesInvoiceService
         }
 
         $details = DB::table('sales_order_details')->where('order_no', $orderNo)->get();
-        $lines = $details->map(fn ($d) => [
+        $lines = $details->map(fn($d) => [
             'stock_id' => (string) $d->stk_code,
             'quantity' => (float) $d->quantity,
             'unit_price' => (float) $d->unit_price,

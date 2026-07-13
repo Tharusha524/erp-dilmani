@@ -36,6 +36,7 @@ import { getItemCategories } from "../../../../api/ItemCategories/ItemCategories
 import { getWorkCentres } from "../../../../api/WorkCentre/WorkCentreApi";
 import { getInventoryLocations } from "../../../../api/InventoryLocation/InventoryLocationApi";
 import ItemSearchSelect, { type ItemSearchOption } from "../../../../components/ItemSearchSelect";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function IssueWorkOrder() {
   const navigate = useNavigate();
@@ -410,7 +411,7 @@ export default function IssueWorkOrder() {
                       </TableCell>
 
                       <TableCell>
-                        <TextField size="small" type="number" value={row.quantity} disabled={!row.editable} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
+                        <FormattedNumberField size="small" value={row.quantity} disabled={!row.editable} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
                       </TableCell>
 
                       <TableCell>
@@ -418,7 +419,7 @@ export default function IssueWorkOrder() {
                       </TableCell>
 
                       <TableCell>
-                        <TextField size="small" type="number" value={row.price} disabled={!row.editable} onChange={(e) => handleChange(row.id, "price", Number(e.target.value))} />
+                        <FormattedNumberField size="small" value={row.price} disabled={!row.editable} onChange={(e) => handleChange(row.id, "price", Number(e.target.value))} />
                       </TableCell>
 
                       <TableCell align="center">

@@ -37,6 +37,7 @@ import { createCustAllocation } from "../../../../api/CustAllocation/CustAllocat
 import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 interface AllocationRow {
   transactionType: string;
@@ -623,10 +624,9 @@ export default function UpdateCustomerPayments() {
 
           <Grid item xs={12} sm={4}>
             <Stack spacing={2}>
-              <TextField
+              <FormattedNumberField
                 label="Bank Charge"
                 fullWidth
-                type="number"
                 size="small"
                 value={bankCharge}
                 onChange={(e) => setBankCharge(Number(e.target.value))}
@@ -687,9 +687,8 @@ export default function UpdateCustomerPayments() {
                       <TableCell>{formatMoney(row.otherAllocations)}</TableCell>
                       <TableCell>{formatMoney(Math.max(0, (Number(row.amount || 0) - Number(row.otherAllocations || 0) - Number(row.thisAllocation || 0))))}</TableCell>
                       <TableCell>
-                        <TextField
+                        <FormattedNumberField
                           size="small"
-                          type="number"
                           value={row.thisAllocation}
                           onChange={(e) => handleAllocationChange(index, Number(e.target.value))}
                           sx={{ width: "100px" }}
@@ -729,33 +728,30 @@ export default function UpdateCustomerPayments() {
 
         <Grid container spacing={2}>
           <Grid item xs={12} sm={4}>
-            <TextField
+            <FormattedNumberField
               label="Customer Prompt Payment Discount (%)"
               fullWidth
               size="small"
-              type="number"
               value={promptDiscount}
               InputProps={{ readOnly: true }}
             />
           </Grid>
 
           <Grid item xs={12} sm={4}>
-            <TextField
+            <FormattedNumberField
               label="Amount of Discount"
               fullWidth
               size="small"
-              type="number"
               value={amountOfDiscount}
               onChange={(e) => setAmountOfDiscount(Number(e.target.value))}
             />
           </Grid>
 
           <Grid item xs={12} sm={4}>
-            <TextField
+            <FormattedNumberField
               label="Amount"
               fullWidth
               size="small"
-              type="number"
               value={amount}
               onChange={(e) => setAmount(Number(e.target.value))}
             />

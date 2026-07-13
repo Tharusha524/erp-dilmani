@@ -46,6 +46,8 @@ import theme from "../../../../theme";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
 import ErrorModal from "../../../../components/ErrorModal";
 import DeleteConfirmationModal from "../../../../components/DeleteConfirmationModal";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
+
 interface SalesKitFormData {
   selectedKit: string; // existing kit or "new"
   kitCode: string;
@@ -652,12 +654,11 @@ export default function AddSalesKitsForm() {
                   <FormHelperText>{errors.category || " "}</FormHelperText>
                 </FormControl>
 
-                <TextField
+                <FormattedNumberField
                   label="Quantity (Kits)"
                   name="quantity"
                   size="small"
                   fullWidth
-                  type="number"
                   value={formData.quantity}
                   onChange={handleInputChange}
                   error={!!errors.quantity}

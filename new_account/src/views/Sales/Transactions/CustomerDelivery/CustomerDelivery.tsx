@@ -41,6 +41,7 @@ import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
 import { useMessageDialog } from "../../../../context/MessageDialogContext";
 import { runTransactionSave } from "../../../../utils/transactionSave";
 import { getLocStocks } from "../../../../api/LocStock/LocStockApi";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function CustomerDelivery() {
   const navigate = useNavigate();
@@ -601,9 +602,8 @@ export default function CustomerDelivery() {
                 <TableCell>{row.units}</TableCell>
                 <TableCell>{row.availableQty ?? 0}</TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.deliveryQty}
                     onChange={(e) => {
                       const maxOrder = Math.max(0, (row.ordered ?? 0) - (row.delivered ?? 0));
@@ -642,9 +642,8 @@ export default function CustomerDelivery() {
             <TableRow>
               <TableCell colSpan={10}>Shipping Cost</TableCell>
               <TableCell>
-                <TextField
+                <FormattedNumberField
                   size="small"
-                  type="number"
                   value={shippingCost}
                   onChange={(e) => setShippingCost(Number(e.target.value))}
                 />

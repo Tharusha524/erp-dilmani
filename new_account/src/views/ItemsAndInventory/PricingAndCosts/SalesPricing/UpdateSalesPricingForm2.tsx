@@ -22,6 +22,8 @@ import { getSalesTypes } from "../../../../api/SalesMaintenance/salesService";
 import { getSalesPricingById, updateSalesPricing, getSalesPricingByStockId } from "../../../../api/SalesPricing/SalesPricingApi";
 import UpdateConfirmationModal from "../../../../components/UpdateConfirmationModal"
 import ErrorModal from "../../../../components/ErrorModal";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
+
 interface SalesPricingFormData {
   currency_id: number | "";
   sales_type_id: number | "";
@@ -183,12 +185,11 @@ export default function UpdateSalesPricingForm2() {
             <FormHelperText>{errors.sales_type_id}</FormHelperText>
           </FormControl>
 
-          <TextField
+          <FormattedNumberField
             label="Price (per each)"
             name="price"
             size="small"
             fullWidth
-            type="number"
             value={formData.price}
             onChange={handleInputChange}
             error={!!errors.price}

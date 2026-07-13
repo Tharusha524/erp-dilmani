@@ -50,6 +50,7 @@ import { resolvePurchaseItemPrice } from "../../../../utils/resolvePurchaseItemP
 import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
 import { invalidateFinancialReports } from "../../../../utils/invalidateFinancialReports";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function DirectGRN() {
   const navigate = useNavigate();
@@ -642,7 +643,7 @@ export default function DirectGRN() {
 
                 {/* Quantity */}
                 <TableCell>
-                  <TextField size="small" type="number" value={row.quantity} disabled={!row.isEditing} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
+                  <FormattedNumberField size="small" value={row.quantity} disabled={!row.isEditing} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
                 </TableCell>
 
                 {/* Unit */}

@@ -33,6 +33,8 @@ import {
   depreciationMethodTypeCode,
   straightLineAnnualDepreciation,
 } from "../../../../../utils/faDepreciation";
+import FormattedNumberField from "../../../../../components/FormattedNumberField";
+
 interface ItemGeneralSettingProps {
   itemId?: string | number;
 }
@@ -517,30 +519,27 @@ export default function FixedAssetsGeneralSettingsForm({ itemId }: ItemGeneralSe
 
               {isStraightLineMethod(formData.depreciationMethod) ? (
                 <>
-                  <TextField
+                  <FormattedNumberField
                     label="Estimated Cost"
                     value={formData.estimatedCost}
                     onChange={(e) => handleChange("estimatedCost", e.target.value)}
                     size="small"
                     fullWidth
-                    type="number"
                     helperText="Updated from purchase if asset is bought later"
                   />
-                  <TextField
+                  <FormattedNumberField
                     label="Salvage Value"
                     value={formData.salvageValue}
                     onChange={(e) => handleChange("salvageValue", e.target.value)}
                     size="small"
                     fullWidth
-                    type="number"
                   />
-                  <TextField
+                  <FormattedNumberField
                     label="Useful Life (Years)"
                     value={formData.usefulLifeYears}
                     onChange={(e) => handleChange("usefulLifeYears", e.target.value)}
                     size="small"
                     fullWidth
-                    type="number"
                     error={!!errors.usefulLifeYears}
                     helperText={
                       errors.usefulLifeYears ||
@@ -557,25 +556,23 @@ export default function FixedAssetsGeneralSettingsForm({ itemId }: ItemGeneralSe
                   />
                 </>
               ) : (
-              <TextField
+              <FormattedNumberField
                 label={(isOtherMethod(formData.depreciationMethod) || isStraightLineMethod(formData.depreciationMethod)) ? "Depreciation Rate (%)" : "Base Rate (%)"}
                 value={formData.baseRate}
                 onChange={(e) => handleChange("baseRate", e.target.value)}
                 size="small"
                 fullWidth
-                type="number"
                 disabled={isOtherMethod(formData.depreciationMethod)}
               />
               )}
 
               {!(isStraightLineMethod(formData.depreciationMethod) || isOtherMethod(formData.depreciationMethod)) && (
-                <TextField
+                <FormattedNumberField
                   label="Rate Multiplier"
                   value={formData.rateMultiplier}
                   onChange={(e) => handleChange("rateMultiplier", e.target.value)}
                   size="small"
                   fullWidth
-                  type="number"
                 />
               )}
 

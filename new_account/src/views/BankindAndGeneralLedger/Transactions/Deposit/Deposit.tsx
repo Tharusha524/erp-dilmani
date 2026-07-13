@@ -41,6 +41,7 @@ import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
 import BankPayerModeBar from "../../../../components/BankPayerModeBar";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function Deposits() {
   const navigate = useNavigate();
@@ -494,7 +495,7 @@ export default function Deposits() {
                   <TextField size="small" value={row.costCenter} onChange={(e) => handleChange(row.id, "costCenter", e.target.value)} />
                 </TableCell>
                 <TableCell>
-                  <TextField size="small" type="number" value={row.amount} onChange={(e) => handleChange(row.id, "amount", e.target.value)} />
+                  <FormattedNumberField size="small" value={row.amount} onChange={(e) => handleChange(row.id, "amount", e.target.value)} />
                 </TableCell>
                 <TableCell>
                   <TextField size="small" value={row.memo} onChange={(e) => handleChange(row.id, "memo", e.target.value)} />

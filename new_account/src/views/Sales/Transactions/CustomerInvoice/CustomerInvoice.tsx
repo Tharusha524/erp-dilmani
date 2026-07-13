@@ -41,6 +41,7 @@ import {
 } from "../../../../utils/customerCredit";
 import { useCustomerCredit } from "../../../../hooks/useCustomerCredit";
 import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSummaryFields";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function CustomerInvoice() {
   const navigate = useNavigate();
@@ -520,9 +521,8 @@ export default function CustomerInvoice() {
                 <TableCell>{row.units}</TableCell>
                 <TableCell>{row.invoiced}</TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.thisInvoice}
                     onChange={(e) => {
                       const value = Number(e.target.value);
@@ -546,9 +546,8 @@ export default function CustomerInvoice() {
             <TableRow>
               <TableCell colSpan={10}>Shipping Cost</TableCell>
               <TableCell>
-                <TextField
+                <FormattedNumberField
                   size="small"
-                  type="number"
                   value={shippingCost}
                   onChange={(e) => setShippingCost(Number(e.target.value))}
                 />

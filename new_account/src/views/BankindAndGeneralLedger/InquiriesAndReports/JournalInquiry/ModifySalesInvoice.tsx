@@ -23,6 +23,7 @@ import PageTitle from "../../../../components/PageTitle";
 import Breadcrumb from "../../../../components/BreadCrumb";
 import { getPaymentTerms } from "../../../../api/PaymentTerm/PaymentTermApi";
 import { getShippingCompanies } from "../../../../api/ShippingCompany/ShippingCompanyApi";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function ModifySalesInvoice() {
   const navigate = useNavigate();
@@ -229,9 +230,8 @@ export default function ModifySalesInvoice() {
                 <TableCell>{row.units}</TableCell>
                 <TableCell>{row.credited}</TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.thisInvoice}
                     onChange={(e) => {
                       const value = Number(e.target.value);
@@ -255,9 +255,8 @@ export default function ModifySalesInvoice() {
             <TableRow>
               <TableCell colSpan={10}>Shipping Cost</TableCell>
               <TableCell>
-                <TextField
+                <FormattedNumberField
                   size="small"
-                  type="number"
                   value={shippingCost}
                   onChange={(e) => setShippingCost(Number(e.target.value))}
                 />

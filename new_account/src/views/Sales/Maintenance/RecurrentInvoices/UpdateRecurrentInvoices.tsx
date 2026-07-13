@@ -25,6 +25,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import UpdateConfirmationModal from "../../../../components/UpdateConfirmationModal"
 import ErrorModal from "../../../../components/ErrorModal";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 interface RecurrentInvoiceData {
   description: string;
@@ -264,10 +265,9 @@ export default function UpdateRecurrentInvoices() {
               <FormHelperText>{errors.salesGroup || " "}</FormHelperText>
             </FormControl>
 
-            <TextField
+            <FormattedNumberField
               label="Days"
               name="days"
-              type="number"
               size="small"
               fullWidth
               value={formData.days}
@@ -276,10 +276,9 @@ export default function UpdateRecurrentInvoices() {
               helperText={errors.days || " "}
             />
 
-            <TextField
+            <FormattedNumberField
               label="Monthly"
               name="monthly"
-              type="number"
               size="small"
               fullWidth
               value={formData.monthly}

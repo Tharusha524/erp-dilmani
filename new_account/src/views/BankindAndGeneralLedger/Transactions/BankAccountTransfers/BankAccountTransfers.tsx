@@ -23,6 +23,7 @@ import { postBankingTransfer } from "../../../../api/Banking/BankingTransactionA
 import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function BankAccountTransfers() {
   const navigate = useNavigate();
@@ -293,11 +294,10 @@ export default function BankAccountTransfers() {
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
+            <FormattedNumberField
               label="Amount"
               fullWidth
               size="small"
-              type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               InputProps={{
@@ -321,11 +321,10 @@ export default function BankAccountTransfers() {
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <TextField
+            <FormattedNumberField
               label="Bank Charge"
               fullWidth
               size="small"
-              type="number"
               value={bankCharge}
               onChange={(e) => setBankCharge(e.target.value)}
               InputProps={{
@@ -357,11 +356,10 @@ export default function BankAccountTransfers() {
 
           {fromCurrency && toCurrency && fromCurrency !== toCurrency && (
             <Grid item xs={12} sm={6}>
-              <TextField
+              <FormattedNumberField
                 label="Incoming Amount"
                 fullWidth
                 size="small"
-                type="number"
                 value={incomingAmount}
                 onChange={(e) => setIncomingAmount(e.target.value)}
                 InputProps={{

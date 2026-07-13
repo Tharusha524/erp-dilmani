@@ -40,6 +40,8 @@ import { getStockMoves } from "../../../../api/StockMoves/StockMovesApi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import UpdateConfirmationModal from "../../../../components/UpdateConfirmationModal"
 import ErrorModal from "../../../../components/ErrorModal";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
+
 interface ItemReOderlevelProps {
   itemId?: string | number;
 }
@@ -361,9 +363,8 @@ export default function ReOrderLevelsTable({ itemId }: ItemReOderlevelProps) {
                       <TableCell>{location.location_name}</TableCell>
                       <TableCell>{quantityOnHandMap[location.loc_code] || 0}</TableCell>
                       <TableCell>
-                        <TextField
+                        <FormattedNumberField
                           size="small"
-                          type="number"
                           value={reorderLevels[location.loc_code] || ""}
                           onChange={(e) => handleReorderLevelChange(location.loc_code, e.target.value)}
                           placeholder="Enter reorder level"

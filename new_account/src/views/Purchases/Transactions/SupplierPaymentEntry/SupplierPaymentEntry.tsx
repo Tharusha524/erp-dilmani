@@ -51,6 +51,7 @@ import SupplierCurrencyField from "../../../../components/SupplierCurrencyField"
 import { resolveSupplierTransactionCurrencyCode } from "../../../../utils/relationId";
 import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function SupplierPaymentEntry() {
   const navigate = useNavigate();
@@ -663,10 +664,9 @@ export default function SupplierPaymentEntry() {
           {/* Column 3: Bank Charge, CostCenter */}
           <Grid item xs={12} md={4}>
             <Stack spacing={2}>
-              <TextField
+              <FormattedNumberField
                 label="Bank Charge"
                 size="small"
-                type="number"
                 value={bankCharge}
                 onChange={(e) => setBankCharge(Number(e.target.value))}
               />
@@ -747,9 +747,8 @@ export default function SupplierPaymentEntry() {
 
                 {/* Allocation Input */}
                 <TableCell sx={{ width: '120px' }}>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.allocation}
                     onChange={(e) =>
                       handleRowChange(row.id, "allocation", Number(e.target.value))

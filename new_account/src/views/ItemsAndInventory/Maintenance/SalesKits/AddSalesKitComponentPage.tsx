@@ -25,6 +25,7 @@ import {
 import theme from "../../../../theme";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
 import ErrorModal from "../../../../components/ErrorModal";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function AddSalesKitComponentPage() {
   const location = useLocation();
@@ -163,7 +164,7 @@ export default function AddSalesKitComponentPage() {
             <FormHelperText>{errors.stock_id || " "}</FormHelperText>
           </FormControl>
 
-          <TextField label="Quantity" name="quantity" size="small" fullWidth type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} error={!!errors.quantity} helperText={errors.quantity || " "} />
+          <FormattedNumberField label="Quantity" name="quantity" size="small" fullWidth value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} error={!!errors.quantity} helperText={errors.quantity || " "} />
 
           <Box sx={{ display: 'flex', mt: 2, flexDirection: isMobile ? 'column' : 'row', alignItems: 'center' }}>
             {/* Cancel on the left - keep selected kit on return */}

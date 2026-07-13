@@ -15,6 +15,7 @@ import { createSalesPerson } from "../../../../api/SalesPerson/SalesPersonApi";
 import { useNavigate } from "react-router";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
 import ErrorModal from "../../../../components/ErrorModal";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 interface SalesPersonFormData {
   name: string;
@@ -173,10 +174,9 @@ export default function AddSalesPerson() {
             helperText={errors.email}
           />
 
-          <TextField
+          <FormattedNumberField
             label="Provision (%)"
             name="provision"
-            type="number"
             size="small"
             fullWidth
             value={formData.provision}
@@ -196,10 +196,9 @@ export default function AddSalesPerson() {
             helperText={errors.turnover_break_point}
           />
 
-          <TextField
+          <FormattedNumberField
             label="Provision 2 (%)"
             name="provision2"
-            type="number"
             size="small"
             fullWidth
             value={formData.provision2}

@@ -21,6 +21,7 @@ import { createTaxType } from "../../../../api/Tax/taxServices";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
 import ErrorModal from "../../../../components/ErrorModal";
 import { getChartMasters } from "../../../../api/GLAccounts/ChartMasterApi";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 interface TaxFormData {
   description: string;
@@ -148,11 +149,10 @@ export default function AddTaxTypes() {
             helperText={errors.description}
           />
 
-          <TextField
+          <FormattedNumberField
             label="Default Rate (%)"
             name="defaultRate"
             size="small"
-            type="number"
             fullWidth
             value={formData.defaultRate}
             onChange={handleChange}

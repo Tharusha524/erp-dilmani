@@ -61,6 +61,7 @@ import { customerCurrencyCode } from "../../../../utils/relationId";
 import { resolveSalesItemLinePrices } from "../../../../utils/resolveSalesItemPrice";
 import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function SalesOrderEntryQuotation() {
     const navigate = useNavigate();
@@ -815,9 +816,8 @@ export default function SalesOrderEntryQuotation() {
                                     </TextField>
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.quantity}
                                         onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))}
                                     />
@@ -833,9 +833,8 @@ export default function SalesOrderEntryQuotation() {
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.discount}
                                         InputProps={{ readOnly: true }}
                                     />
@@ -888,9 +887,8 @@ export default function SalesOrderEntryQuotation() {
                         <TableRow>
                             <TableCell colSpan={7}>Shipping Charge</TableCell>
                             <TableCell>
-                                <TextField
+                                <FormattedNumberField
                                     size="small"
-                                    type="number"
                                     value={shippingCharge}
                                     onChange={(e) => setShippingCharge(Number(e.target.value))}
                                 />

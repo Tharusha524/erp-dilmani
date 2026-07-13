@@ -22,6 +22,8 @@ import { useParams } from "react-router";
 import UpdateConfirmationModal from "../../../../components/UpdateConfirmationModal"
 import ErrorModal from "../../../../components/ErrorModal";
 import { getChartMasters } from "../../../../api/GLAccounts/ChartMasterApi";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
+
 interface TaxFormData {
   description: string;
   defaultRate: string;
@@ -163,11 +165,10 @@ export default function UpdateTaxTypes() {
             helperText={errors.description}
           />
 
-          <TextField
+          <FormattedNumberField
             label="Default Rate (%)"
             name="defaultRate"
             size="small"
-            type="number"
             fullWidth
             value={formData.defaultRate}
             onChange={handleChange}

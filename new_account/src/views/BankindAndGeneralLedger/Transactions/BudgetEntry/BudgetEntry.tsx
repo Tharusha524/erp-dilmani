@@ -31,6 +31,7 @@ import PageTitle from "../../../../components/PageTitle";
 import CostCenterSelect from "../../../../components/CostCenterSelect";
 import { useCompanySetupSettings } from "../../../../hooks/useCompanySetupSettings";
 import theme from "../../../../theme";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function BudgetEntry() {
   const navigate = useNavigate();
@@ -336,9 +337,8 @@ export default function BudgetEntry() {
               <TableRow key={period.id} hover>
                 <TableCell>{period.period}</TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={periodAmounts[period.id] ?? period.amount ?? ""}
                     onChange={(e) => handlePeriodAmountChange(period.id, e.target.value)}
                     placeholder="0.00"

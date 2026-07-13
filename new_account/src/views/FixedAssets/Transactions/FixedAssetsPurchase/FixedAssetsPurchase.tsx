@@ -50,6 +50,7 @@ import { useSupplierCredit } from "../../../../hooks/useSupplierCredit";
 import SupplierCreditSummaryFields from "../../../../components/SupplierCreditSummaryFields";
 import ItemSearchSelect, { type ItemSearchOption } from "../../../../components/ItemSearchSelect";
 import { findFaItemByStockId } from "../../../../utils/fixedAssetsScreenCopy";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 function faLocationCode(loc: { locationCode?: string; loc_code?: string }): string {
   return String(loc.locationCode ?? loc.loc_code ?? "");
@@ -487,7 +488,7 @@ export default function FixedAssetsPurchase() {
 
                 {/* Quantity */}
                 <TableCell>
-                  <TextField size="small" type="number" value={row.quantity} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
+                  <FormattedNumberField size="small" value={row.quantity} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
                 </TableCell>
 
                 {/* Unit */}
@@ -497,7 +498,7 @@ export default function FixedAssetsPurchase() {
 
                 {/* Price Before Tax */}
                 <TableCell>
-                  <TextField size="small" type="number" value={row.price} onChange={(e) => handleChange(row.id, "price", Number(e.target.value))} />
+                  <FormattedNumberField size="small" value={row.price} onChange={(e) => handleChange(row.id, "price", Number(e.target.value))} />
                 </TableCell>
 
                 {/* Line Total */}

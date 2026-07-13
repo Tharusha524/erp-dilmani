@@ -56,8 +56,8 @@ import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
 import {
-  isCashSalePaymentTerm,
-  validateCustomerCreditForSale,
+    isCashSalePaymentTerm,
+    validateCustomerCreditForSale,
 } from "../../../../utils/customerCredit";
 import { useCustomerCredit } from "../../../../hooks/useCustomerCredit";
 import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSummaryFields";
@@ -65,14 +65,15 @@ import CustomerCurrencyField from "../../../../components/CustomerCurrencyField"
 import CurrencyAmountInput from "../../../../components/CurrencyAmountInput";
 import ItemSearchSelect from "../../../../components/ItemSearchSelect";
 import {
-  customerPaymentTermId,
-  customerSalesTypeId,
-  customerCurrencyCode,
-  relationId,
+    customerPaymentTermId,
+    customerSalesTypeId,
+    customerCurrencyCode,
+    relationId,
 } from "../../../../utils/relationId";
 import { resolveSalesItemLinePrices } from "../../../../utils/resolveSalesItemPrice";
 import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 function sanitizeEmail(value: string | null | undefined): string | null {
     if (!value || typeof value !== "string") return null;
@@ -259,24 +260,24 @@ export default function DirectInvoice() {
                 if (defaultPos.pos_account && !cashAccount) {
                     const pa = defaultPos.pos_account;
                     const paId =
-                      pa != null && typeof pa === "object" && !Array.isArray(pa)
-                        ? (pa as { id?: unknown; bank_account_id?: unknown; bank_act?: unknown; account_id?: unknown }).id ??
-                          (pa as { bank_account_id?: unknown }).bank_account_id ??
-                          (pa as { bank_act?: unknown }).bank_act ??
-                          (pa as { account_id?: unknown }).account_id ??
-                          pa
-                        : pa;
+                        pa != null && typeof pa === "object" && !Array.isArray(pa)
+                            ? (pa as { id?: unknown; bank_account_id?: unknown; bank_act?: unknown; account_id?: unknown }).id ??
+                            (pa as { bank_account_id?: unknown }).bank_account_id ??
+                            (pa as { bank_act?: unknown }).bank_act ??
+                            (pa as { account_id?: unknown }).account_id ??
+                            pa
+                            : pa;
                     if (paId != null) setCashAccount(String(paId));
                 }
                 if (defaultPos.pos_location && !deliverFrom) {
                     const pl = defaultPos.pos_location;
                     const plCode =
-                      pl != null && typeof pl === "object" && !Array.isArray(pl)
-                        ? (pl as { loc_code?: unknown; code?: unknown; id?: unknown }).loc_code ??
-                          (pl as { code?: unknown }).code ??
-                          (pl as { id?: unknown }).id ??
-                          pl
-                        : pl;
+                        pl != null && typeof pl === "object" && !Array.isArray(pl)
+                            ? (pl as { loc_code?: unknown; code?: unknown; id?: unknown }).loc_code ??
+                            (pl as { code?: unknown }).code ??
+                            (pl as { id?: unknown }).id ??
+                            pl
+                            : pl;
                     if (plCode != null) setDeliverFrom(String(plCode));
                 }
             }
@@ -879,22 +880,22 @@ export default function DirectInvoice() {
                 },
             });
         } catch (e: any) {
-              console.error("Save error", e);
-              const respData = e?.data ?? e?.response?.data;
-              console.error("Save error response data:", respData);
-              let detail = e?.statusText || e?.message || "Unknown error";
-              if (respData) {
-                  if (typeof respData === "object") {
-                      detail = respData.message
-                          + (respData.error ? `: ${respData.error}` : "")
-                          || (respData.errors ? JSON.stringify(respData.errors, null, 2) : JSON.stringify(respData, null, 2));
-                  } else {
-                      detail = String(respData);
-                  }
-              } else if (e?.status === 422) {
-                  detail = "Validation failed. Check location, price list, shipping, and customer email.";
-              }
-              alert("Failed to save: " + detail);
+            console.error("Save error", e);
+            const respData = e?.data ?? e?.response?.data;
+            console.error("Save error response data:", respData);
+            let detail = e?.statusText || e?.message || "Unknown error";
+            if (respData) {
+                if (typeof respData === "object") {
+                    detail = respData.message
+                        + (respData.error ? `: ${respData.error}` : "")
+                        || (respData.errors ? JSON.stringify(respData.errors, null, 2) : JSON.stringify(respData, null, 2));
+                } else {
+                    detail = String(respData);
+                }
+            } else if (e?.status === 422) {
+                detail = "Validation failed. Check location, price list, shipping, and customer email.";
+            }
+            alert("Failed to save: " + detail);
         } finally {
             setSubmitting(false);
         }
@@ -1176,9 +1177,8 @@ export default function DirectInvoice() {
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.quantity}
                                         onChange={(e) => {
                                             // const newValue = Number(e.target.value);
@@ -1206,9 +1206,8 @@ export default function DirectInvoice() {
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.discount}
                                         InputProps={{ readOnly: true }}
                                     />
@@ -1261,9 +1260,8 @@ export default function DirectInvoice() {
                         <TableRow>
                             <TableCell colSpan={7}>Shipping Charge</TableCell>
                             <TableCell>
-                                <TextField
+                                <FormattedNumberField
                                     size="small"
-                                    type="number"
                                     value={shippingCharge}
                                     onChange={(e) => setShippingCharge(Number(e.target.value))}
                                 />
@@ -1331,9 +1329,9 @@ export default function DirectInvoice() {
                                         size="small"
                                     >
                                         {locations.map((loc: any) => (
-                                                    <MenuItem key={loc.loc_code} value={String(loc.loc_code)}>
-                                                        {loc.location_name}
-                                                    </MenuItem>
+                                            <MenuItem key={loc.loc_code} value={String(loc.loc_code)}>
+                                                {loc.location_name}
+                                            </MenuItem>
                                         ))}
                                     </TextField>
                                     <TextField
@@ -1444,10 +1442,10 @@ export default function DirectInvoice() {
                                         cashBankAccounts.length === 0
                                             ? "No bank accounts found — add one under Banking maintenance."
                                             : selectedCashBankAccount
-                                              ? undefined
-                                              : cashAccount
-                                                ? "Selected account is not in the list."
-                                                : undefined
+                                                ? undefined
+                                                : cashAccount
+                                                    ? "Selected account is not in the list."
+                                                    : undefined
                                     }
                                 >
                                     <MenuItem value="">Select</MenuItem>

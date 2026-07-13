@@ -40,6 +40,7 @@ import theme from "../../../../theme";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
 import ErrorModal from "../../../../components/ErrorModal";
 import ItemSearchSelect, { type ItemSearchOption } from "../../../../components/ItemSearchSelect";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function AddInventoryAdjustments() {
   const navigate = useNavigate();
@@ -504,9 +505,8 @@ export default function AddInventoryAdjustments() {
                   />
                 </TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.qoh}
                     InputProps={{
                       readOnly: true,
@@ -514,9 +514,8 @@ export default function AddInventoryAdjustments() {
                   />
                 </TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.quantity}
                     onChange={(e) =>
                       handleChange(row.id, "quantity", Number(e.target.value))
@@ -536,9 +535,8 @@ export default function AddInventoryAdjustments() {
                   />
                 </TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.unitCost}
                     onChange={(e) =>
                       handleChange(row.id, "unitCost", Number(e.target.value))

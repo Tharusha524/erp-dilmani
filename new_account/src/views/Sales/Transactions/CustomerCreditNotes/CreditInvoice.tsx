@@ -47,6 +47,7 @@ import useCurrentUser from "../../../../hooks/useCurrentUser";
 import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function CreditInvoice() {
     const navigate = useNavigate();
@@ -651,17 +652,15 @@ export default function CreditInvoice() {
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.quantity}
                                         InputProps={{ readOnly: true }}
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.remainingQuantity}
                                         InputProps={{ readOnly: true }}
                                     />
@@ -670,17 +669,15 @@ export default function CreditInvoice() {
                                     <TextField size="small" value={row.unit} InputProps={{ readOnly: true }} />
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.price}
                                         InputProps={{ readOnly: true }}
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <TextField
+                                    <FormattedNumberField
                                         size="small"
-                                        type="number"
                                         value={row.creditQuantity ?? 0}
                                         disabled={row.remainingQuantity <= 0}
                                         onChange={(e) => handleChange(row.id, "creditQuantity", Number(e.target.value))}
@@ -688,7 +685,7 @@ export default function CreditInvoice() {
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <TextField size="small" type="number" value={row.discount} InputProps={{ readOnly: true }} />
+                                    <FormattedNumberField size="small" value={row.discount} InputProps={{ readOnly: true }} />
                                 </TableCell>
                                 <TableCell>{row.total.toFixed(2)}</TableCell>
                                 <TableCell />

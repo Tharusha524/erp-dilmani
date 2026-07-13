@@ -28,6 +28,7 @@ import {
   updateMailSettings,
   type MailSettings,
 } from "../../../../api/MailSettings/MailSettingsApi";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 type ProviderPreset = "gmail" | "outlook" | "custom";
 
@@ -176,9 +177,8 @@ export default function EmailSetupForm() {
               disabled={!mailEnabled}
               fullWidth
             />
-            <TextField
+            <FormattedNumberField
               label="Port"
-              type="number"
               value={mailPort}
               onChange={(e) => setMailPort(Number(e.target.value) || 587)}
               disabled={!mailEnabled}

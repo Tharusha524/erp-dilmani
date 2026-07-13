@@ -21,6 +21,8 @@ import { getSuppliers } from "../../../../../api/Supplier/SupplierApi";
 import { createPurchData, PurchData } from "../../../../../api/PurchasingPricing/PurchasingPricingApi";
 import AddedConfirmationModal from "../../../../../components/AddedConfirmationModal";
 import ErrorModal from "../../../../../components/ErrorModal";
+import FormattedNumberField from "../../../../../components/FormattedNumberField";
+
 interface Supplier {
   supplier_id: number;
   supp_name: string;
@@ -163,12 +165,11 @@ export default function AddPurchasingPricingForm({ itemId }: AddPurchasingPricin
           </FormControl>
 
           {/* Price */}
-          <TextField
+          <FormattedNumberField
             label="Price"
             name="price"
             size="small"
             fullWidth
-            type="number"
             value={formData.price}
             onChange={handleInputChange}
             error={!!errors.price}
@@ -188,12 +189,11 @@ export default function AddPurchasingPricingForm({ itemId }: AddPurchasingPricin
           />
 
           {/* Conversion Factor */}
-          <TextField
+          <FormattedNumberField
             label="Conversion Factor (to our UOM)"
             name="conversionFactor"
             size="small"
             fullWidth
-            type="number"
             value={formData.conversionFactor}
             onChange={handleInputChange}
             error={!!errors.conversionFactor}

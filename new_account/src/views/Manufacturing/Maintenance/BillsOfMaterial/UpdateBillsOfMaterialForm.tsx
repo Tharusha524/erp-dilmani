@@ -25,6 +25,8 @@ import {
 import theme from "../../../../theme";
 import ErrorModal from "../../../../components/ErrorModal";
 import UpdateConfirmationModal from "../../../../components/UpdateConfirmationModal"
+import FormattedNumberField from "../../../../components/FormattedNumberField";
+
 interface BillsOfMaterialFormData {
   componentCode: string;
   componentName: string;
@@ -289,12 +291,11 @@ export default function UpdateBillsOfMaterialForm() {
             <FormHelperText>{errors.workCentre || " "}</FormHelperText>
           </FormControl>
 
-          <TextField
+          <FormattedNumberField
             label="Quantity"
             name="quantity"
             size="small"
             fullWidth
-            type="number"
             value={formData.quantity}
             onChange={handleInputChange}
             error={!!errors.quantity}

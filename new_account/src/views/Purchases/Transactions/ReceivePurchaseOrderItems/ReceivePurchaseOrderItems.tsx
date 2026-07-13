@@ -37,6 +37,7 @@ import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearR
 import { getFriendlyApiErrorMessage } from "../../../../utils/apiErrorMessage";
 import { invalidateFinancialReports } from "../../../../utils/invalidateFinancialReports";
 import { runTransactionSave } from "../../../../utils/transactionSave";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 function resolveLocCode(locations: any[], selected: string | number | null | undefined): string {
   if (selected === null || selected === undefined || selected === "") return "";
@@ -679,9 +680,8 @@ export default function ReceivePurchaseOrderItems() {
 
                 {/* Editable Quantity */}
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.thisDelivery}
                     onChange={(e) => {
                       const value = Number(e.target.value);

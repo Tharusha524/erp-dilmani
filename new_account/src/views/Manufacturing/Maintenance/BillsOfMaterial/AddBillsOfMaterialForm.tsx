@@ -41,6 +41,8 @@ import {
   itemMbFlagLabel,
   manufacturedWithoutBom,
 } from "../../../../utils/bomComponentItem";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
+
 interface BillsOfMaterialFormData {
   componentCode: string;
   componentName: string;
@@ -405,12 +407,11 @@ export default function AddBillsOfMaterialForm() {
             <FormHelperText>{errors.workCentre || " "}</FormHelperText>
           </FormControl>
 
-          <TextField
+          <FormattedNumberField
             label="Quantity"
             name="quantity"
             size="small"
             fullWidth
-            type="number"
             value={formData.quantity}
             onChange={handleInputChange}
             error={!!errors.quantity}

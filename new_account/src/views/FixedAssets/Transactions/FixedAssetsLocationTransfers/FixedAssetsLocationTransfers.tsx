@@ -38,6 +38,7 @@ import PageTitle from "../../../../components/PageTitle";
 import ItemSearchSelect, { type ItemSearchOption } from "../../../../components/ItemSearchSelect";
 import { findFaItemByStockId } from "../../../../utils/fixedAssetsScreenCopy";
 import theme from "../../../../theme";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 function faLocationCode(loc: { locationCode?: string; loc_code?: string }): string {
   return String(loc.locationCode ?? loc.loc_code ?? "").toUpperCase();
@@ -597,9 +598,8 @@ export default function FixedAssetsLocationTransfers() {
                   />
                 </TableCell>
                 <TableCell>
-                  <TextField
+                  <FormattedNumberField
                     size="small"
-                    type="number"
                     value={row.quantity}
                     onChange={(e) =>
                       handleChange(row.id, "quantity", Number(e.target.value))

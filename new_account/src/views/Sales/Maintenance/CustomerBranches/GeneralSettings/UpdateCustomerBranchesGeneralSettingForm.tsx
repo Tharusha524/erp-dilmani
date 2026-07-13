@@ -148,20 +148,10 @@ export default function UpdateCustomerBranchesGeneralSettingForm() {
 
     if (!formData.branchName.trim()) tempErrors.branchName = "Branch Name is required";
     if (!formData.branchShortName.trim()) tempErrors.branchShortName = "Branch Short Name is required";
-    if (!formData.salesPerson.trim()) tempErrors.salesPerson = "Sales Person is required";
-    if (!formData.salesArea.trim()) tempErrors.salesArea = "Sales Area is required";
-    if (!formData.salesGroup.trim()) tempErrors.salesGroup = "Sales Group is required";
-    if (!formData.defaultInventoryLocation.trim()) tempErrors.defaultInventoryLocation = "Default Inventory Location is required";
-    if (!formData.defaultShippingCompany.trim()) tempErrors.defaultShippingCompany = "Default Shipping Company is required";
-    if (!formData.taxGroup.trim()) tempErrors.taxGroup = "Tax Group is required";
     if (!formData.salesAccount.trim()) tempErrors.salesAccount = "Sales Account is required";
     if (!formData.salesDiscountAccount.trim()) tempErrors.salesDiscountAccount = "Sales Discount Account is required";
     if (!formData.accountsReceivable.trim()) tempErrors.accountsReceivable = "Accounts Receivable is required";
     if (!formData.promptPaymentDiscount.trim()) tempErrors.promptPaymentDiscount = "Prompt Payment Discount Account is required";
-    if (!formData.bankAccountNumber.trim()) tempErrors.bankAccountNumber = "Bank Account Number is required";
-    if (!formData.mailingAddress.trim()) tempErrors.mailingAddress = "Mailing Address is required";
-    if (!formData.billingAddress.trim()) tempErrors.billingAddress = "Billing Address is required";
-    if (!formData.generalNotes.trim()) tempErrors.generalNotes = "General Notes are required";
 
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;

@@ -43,6 +43,7 @@ import {
 } from "../../../../utils/customerCredit";
 import { useCustomerCredit } from "../../../../hooks/useCustomerCredit";
 import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSummaryFields";
+import FormattedNumberField from "../../../../components/FormattedNumberField";
 
 export default function UpdateCustomerInvoice() {
   const navigate = useNavigate();
@@ -677,9 +678,8 @@ export default function UpdateCustomerInvoice() {
                 <TableCell>{row.invoiced}</TableCell>
                 {selectedPaymentType !== 1 && (
                   <TableCell>
-                    <TextField
+                    <FormattedNumberField
                       size="small"
-                      type="number"
                       value={row.thisInvoice}
                       onChange={(e) => {
                         const value = Number(e.target.value);
@@ -714,9 +714,8 @@ export default function UpdateCustomerInvoice() {
             <TableRow>
               <TableCell colSpan={10}>Shipping Cost</TableCell>
               <TableCell>
-                <TextField
+                <FormattedNumberField
                   size="small"
-                  type="number"
                   value={shippingCost}
                   onChange={(e) => setShippingCost(Number(e.target.value))}
                   InputProps={selectedPaymentType === 1 ? { readOnly: true } : undefined}

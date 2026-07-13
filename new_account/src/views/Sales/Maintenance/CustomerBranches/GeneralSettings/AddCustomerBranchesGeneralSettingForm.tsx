@@ -131,19 +131,11 @@ export default function AddCustomerBranchesGeneralSettingForm() {
       tempErrors.branchShortName = "Branch Short Name is required";
 
     // Sales - ID fields just check for truthiness
-    if (!formData.salesPerson) tempErrors.salesPerson = "Sales Person is required";
-    if (!formData.salesArea) tempErrors.salesArea = "Sales Area is required";
-    if (!formData.salesGroup) tempErrors.salesGroup = "Sales Group is required";
-    if (!formData.defaultInventoryLocation) tempErrors.defaultInventoryLocation = "Default Inventory Location is required";
-    if (!formData.defaultShippingCompany) tempErrors.defaultShippingCompany = "Default Shipping Company is required";
-    if (!formData.taxGroup) tempErrors.taxGroup = "Tax Group is required";
-
     // GL Accounts
     if (!formData.salesAccount.trim()) tempErrors.salesAccount = "Sales Account is required";
     if (!formData.salesDiscountAccount.trim()) tempErrors.salesDiscountAccount = "Sales Discount Account is required";
     if (!formData.accountsReceivable.trim()) tempErrors.accountsReceivable = "Accounts Receivable is required";
     if (!formData.promptPaymentDiscount.trim()) tempErrors.promptPaymentDiscount = "Prompt Payment Discount Account is required";
-    if (!formData.bankAccountNumber.trim()) tempErrors.bankAccountNumber = "Bank Account Number is required";
 
     // General Contact Data
     if (!formData.contactPerson.trim()) tempErrors.contactPerson = "Contact Person is required";
@@ -155,12 +147,8 @@ export default function AddCustomerBranchesGeneralSettingForm() {
       tempErrors.faxNumber = "Enter a valid fax number (6–15 digits)";
     if (formData.email.trim() && !emailRegex.test(formData.email))
       tempErrors.email = "Enter a valid email address";
-    if (!formData.documentLanguage.trim()) tempErrors.documentLanguage = "Document Language is required";
 
     // Addresses
-    if (!formData.mailingAddress.trim()) tempErrors.mailingAddress = "Mailing Address is required";
-    if (!formData.billingAddress.trim()) tempErrors.billingAddress = "Billing Address is required";
-    if (!formData.generalNotes.trim()) tempErrors.generalNotes = "General Notes are required";
 
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
