@@ -686,14 +686,17 @@ class ReportPdfBuilder
         $debitExpr = \App\Support\GlBalanceQuery::rangeDebitSumExpr('gt', $from, $to);
         $creditExpr = \App\Support\GlBalanceQuery::rangeCreditSumExpr('gt', $from, $to);
 
-        $data = DB::table('chart_master as cm')
+        $query = DB::table('chart_master as cm')
             ->join('chart_types as ct', 'cm.account_type', '=', 'ct.id')
             ->join('chart_class as cc', 'ct.class_id', '=', 'cc.cid')
             ->leftJoin('gl_trans as gt', function ($join) {
                 $join->on(DB::raw('TRIM(cm.account_code)'), '=', DB::raw('TRIM(gt.account)'));
             })
-            ->where('ct.class_id', '4')
-            ->groupBy('cm.account_code', 'cm.account_name', 'cm.account_type', 'ct.name', 'cc.class_name')
+            ->where('ct.class_id', '4');
+
+        \App\Support\GlBalanceQuery::applyCostCenter($query, $dates['costCenter'], 'gt');
+
+        $data = $query->groupBy('cm.account_code', 'cm.account_name', 'cm.account_type', 'ct.name', 'cc.class_name')
             ->select(
                 'cm.account_code as code',
                 'cm.account_name as account',
@@ -1074,10 +1077,13 @@ class ReportPdfBuilder
 
         return $this->pack($title, [
             'date' => 'Date',
+            'type_name' => 'Type',
+            'reference' => 'Reference',
             'stock_id' => 'Item',
+            'description' => 'Description',
             'loc_code' => 'Location',
             'qty' => 'Quantity',
-            'price' => 'Price',
+            'price' => 'Unit Cost',
         ], $this->inventoryModuleData($request), $request, $this->periodSubtitle($dates['fromDate'], $dates['toDate']));
     }
 
@@ -1664,10 +1670,20 @@ class ReportPdfBuilder
     {
         $dates = $this->reportDates($request);
         $query = DB::table('stock_moves as m')
-            ->select('m.tran_date as date', 'm.stock_id', 'm.loc_code', 'm.qty', 'm.price')
+            ->leftJoin('stock_master as sm', 'm.stock_id', '=', 'sm.stock_id')
+            ->select(
+                'm.tran_date as date', 
+                'm.type',
+                'm.reference',
+                'm.stock_id', 
+                'sm.description',
+                'm.loc_code', 
+                'm.qty', 
+                'sm.material_cost as price'
+            )
             ->orderByDesc('m.tran_date');
 
-        $this->applyInventoryStockFilters($query, $request, 'm');
+        $this->applyInventoryStockFilters($query, $request, 'm', true);
 
         if ($dates['fromDate']) {
             $query->where('m.tran_date', '>=', $dates['fromDate']);
@@ -1676,7 +1692,29 @@ class ReportPdfBuilder
             $query->where('m.tran_date', '<=', $dates['toDate']);
         }
 
-        return $query->limit(2000)->get();
+        return $query->limit(2000)->get()->map(function ($row) {
+            $typeNames = [
+                0 => 'Journal Entry',
+                1 => 'Bank Payment',
+                2 => 'Bank Deposit',
+                10 => 'Sales Invoice',
+                11 => 'Credit Note',
+                12 => 'Customer Payment',
+                13 => 'Delivery',
+                16 => 'Location Transfer',
+                17 => 'Inventory Adjustment',
+                18 => 'Purchase Order',
+                20 => 'Purchase Invoice',
+                21 => 'Supplier Credit Note',
+                22 => 'Supplier Payment',
+                25 => 'GRN',
+                26 => 'Work Order Issue',
+                28 => 'Work Order Produce',
+                29 => 'Work Order Costing',
+            ];
+            $row->type_name = $typeNames[$row->type] ?? "Type {$row->type}";
+            return $row;
+        });
     }
 
     /**

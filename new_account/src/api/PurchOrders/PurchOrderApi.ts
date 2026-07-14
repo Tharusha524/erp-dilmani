@@ -17,6 +17,7 @@ export interface PurchOrderPayload {
   prep_amount: number;
   alloc: number;
   tax_included: boolean;
+  cost_center_id?: number;
 }
 
 /**
