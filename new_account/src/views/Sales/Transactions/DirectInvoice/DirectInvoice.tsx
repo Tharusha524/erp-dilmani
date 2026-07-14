@@ -55,6 +55,7 @@ import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import {
     isCashSalePaymentTerm,
     validateCustomerCreditForSale,
@@ -127,6 +128,7 @@ export default function DirectInvoice() {
     });
     const [deliverFrom, setDeliverFrom] = useState("");
     const [cashAccount, setCashAccount] = useState("");
+    const [costCenter, setCostCenter] = useState("");
     const [comments, setComments] = useState("");
     const [dateError, setDateError] = useState("");
     const [shippingCharge, setShippingCharge] = useState(0);
@@ -183,6 +185,7 @@ export default function DirectInvoice() {
     const { data: shippingCompanies = [] } = useQuery({ queryKey: ["shippingCompanies"], queryFn: getShippingCompanies });
     const { data: fiscalYears = [] } = useQuery({ queryKey: ["fiscalYears"], queryFn: getFiscalYears });
     const { data: companyData } = useQuery({ queryKey: ["company"], queryFn: getCompanies });
+    const { data: costCenters = [] } = useQuery({ queryKey: ["costCenters"], queryFn: getCostCenters });
     const { data: bankAccounts = [] } = useQuery({ queryKey: ["bankAccounts"], queryFn: getBankAccounts });
     const { user } = useCurrentUser();
     const { data: salesOrders = [] } = useQuery({ queryKey: ["salesOrders"], queryFn: getSalesOrders });
@@ -822,7 +825,8 @@ export default function DirectInvoice() {
 
         setSubmitting(true);
         try {
-            const shipViaId = Number(relationId(shippingCompany, "shipper_id", "id")) || 1;
+            const defaultShipperId = shippingCompanies.length > 0 ? shippingCompanies[0].shipper_id : 1;
+            const shipViaId = Number(relationId(shippingCompany, "shipper_id", "id")) || Number(defaultShipperId) || 1;
             const paymentTermsId = payment
                 ? Number(relationId(payment, "terms_indicator", "id")) || null
                 : null;
@@ -845,6 +849,7 @@ export default function DirectInvoice() {
                 freight_cost: shippingCharge || 0,
                 from_stk_loc: stockLoc || undefined,
                 customer_ref: customerReference || undefined,
+                cost_center_id: Number(costCenter) || undefined,
                 delivery_address: customerAddr || undefined,
                 deliver_to: customerName || undefined,
                 comments: comments || undefined,
@@ -976,7 +981,6 @@ export default function DirectInvoice() {
         });
     }, [paymentTerms]);
 
-    const showQuotationDeliveryDetails = selectedPaymentType === 3 || selectedPaymentType === 4;
 
     return (
         <Stack spacing={2}>
@@ -1100,21 +1104,38 @@ export default function DirectInvoice() {
                     </Grid>
 
                     <Grid item xs={12} sm={3}>
-                        <TextField
-                            label="Invoice Date"
-                            type="date"
-                            fullWidth
-                            size="small"
-                            value={invoiceDate}
-                            onChange={(e) => handleDateChange(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                            inputProps={{
-                                min: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_from).toISOString().split('T')[0] : undefined,
-                                max: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_to).toISOString().split('T')[0] : undefined,
-                            }}
-                            error={!!dateError}
-                            helperText={dateError}
-                        />
+                        <Stack spacing={2}>
+                            <TextField
+                                label="Invoice Date"
+                                type="date"
+                                fullWidth
+                                size="small"
+                                value={invoiceDate}
+                                onChange={(e) => handleDateChange(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                                inputProps={{
+                                    min: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_from).toISOString().split('T')[0] : undefined,
+                                    max: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_to).toISOString().split('T')[0] : undefined,
+                                }}
+                                error={!!dateError}
+                                helperText={dateError}
+                            />
+                            <TextField
+                                select
+                                fullWidth
+                                label="Cost Center"
+                                value={costCenter}
+                                onChange={(e) => setCostCenter(e.target.value)}
+                                size="small"
+                            >
+                                <MenuItem value="">None</MenuItem>
+                                {costCenters.map((cc: any) => (
+                                    <MenuItem key={cc.id} value={cc.id}>
+                                        {cc.name}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Stack>
                     </Grid>
                 </Grid>
             </Paper>
@@ -1313,162 +1334,72 @@ export default function DirectInvoice() {
             {/* Cash Payment Section */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Typography variant="subtitle1" sx={{ mb: 2, textAlign: 'center' }}>
-                    {showQuotationDeliveryDetails ? "Quotation Delivery Details" : "Cash Payment"}
+                    Cash Payment
                 </Typography>
                 <Grid container spacing={2}>
-                    {showQuotationDeliveryDetails ? (
-                        <>
-                            <Grid item xs={12} sm={6}>
-                                <Stack spacing={2}>
-                                    <TextField
-                                        select
-                                        fullWidth
-                                        label="Deliver From Location"
-                                        value={String(deliverFrom || "")}
-                                        onChange={(e) => setDeliverFrom(e.target.value)}
-                                        size="small"
-                                    >
-                                        {locations.map((loc: any) => (
-                                            <MenuItem key={loc.loc_code} value={String(loc.loc_code)}>
-                                                {loc.location_name}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
-                                    <TextField
-                                        label="Valid Until"
-                                        type="date"
-                                        fullWidth
-                                        size="small"
-                                        value={validUntil}
-                                        onChange={(e) => setValidUntil(e.target.value)}
-                                        InputLabelProps={{ shrink: true }}
-                                    />
-                                    <TextField
-                                        label="Deliver To"
-                                        fullWidth
-                                        size="small"
-                                        value={deliverTo}
-                                        onChange={(e) => setDeliverTo(e.target.value)}
-                                    />
-                                    <TextField
-                                        label="Address"
-                                        fullWidth
-                                        multiline
-                                        rows={2}
-                                        size="small"
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                    />
-                                </Stack>
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                                <Stack spacing={2}>
-                                    <TextField
-                                        label="Contact Phone Number"
-                                        fullWidth
-                                        size="small"
-                                        value={contactPhoneNumber}
-                                        onChange={(e) => setContactPhoneNumber(e.target.value)}
-                                    />
-                                    <TextField
-                                        label="Customer Reference"
-                                        fullWidth
-                                        size="small"
-                                        value={customerReference}
-                                        onChange={(e) => setCustomerReference(e.target.value)}
-                                    />
-                                    <TextField
-                                        select
-                                        fullWidth
-                                        label="Shipping Company"
-                                        value={String(shippingCompany || "")}
-                                        onChange={(e) => setShippingCompany(e.target.value)}
-                                        size="small"
-                                    >
-                                        {shippingCompanies.map((sc: any) => (
-                                            <MenuItem key={sc.shipper_id} value={String(sc.shipper_id)}>
-                                                {sc.shipper_name}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
-                                    <TextField
-                                        fullWidth
-                                        multiline
-                                        rows={2}
-                                        label="Comments"
-                                        value={comments}
-                                        onChange={(e) => setComments(e.target.value)}
-                                    />
-                                </Stack>
-                            </Grid>
-                        </>
-                    ) : (
-                        <>
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    select
-                                    fullWidth
-                                    label="Deliver From Location"
-                                    value={String(deliverFrom || "")}
-                                    onChange={(e) => setDeliverFrom(e.target.value)}
-                                    size="small"
-                                >
-                                    {locations.map((loc: any) => (
-                                        <MenuItem key={loc.loc_code} value={String(loc.loc_code)}>
-                                            {loc.location_name}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                            </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Deliver From Location"
+                            value={String(deliverFrom || "")}
+                            onChange={(e) => setDeliverFrom(e.target.value)}
+                            size="small"
+                        >
+                            {locations.map((loc: any) => (
+                                <MenuItem key={loc.loc_code} value={String(loc.loc_code)}>
+                                    {loc.location_name}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
 
-                            <Grid item xs={12} sm={6}>
-                                <TextField
-                                    select
-                                    fullWidth
-                                    label="Cash Account"
-                                    value={String(cashAccount || "")}
-                                    onChange={(e) => setCashAccount(e.target.value)}
-                                    size="small"
-                                    SelectProps={{
-                                        renderValue: (selected) => {
-                                            if (!selected) return "Select";
-                                            const acc = cashBankAccounts.find(
-                                                (a: any) => String(a.id) === String(selected)
-                                            );
-                                            return acc ? bankAccountLabel(acc) : String(selected);
-                                        },
-                                    }}
-                                    helperText={
-                                        cashBankAccounts.length === 0
-                                            ? "No bank accounts found — add one under Banking maintenance."
-                                            : selectedCashBankAccount
-                                                ? undefined
-                                                : cashAccount
-                                                    ? "Selected account is not in the list."
-                                                    : undefined
-                                    }
-                                >
-                                    <MenuItem value="">Select</MenuItem>
-                                    {cashBankAccounts.map((acc: any) => (
-                                        <MenuItem key={acc.id} value={String(acc.id)}>
-                                            {bankAccountLabel(acc)}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                            </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Cash Account"
+                            value={String(cashAccount || "")}
+                            onChange={(e) => setCashAccount(e.target.value)}
+                            size="small"
+                            SelectProps={{
+                                renderValue: (selected) => {
+                                    if (!selected) return "Select";
+                                    const acc = cashBankAccounts.find(
+                                        (a: any) => String(a.id) === String(selected)
+                                    );
+                                    return acc ? bankAccountLabel(acc) : String(selected);
+                                },
+                            }}
+                            helperText={
+                                cashBankAccounts.length === 0
+                                    ? "No bank accounts found — add one under Banking maintenance."
+                                    : selectedCashBankAccount
+                                        ? undefined
+                                        : cashAccount
+                                            ? "Selected account is not in the list."
+                                            : undefined
+                            }
+                        >
+                            <MenuItem value="">Select</MenuItem>
+                            {cashBankAccounts.map((acc: any) => (
+                                <MenuItem key={acc.id} value={String(acc.id)}>
+                                    {bankAccountLabel(acc)}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
 
-                            <Grid item xs={12}>
-                                <TextField
-                                    fullWidth
-                                    multiline
-                                    rows={2}
-                                    label="Comments"
-                                    value={comments}
-                                    onChange={(e) => setComments(e.target.value)}
-                                />
-                            </Grid>
-                        </>
-                    )}
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={2}
+                            label="Comments"
+                            value={comments}
+                            onChange={(e) => setComments(e.target.value)}
+                        />
+                    </Grid>
                 </Grid>
 
                 <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2, gap: 2 }}>

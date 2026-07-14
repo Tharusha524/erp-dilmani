@@ -46,6 +46,7 @@ import { getCompanies } from "../../../../api/CompanySetup/CompanySetupApi";
 import { postSalesOrderWithDetails, generateProvisionalOrderNo, getSalesOrders } from "../../../../api/SalesOrders/SalesOrdersApi";
 import { runTransactionSave } from "../../../../utils/transactionSave";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import { useCustomerCredit } from "../../../../hooks/useCustomerCredit";
 import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSummaryFields";
 import CustomerCurrencyField from "../../../../components/CustomerCurrencyField";
@@ -77,6 +78,7 @@ export default function SalesQuotationEntry() {
     const [dateError, setDateError] = useState("");
     const [deliverFrom, setDeliverFrom] = useState("");
     const [cashAccount, setCashAccount] = useState("");
+    const [costCenter, setCostCenter] = useState("");
     const [comments, setComments] = useState("");
     const [shippingCharge, setShippingCharge] = useState(0);
     const [priceColumnLabel, setPriceColumnLabel] = useState("Price after Tax");
@@ -110,6 +112,7 @@ export default function SalesQuotationEntry() {
 
     // Fetch company setup
     const { data: companyData } = useQuery({ queryKey: ["company"], queryFn: getCompanies });
+    const { data: costCenters = [] } = useQuery({ queryKey: ["costCenters"], queryFn: getCostCenters });
 
     // ===== Tax-related state =====
     const [taxGroupItems, setTaxGroupItems] = useState<any[]>([]);
@@ -386,6 +389,7 @@ export default function SalesQuotationEntry() {
                 payment_terms: payment ? Number(payment) : null,
                 comments: comments || null,
                 customer_ref: customerReference || null,
+                cost_center_id: Number(costCenter) || null,
                 total: subTotal + shippingCharge + (selectedPriceList?.taxIncl ? 0 : totalTaxAmount),
                 prep_amount: 0,
                 alloc: 0,
@@ -698,17 +702,34 @@ export default function SalesQuotationEntry() {
                     </Grid>
 
                     <Grid item xs={12} sm={3}>
-                        <TextField
-                            label="Quotation Date"
-                            type="date"
-                            fullWidth
-                            size="small"
-                            value={quotationDate}
-                            onChange={(e) => handleDateChange(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                            error={!!dateError}
-                            helperText={dateError}
-                        />
+                        <Stack spacing={2}>
+                            <TextField
+                                label="Quotation Date"
+                                type="date"
+                                fullWidth
+                                size="small"
+                                value={quotationDate}
+                                onChange={(e) => handleDateChange(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                                error={!!dateError}
+                                helperText={dateError}
+                            />
+                            <TextField
+                                select
+                                fullWidth
+                                label="Cost Center"
+                                value={costCenter}
+                                onChange={(e) => setCostCenter(e.target.value)}
+                                size="small"
+                            >
+                                <MenuItem value="">None</MenuItem>
+                                {costCenters.map((cc: any) => (
+                                    <MenuItem key={cc.id} value={cc.id}>
+                                        {cc.name}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Stack>
                     </Grid>
                 </Grid>
             </Paper>

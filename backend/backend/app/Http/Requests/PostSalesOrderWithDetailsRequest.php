@@ -41,6 +41,7 @@ class PostSalesOrderWithDetailsRequest extends FormRequest
             'header.total' => 'numeric',
             'header.prep_amount' => 'numeric',
             'header.alloc' => 'numeric',
+            'header.cost_center_id' => 'nullable|integer',
             'lines' => 'required|array|min:1',
             'lines.*.stk_code' => 'required|string|exists:stock_master,stock_id',
             'lines.*.description' => 'nullable|string',

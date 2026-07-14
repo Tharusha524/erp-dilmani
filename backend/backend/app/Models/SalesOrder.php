@@ -24,7 +24,7 @@ class SalesOrder extends Model
         'deliver_to', 'freight_cost',
         'from_stk_loc', 'delivery_date',
         'payment_terms',
-        'total', 'prep_amount', 'alloc'
+        'total', 'prep_amount', 'alloc', 'cost_center_id'
     ];
 
 
