@@ -6,9 +6,11 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const apiTarget =
     env.VITE_API_PROXY_TARGET?.trim() || 'http://127.0.0.1:8000'
+  const rawBasePath = (env.VITE_APP_BASE_PATH?.trim() || '/sky_erp').replace(/^\/+|\/+$/g, '')
+  const basePath = `/${rawBasePath}/`
 
   return {
-  base: '/sky_erp/',
+  base: basePath,
   plugins: [react()],
   server: {
     // Optional: set VITE_API_BASE_URL=/api in .env.local to proxy to local Laravel

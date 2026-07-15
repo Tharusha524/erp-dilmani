@@ -1,12 +1,12 @@
 <?php
 /**
  * SPA fallback for LiteSpeed/cPanel when mod_rewrite is disabled in subfolders.
- * Serves index.html for any non-file route under /sky_erp/
+ * Serves index.html for any non-file route under /dilmani_apparel/
  */
 declare(strict_types=1);
 
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-$base = '/sky_erp';
+$base = '/dilmani_apparel';
 
 // Serve existing files (assets, images, etc.)
 $relative = substr($uri, strlen($base));
