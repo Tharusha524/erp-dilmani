@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\TaxGroupItem;
 use App\Models\UserProfile;
+use App\Services\Accounting\PostingsService;
+use App\Services\Sales\CustomerCreditService;
 use App\Repositories\All\AccountTag\AccountTagInterface;
 use App\Repositories\All\AccountTag\AccountTagRepository;
 use App\Repositories\All\AccountType\AccountTypeInterface;
@@ -209,6 +211,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(PostingsService::class);
+        $this->app->singleton(CustomerCreditService::class);
         $this->app->bind(UserManagementInterface::class, UserManagementRepository::class);
         $this->app->bind(AuthInterface::class, AuthRepository::class);
         $this->app->bind(CurrencyInterface::class, CurrencyRepository::class);
@@ -314,12 +318,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $router = $this->app->make(\Illuminate\Routing\Router::class);
-
-        if (method_exists($router, 'aliasMiddleware')) {
-            $router->aliasMiddleware('permission', \App\Http\Middleware\CheckPermission::class);
-        } else {
-            $router->middleware('permission', \App\Http\Middleware\CheckPermission::class);
-        }
+        $router->aliasMiddleware('permission', \App\Http\Middleware\CheckPermission::class);
 
         \Illuminate\Support\Facades\RateLimiter::for('login', function (\Illuminate\Http\Request $request) {
             $limit = max(1, (int) config('security.login.rate_limit_per_minute', 5));

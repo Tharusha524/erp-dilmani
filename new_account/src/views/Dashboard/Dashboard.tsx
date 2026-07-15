@@ -550,6 +550,7 @@ const Dashboard = () => {
                           {activityIcon(item.type)}
                         </ListItemIcon>
                         <ListItemText
+                          slotProps={{ secondary: { component: 'div' } }}
                           primary={
                             <Stack direction="row" justifyContent="space-between" alignItems="center">
                               <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: '55%' }}>

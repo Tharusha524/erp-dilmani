@@ -100,6 +100,9 @@ import QuickEntriesTable from "./views/BankindAndGeneralLedger/Maintenance/Quick
 import GlAccountGroupsTable from "./views/BankindAndGeneralLedger/Maintenance/GlAccountGroups/GlAccountGroupsTable";
 import AddGlAccountGroupsForm from "./views/BankindAndGeneralLedger/Maintenance/GlAccountGroups/AddGlAccountGroupsForm";
 import UpdateGlAccountGroupsForm from "./views/BankindAndGeneralLedger/Maintenance/GlAccountGroups/UpdateGlAccountGroupsForm";
+import GlTypesTable from "./views/BankindAndGeneralLedger/Maintenance/GlTypes/GlTypesTable";
+import AddGlTypeForm from "./views/BankindAndGeneralLedger/Maintenance/GlTypes/AddGlTypeForm";
+import UpdateGlTypeForm from "./views/BankindAndGeneralLedger/Maintenance/GlTypes/UpdateGlTypeForm";
 import RevaluateCurrenciesForm from "./views/BankindAndGeneralLedger/Maintenance/RevaluationOfCurrencyAccounts/RevaluateCurrencies";
 import GlAccountClassesTable from "./views/BankindAndGeneralLedger/Maintenance/GlAccountClasses/GlAccountClassesTable";
 import AddGlAccountClassesForm from "./views/BankindAndGeneralLedger/Maintenance/GlAccountClasses/AddGlAccountClassesForm";
@@ -3654,6 +3657,30 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['GL account groups']}>
               {withLayout(MainLayout, UpdateGlAccountGroupsForm)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bankingandgeneralledger/maintenance/gl-types"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Company GL setup']}>
+              {withLayout(MainLayout, GlTypesTable)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bankingandgeneralledger/maintenance/add-gl-type"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Company GL setup']}>
+              {withLayout(MainLayout, AddGlTypeForm)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bankingandgeneralledger/maintenance/update-gl-type/:id"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Company GL setup']}>
+              {withLayout(MainLayout, UpdateGlTypeForm)}
             </ProtectedRoute>
           }
         />

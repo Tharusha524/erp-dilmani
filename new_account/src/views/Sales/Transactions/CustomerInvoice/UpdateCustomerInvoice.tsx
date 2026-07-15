@@ -37,6 +37,7 @@ import { updateDebtorTran } from "../../../../api/DebtorTrans/DebtorTransApi";
 import { updateDebtorTransDetail } from "../../../../api/DebtorTrans/DebtorTransDetailsApi";
 import { getSalesOrders } from "../../../../api/SalesOrders/SalesOrdersApi";
 import { getCustAllocations } from "../../../../api/CustAllocation/CustAllocationApi";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
 import {
   isCashSalePaymentTerm,
   validateCustomerCreditForSale,
@@ -63,6 +64,7 @@ export default function UpdateCustomerInvoice() {
   const [dueDate, setDueDate] = useState("");
   const [memo, setMemo] = useState("");
   const [shippingCost, setShippingCost] = useState(0);
+  const [costCenter, setCostCenter] = useState("");
   const [dateError, setDateError] = useState("");
 
   const isUpdate = !!trans_no;
@@ -92,6 +94,7 @@ export default function UpdateCustomerInvoice() {
   });
   const { data: salesOrders = [] } = useQuery({ queryKey: ["salesOrders"], queryFn: getSalesOrders });
   const { data: custAllocations = [] } = useQuery({ queryKey: ["custAllocations"], queryFn: async () => (await getCustAllocations()).data });
+  const { data: costCenters = [] } = useQuery({ queryKey: ["costCenters"], queryFn: getCostCenters });
 
   const queryClient = useQueryClient();
 
@@ -226,6 +229,7 @@ export default function UpdateCustomerInvoice() {
         ov_freight: shippingCost,
         ov_amount: invoiceTotal,
         prep_amount: currentPaymentType === 1 ? invoiceTotal : 0,
+        cost_center_id: costCenter ? Number(costCenter) : null,
       };
 
       console.log("Updating debtor transaction:", originalInvoice.trans_no, updateData);
@@ -350,6 +354,7 @@ export default function UpdateCustomerInvoice() {
         ov_freight: shippingCost,
         ov_amount: invoiceTotal,
         prep_amount: currentPaymentType === 1 ? invoiceTotal : 0,
+        cost_center_id: costCenter ? Number(costCenter) : null,
         // status: 'processed', // Alternative status field
       };
 
@@ -479,6 +484,7 @@ export default function UpdateCustomerInvoice() {
     setPaymentTerm(invoice.payment_terms || "");
     setShippingCompany(invoice.ship_via || "");
     setMemo(invoice.memo_ || invoice.comments || "");
+    setCostCenter(invoice.cost_center_id != null ? String(invoice.cost_center_id) : "");
 
     // rows from details (only invoice lines: debtor_trans_type = 10)
     const details = (debtorTransDetails || []).filter(
@@ -638,6 +644,24 @@ export default function UpdateCustomerInvoice() {
               onChange={(e) => setDueDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
             />
+          </Grid>
+
+          <Grid item xs={12} sm={4}>
+            <TextField
+              select
+              fullWidth
+              label="Cost Center"
+              value={costCenter}
+              onChange={(e) => setCostCenter(e.target.value)}
+              size="small"
+            >
+              <MenuItem value="">None</MenuItem>
+              {costCenters.map((cc: any) => (
+                <MenuItem key={cc.id} value={String(cc.id)}>
+                  {cc.name}
+                </MenuItem>
+              ))}
+            </TextField>
           </Grid>
         </Grid>
       </Paper>

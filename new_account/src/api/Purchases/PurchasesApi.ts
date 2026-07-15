@@ -28,6 +28,7 @@ export const postDirectGrn = async (payload: {
   tax_included?: boolean;
   comments?: string;
   total?: number;
+  cost_center_id?: number;
   lines: Array<{
     item_code: string;
     description?: string;
@@ -67,6 +68,7 @@ export const postDirectSupplierInvoice = async (payload: {
   tax_included?: boolean;
   fixed_asset?: boolean;
   comments?: string;
+  cost_center_id?: number;
   lines: Array<{
     item_code: string;
     description?: string;

@@ -282,6 +282,7 @@ export const HUB_CARD_DESCRIPTIONS: Record<string, string> = {
   "/bankingandgeneralledger/maintenance/exchange-rates": "Rates for foreign currency posting",
   "/bankingandgeneralledger/maintenance/gl-accounts": "Chart of accounts",
   "/bankingandgeneralledger/maintenance/gl-account-groups": "Account groups (types)",
+  "/bankingandgeneralledger/maintenance/gl-types": "Account numbering formats (Numeric, Alpha Numeric)",
   "/bankingandgeneralledger/maintenance/gl-account-classes": "Balance sheet / P&L classes",
   "/bankingandgeneralledger/maintenance/closing-gl-transactions": "Year-end close",
   "/bankingandgeneralledger/maintenance/revaluation-of-currency-accounts": "Revalue foreign balances",
