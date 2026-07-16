@@ -4,154 +4,183 @@
     <title>{{ $title }}</title>
     @include('reports.partials.pdf_common_styles')
     <style>
-        .erp-fy-banner {
-            font-size: 8px;
-            color: #334155;
-            margin: 0 0 6px 0;
-            padding: 4px 6px;
-            background: #f1f5f9;
-            border: 1px solid #cbd5e1;
-        }
-        table.erp-pl-table { border-collapse: collapse; }
-        table.erp-pl-table td {
-            padding: 4px 6px;
+        /* Custom stacked header for this report (Print Out Date / Fiscal Year / Period) */
+        table.erp-pl-header { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+        table.erp-pl-header td { border: none; padding: 0; vertical-align: top; }
+        .erp-pl-title { font-size: 16px; font-weight: bold; color: #0b1f44; margin: 0 0 4px 0; }
+        .erp-pl-logo { width: 46px; }
+        .erp-pl-logo img { width: 40px; height: 40px; }
+        .erp-pl-company-name { font-size: 12px; font-weight: bold; color: #0f172a; margin: 0 0 2px 0; }
+        .erp-pl-meta { font-size: 8px; color: #475569; margin: 0; }
+        .erp-pl-params { font-size: 8px; color: #1e293b; text-align: left; }
+        .erp-pl-params .label { display: inline-block; width: 85px; font-weight: bold; }
+        .erp-pl-page { font-size: 8px; color: #475569; text-align: right; }
+        hr.erp-pl-rule { border: none; border-top: 1px solid #0b1f44; margin: 4px 0 6px 0; }
+
+        /* Plain, minimalist row styling (overrides the boxed/colored bar style used elsewhere) */
+        table.erp-data-table tr.erp-section-row td {
+            background-color: #ffffff;
+            color: #0b1f44;
             border: none;
+            border-bottom: 1px solid #0b1f44;
+            font-size: 9px;
+            padding: 5px 2px 2px 2px;
         }
-        table.erp-pl-table td.pl-amount { text-align: right; white-space: nowrap; width: 18%; }
-        table.erp-pl-table td.pl-amount-sub { text-align: right; white-space: nowrap; width: 18%; }
-        table.erp-pl-table tr.pl-spacer td { padding: 2px 0; }
-        table.erp-pl-table tr.pl-heading td { font-weight: bold; }
-        table.erp-pl-table tr.pl-line td.pl-label { padding-left: 18px; }
-        table.erp-pl-table tr.pl-total td {
-            font-weight: bold;
-            border-top: 1px solid #333;
+        table.erp-data-table tr.erp-group-row td {
+            background-color: #ffffff;
+            color: #1e293b;
+            border: none;
+            font-size: 8px;
+            padding: 4px 2px 2px 2px;
         }
-        table.erp-pl-table tr.pl-gross-profit td {
-            font-weight: bold;
-            border: 2px solid #1b5e20;
-            background: #e8f5e9;
+        table.erp-data-table tr.erp-subtotal-row td {
+            background-color: #ffffff;
+            border: none;
+            border-top: 1px solid #cbd5e1;
+            font-size: 8px;
         }
-        table.erp-pl-table tr.pl-net-profit td {
+        table.erp-data-table tr.erp-grand-row td {
+            background-color: #ffffff;
+            border: none;
+            border-top: 1px solid #0f172a;
+            border-bottom: 1px solid #0f172a;
+            font-size: 8.5px;
+        }
+        table.erp-data-table tr.erp-calculated-return-row td {
+            background-color: #ffffff;
             font-weight: bold;
-            border-top: 3px solid #1b5e20;
-            background: #e8f5e9;
+            border-top: 2px solid #0b1f44;
+            border-bottom: 2px solid #0b1f44;
+        }
+        table.erp-data-table th {
+            background-color: #ffffff;
+            color: #0b1f44;
+            border: none;
+            border-bottom: 1px solid #0b1f44;
+        }
+        table.erp-data-table td {
+            border: none;
         }
     </style>
 </head>
 <body>
-    @include('reports.partials.report_header', [
-        'companyHeader' => $companyHeader ?? [],
-        'title' => $title,
-        'subtitle' => $subtitle ?? null,
-    ])
+    @php
+        $company = $companyHeader ?? [];
+        $fy = $fiscalYear ?? [];
+        $printOutDate = $company['report_generated_at'] ?? date('d/m/Y H:i');
+    @endphp
+
+    <table class="erp-pl-header">
+        <tr>
+            @if(!empty($company['show_logo']) && !empty($company['logo_path']))
+                <td class="erp-pl-logo"><img src="{{ $company['logo_path'] }}" alt="" /></td>
+            @endif
+            <td>
+                <div class="erp-pl-company-name">{{ $company['name'] ?? '' }}</div>
+                @if(!empty($company['address']))
+                    <div class="erp-pl-meta">{!! nl2br(e($company['address'])) !!}</div>
+                @endif
+                @if(!empty($company['phone_number']) || !empty($company['email_address']))
+                    <div class="erp-pl-meta">
+                        @if(!empty($company['phone_number']))Tel: {{ $company['phone_number'] }}@endif
+                        @if(!empty($company['email_address'])) | {{ $company['email_address'] }}@endif
+                    </div>
+                @endif
+            </td>
+            <td width="42%" style="text-align:right;">
+                <div class="erp-pl-title">{{ $title }}</div>
+            </td>
+        </tr>
+    </table>
+    <hr class="erp-pl-rule" />
+
+    <table class="erp-pl-header">
+        <tr>
+            <td class="erp-pl-params">
+                <div><span class="label">Print Out Date:</span> {{ $printOutDate }}</div>
+                @if(!empty($fy['from_display']) && !empty($fy['to_display']))
+                    <div><span class="label">Fiscal Year:</span> {{ $fy['from_display'] }} - {{ $fy['to_display'] }} @if(!empty($fy['active'])) (Active) @endif</div>
+                @endif
+                @if(!empty($periodDisplay))
+                    <div><span class="label">Period:</span> {{ $periodDisplay }}</div>
+                @endif
+            </td>
+            <td width="20%" class="erp-pl-page">Page @{{:pnp:}}</td>
+        </tr>
+    </table>
 
     @php
         $fmt = fn ($n) => number_format((float) $n, 0, '.', ',');
-        $fmtParen = fn ($n) => abs((float) $n) < 0.005 ? $fmt(0) : '(' . $fmt(abs((float) $n)) . ')';
-        $fy = $fiscalYear ?? [];
-        $summary = $statement['summary'] ?? [];
-        $val = fn (string $key) => (float) ($summary[$key]['period'] ?? 0);
-        $expenseCategories = $summary['expenseCategories'] ?? [];
-        $catVal = fn (string $key) => (float) ($expenseCategories[$key]['period'] ?? 0);
+        $achieve = function (float $period, float $compare) {
+            if (abs($compare) < 0.001) return '999.0';
+            return number_format(($period / $compare) * 100, 1, '.', ',');
+        };
+        $compareLabel = $compareLabel ?? 'Accumulated';
+        $statement = $statement ?? [];
+        $sections = $statement['detailedSections'] ?? [];
+        $detailedSummary = $statement['detailedSummary'] ?? [];
+        $calculatedReturn = $detailedSummary['calculatedReturn'] ?? ['period' => 0, 'compare' => 0, 'achievePercent' => '999.0'];
     @endphp
 
-    @if(!empty($fy['from_display']) && !empty($fy['to_display']))
-        <div class="erp-fy-banner">
-            <strong>Fiscal Year:</strong> {{ $fy['from_display'] }} - {{ $fy['to_display'] }}
-            @if(!empty($fy['active'])) (Active) @endif
-            @if(!empty($periodDisplay))
-                &nbsp;&nbsp;|&nbsp;&nbsp;<strong>Period:</strong> {{ $periodDisplay }}
-            @endif
-        </div>
+    @if(empty($sections))
+        <div class="erp-empty">No profit and loss activity for the selected period.</div>
+    @else
+        <table class="erp-data-table" cellpadding="0" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th class="account-code" width="12%">Account</th>
+                    <th class="account-name" width="34%">Account Name</th>
+                    <th class="text-right" width="16%">Period</th>
+                    <th class="text-right" width="16%">{{ $compareLabel }}</th>
+                    <th class="text-right" width="12%">Achieved %</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($sections as $section)
+                    <tr class="erp-section-row">
+                        <td colspan="5">{{ strtoupper($section['title'] ?? '') }}</td>
+                    </tr>
+
+                    @foreach($section['lines'] ?? [] as $line)
+                        @php $kind = $line['kind'] ?? 'account'; @endphp
+                        @if($kind === 'group')
+                            <tr class="erp-group-row"><td colspan="5">{{ $line['label'] ?? '' }}</td></tr>
+                        @elseif($kind === 'account')
+                            <tr>
+                                <td class="account-code">{{ $line['account_code'] ?? '' }}</td>
+                                <td class="account-name">{{ $line['label'] ?? '' }}</td>
+                                <td class="text-right">{{ $fmt($line['period'] ?? 0) }}</td>
+                                <td class="text-right">{{ $fmt($line['compareValue'] ?? 0) }}</td>
+                                <td class="text-right">{{ $line['achievePercent'] ?? $achieve((float) ($line['period'] ?? 0), (float) ($line['compareValue'] ?? 0)) }}</td>
+                            </tr>
+                        @elseif($kind === 'subtotal')
+                            <tr class="erp-subtotal-row">
+                                <td colspan="2">{{ $line['label'] ?? '' }}</td>
+                                <td class="text-right">{{ $fmt($line['period'] ?? 0) }}</td>
+                                <td class="text-right">{{ $fmt($line['compareValue'] ?? 0) }}</td>
+                                <td class="text-right">{{ $line['achievePercent'] ?? $achieve((float) ($line['period'] ?? 0), (float) ($line['compareValue'] ?? 0)) }}</td>
+                            </tr>
+                        @endif
+                    @endforeach
+
+                    @foreach($section['subtotals'] ?? [] as $subtotal)
+                        <tr class="erp-grand-row">
+                            <td colspan="2">Total {{ strtoupper($section['title'] ?? '') }}</td>
+                            <td class="text-right">{{ $fmt($subtotal['period'] ?? 0) }}</td>
+                            <td class="text-right">{{ $fmt($subtotal['compareValue'] ?? 0) }}</td>
+                            <td class="text-right">{{ $subtotal['achievePercent'] ?? $achieve((float) ($subtotal['period'] ?? 0), (float) ($subtotal['compareValue'] ?? 0)) }}</td>
+                        </tr>
+                    @endforeach
+                @endforeach
+
+                <tr class="erp-calculated-return-row">
+                    <td colspan="2">Calculated Return</td>
+                    <td class="text-right">{{ $fmt($calculatedReturn['period'] ?? 0) }}</td>
+                    <td class="text-right">{{ $fmt($calculatedReturn['compare'] ?? 0) }}</td>
+                    <td class="text-right">{{ $calculatedReturn['achievePercent'] ?? '999.0' }}</td>
+                </tr>
+            </tbody>
+        </table>
     @endif
-
-    <table class="erp-pl-table" width="100%" cellpadding="0" cellspacing="0">
-        <thead>
-            <tr>
-                <th width="78%"></th>
-                <th class="pl-amount" width="22%"></th>
-            </tr>
-        </thead>
-        <tbody>
-        <tr class="pl-heading">
-            <td class="pl-label">Sales Revenue</td>
-            <td class="pl-amount">{{ $fmt($val('sales')) }}</td>
-        </tr>
-
-        <tr class="pl-spacer"><td colspan="2">&nbsp;</td></tr>
-
-        <tr class="pl-heading">
-            <td class="pl-label">Less: Cost of Sales</td>
-            <td class="pl-amount">&nbsp;</td>
-        </tr>
-        <tr class="pl-line">
-            <td class="pl-label">Opening Stock</td>
-            <td class="pl-amount-sub">{{ $fmt($val('openingStock')) }}</td>
-        </tr>
-        <tr class="pl-line">
-            <td class="pl-label">Add: Purchases</td>
-            <td class="pl-amount-sub">{{ $fmt($val('purchases')) }}</td>
-        </tr>
-        <tr class="pl-line">
-            <td class="pl-label">Less: Closing Stock</td>
-            <td class="pl-amount-sub">{{ $fmtParen($val('closingStock')) }}</td>
-        </tr>
-        <tr class="pl-total">
-            <td class="pl-label">Total Cost of Sales</td>
-            <td class="pl-amount">{{ $fmtParen($val('costOfSales')) }}</td>
-        </tr>
-
-        <tr class="pl-spacer"><td colspan="2">&nbsp;</td></tr>
-
-        <tr class="pl-gross-profit">
-            <td class="pl-label">Gross Profit</td>
-            <td class="pl-amount">{{ $fmt($val('grossProfit')) }}</td>
-        </tr>
-        <tr class="pl-line">
-            <td class="pl-label">Add: Other Income</td>
-            <td class="pl-amount-sub">{{ $fmt($val('otherIncome')) }}</td>
-        </tr>
-        <tr class="pl-total">
-            <td class="pl-label">Total Income</td>
-            <td class="pl-amount">{{ $fmt($val('totalIncome')) }}</td>
-        </tr>
-
-        <tr class="pl-spacer"><td colspan="2">&nbsp;</td></tr>
-
-        <tr class="pl-heading">
-            <td class="pl-label">Less: Expenses</td>
-            <td class="pl-amount">&nbsp;</td>
-        </tr>
-        <tr class="pl-line">
-            <td class="pl-label">Distribution Expenses</td>
-            <td class="pl-amount-sub">{{ $fmt($catVal('sales_distribution')) }}</td>
-        </tr>
-        <tr class="pl-line">
-            <td class="pl-label">General &amp; Administrative Expenses</td>
-            <td class="pl-amount-sub">{{ $fmt($catVal('general_administrative')) }}</td>
-        </tr>
-        <tr class="pl-line">
-            <td class="pl-label">Finance Expenses</td>
-            <td class="pl-amount-sub">{{ $fmt($catVal('finance')) }}</td>
-        </tr>
-        <tr class="pl-line">
-            <td class="pl-label">Other Expenses</td>
-            <td class="pl-amount-sub">{{ $fmt($catVal('other_cost')) }}</td>
-        </tr>
-        <tr class="pl-total">
-            <td class="pl-label">Total Operating Expenses</td>
-            <td class="pl-amount">{{ $fmtParen($val('totalExpenses')) }}</td>
-        </tr>
-
-        <tr class="pl-spacer"><td colspan="2">&nbsp;</td></tr>
-
-        <tr class="pl-net-profit">
-            <td class="pl-label">Net Profit</td>
-            <td class="pl-amount">{{ $fmt($val('netProfit')) }}</td>
-        </tr>
-        </tbody>
-    </table>
-
-    <div class="erp-footer">Profit and Loss Statement</div>
 </body>
 </html>

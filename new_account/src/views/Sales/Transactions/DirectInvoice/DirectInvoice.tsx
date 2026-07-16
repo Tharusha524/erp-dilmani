@@ -891,9 +891,10 @@ export default function DirectInvoice() {
             let detail = e?.statusText || e?.message || "Unknown error";
             if (respData) {
                 if (typeof respData === "object") {
-                    detail = respData.message
-                        + (respData.error ? `: ${respData.error}` : "")
-                        || (respData.errors ? JSON.stringify(respData.errors, null, 2) : JSON.stringify(respData, null, 2));
+                    let msg = respData.message || "";
+                    if (respData.error) msg += `: ${respData.error}`;
+                    if (respData.errors) msg += `\nErrors:\n${JSON.stringify(respData.errors, null, 2)}`;
+                    detail = msg || JSON.stringify(respData, null, 2);
                 } else {
                     detail = String(respData);
                 }

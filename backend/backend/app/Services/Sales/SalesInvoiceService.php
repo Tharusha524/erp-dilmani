@@ -106,6 +106,7 @@ class SalesInvoiceService
 
                 $remaining = (float) $detail->quantity - (float) $detail->qty_done;
                 if ($qty > $remaining + 0.0001) {
+
                     throw new InvalidArgumentException(
                         "Invoice quantity for {$detail->stock_id} exceeds undelivered quantity on delivery."
                     );

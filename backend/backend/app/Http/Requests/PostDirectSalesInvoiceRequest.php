@@ -11,6 +11,12 @@ class PostDirectSalesInvoiceRequest extends FormRequest
         return true;
     }
 
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        \Illuminate\Support\Facades\Log::error('Validation failed for Direct Invoice', $validator->errors()->toArray());
+        parent::failedValidation($validator);
+    }
+
     /**
      * @return array<string, mixed>
      */
