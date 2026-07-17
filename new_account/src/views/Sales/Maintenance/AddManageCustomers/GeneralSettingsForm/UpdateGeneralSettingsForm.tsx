@@ -25,6 +25,7 @@ import DeleteConfirmationModal from "../../../../../components/DeleteConfirmatio
 import { getPaymentTerms } from "../../../../../api/PaymentTerm/PaymentTermApi";
 import CostCenterSelect from "../../../../../components/CostCenterSelect";
 import { getFriendlyApiErrorMessage } from "../../../../../utils/apiErrorMessage";
+import FormattedNumberField from "../../../../../components/FormattedNumberField";
 
 interface GeneralSettingsFormProps {
     customerId?: string | number;
@@ -516,7 +517,7 @@ export default function UpdateGeneralSettingsForm({ customerId, onCustomerDelete
                                 error={!!errors.promptPaymentDiscount}
                                 helperText={errors.promptPaymentDiscount || " "}
                             />
-                            <TextField
+                            <FormattedNumberField
                                 label="Credit Limit"
                                 value={formData.creditLimit}
                                 onChange={(e) => handleChange("creditLimit", e.target.value)}

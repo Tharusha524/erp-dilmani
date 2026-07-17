@@ -901,6 +901,7 @@ class BankingTransactionService
                     'ref' => $reference,
                     'trans_date' => $date,
                     'amount' => $bankAmount,
+                    'cost_center_id' => $data['cost_center_id'] ?? null,
                     'updated_at' => now(),
                 ]);
             $bankTransId = (int) (DB::table('bank_trans')
@@ -915,6 +916,7 @@ class BankingTransactionService
                 'ref' => $reference,
                 'trans_date' => $date,
                 'amount' => $bankAmount,
+                'cost_center_id' => $data['cost_center_id'] ?? null,
             ]);
             $bankTransId = $bankRow['id'] ?? null;
         }
@@ -934,9 +936,9 @@ class BankingTransactionService
         }
 
         if ($creditBank) {
-            $glLines[] = $this->glLinePayload($transType, $transNo, $reference, $date, $bankGl, 0, $total, $memo ?: $bankLabel);
+            $glLines[] = $this->glLinePayload($transType, $transNo, $reference, $date, $bankGl, 0, $total, $memo ?: $bankLabel, $data['cost_center_id'] ?? null);
         } else {
-            $glLines[] = $this->glLinePayload($transType, $transNo, $reference, $date, $bankGl, $total, 0, $memo ?: $bankLabel);
+            $glLines[] = $this->glLinePayload($transType, $transNo, $reference, $date, $bankGl, $total, 0, $memo ?: $bankLabel, $data['cost_center_id'] ?? null);
         }
 
         if ($glLines !== []) {

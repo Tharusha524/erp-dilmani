@@ -38,6 +38,7 @@ export const postBankingPayment = async (payload: {
   trans_date: string;
   reference?: string;
   memo?: string;
+  cost_center_id?: number;
   lines: BankingLine[];
 }) => {
   const { data } = await api.post("/banking/payment", payload);
@@ -56,6 +57,7 @@ export const putBankingPayment = async (
     trans_date: string;
     reference?: string;
     memo?: string;
+    cost_center_id?: number;
     lines: BankingLine[];
   }
 ) => {
@@ -155,6 +157,7 @@ export function mapFormLines(
       credit: parseFloat(String(r.credit || "0")) || undefined,
       memo: r.memo,
       costCenter: r.costCenter,
+      cost_center_id: r.costCenter, // Backend expects cost_center_id
     }))
     .filter((l) => l.account_code);
 }

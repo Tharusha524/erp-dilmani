@@ -41,6 +41,10 @@ class ReportsRepository extends BaseRepository implements ReportsInterface
                 $q->where('t.tran_date', '<=', $date)
                   ->orWhereNull('t.tran_date');
             })
+            ->where(function($q) {
+                $q->where('t.trans_type', '<>', 13)
+                  ->orWhereNull('t.trans_type');
+            })
             ->groupBy('d.debtor_no', 'd.name', 'd.curr_code');
 
         if ($from_customer) {
@@ -97,6 +101,10 @@ class ReportsRepository extends BaseRepository implements ReportsInterface
             ->where(function($q) use ($date) {
                 $q->where('t.tran_date', '<=', $date)
                   ->orWhereNull('t.tran_date');
+            })
+            ->where(function($q) {
+                $q->where('t.trans_type', '<>', 13)
+                  ->orWhereNull('t.trans_type');
             })
             ->groupBy('d.debtor_no', 'd.name', 'd.curr_code');
 

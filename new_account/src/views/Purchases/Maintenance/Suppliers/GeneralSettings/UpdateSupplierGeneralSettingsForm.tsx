@@ -33,6 +33,7 @@ import ErrorModal from "../../../../../components/ErrorModal";
 import { getPaymentTerms } from "../../../../../api/PaymentTerm/PaymentTermApi";
 import CostCenterSelect from "../../../../../components/CostCenterSelect";
 import { getFriendlyApiErrorMessage } from "../../../../../utils/apiErrorMessage";
+import FormattedNumberField from "../../../../../components/FormattedNumberField";
 
 interface UpdateSupplierGeneralSettingProps {
     supplierId?: string | number;
@@ -383,7 +384,7 @@ export default function UpdateSupplierGeneralSettingsForm({
                                 error={!!errors.bankAccount}
                                 helperText={errors.bankAccount}
                             />
-                            <TextField
+                            <FormattedNumberField
                                 label="Credit Limit"
                                 value={formData.creditLimit}
                                 onChange={(e) => handleChange("creditLimit", e.target.value)}

@@ -30,6 +30,7 @@ import { createCrmContact } from "../../../../../api/CrmContact/CrmContact";
 import { getContactCategories } from "../../../../../api/ContactCategory/ContactCategoryApi";
 import CostCenterSelect from "../../../../../components/CostCenterSelect";
 import { getFriendlyApiErrorMessage } from "../../../../../utils/apiErrorMessage";
+import FormattedNumberField from "../../../../../components/FormattedNumberField";
 
 interface SupplierGeneralSettingProps {
   supplierId?: string | number;
@@ -380,7 +381,7 @@ export default function SupplierGeneralSettingsForm({ supplierId, onSupplierAdde
                 error={!!errors.bankAccount}
                 helperText={errors.bankAccount}
               />
-              <TextField
+              <FormattedNumberField
                 label="Credit Limit"
                 value={formData.creditLimit}
                 onChange={(e) => handleChange("creditLimit", e.target.value)}

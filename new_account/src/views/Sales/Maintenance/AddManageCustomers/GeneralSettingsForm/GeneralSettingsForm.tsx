@@ -28,6 +28,7 @@ import { getSalesPersons, SalesPerson } from "../../../../../api/SalesPerson/Sal
 import { getInventoryLocations, InventoryLocation } from "../../../../../api/InventoryLocation/InventoryLocationApi";
 import { getShippingCompanies, ShippingCompany } from "../../../../../api/ShippingCompany/ShippingCompanyApi";
 import { getTaxGroups, TaxGroup } from "../../../../../api/Tax/taxServices";
+import FormattedNumberField from "../../../../../components/FormattedNumberField";
 import { getCreditStatusSetups, CreditStatusSetup } from "../../../../../api/CreditStatusSetup/CreditStatusSetupApi";
 import { createBranch } from "../../../../../api/CustomerBranch/CustomerBranchApi";
 import ErrorModal from "../../../../../components/ErrorModal";
@@ -528,7 +529,7 @@ export default function GeneralSettingsForm({ customerId, onCustomerAdded }: Gen
                 error={!!errors.promptPaymentDiscount}
                 helperText={errors.promptPaymentDiscount || " "}
               />
-              <TextField
+              <FormattedNumberField
                 label="Credit Limit"
                 value={formData.creditLimit}
                 onChange={(e) => handleChange("creditLimit", e.target.value)}

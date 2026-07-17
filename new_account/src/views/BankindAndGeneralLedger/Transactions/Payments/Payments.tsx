@@ -48,6 +48,7 @@ import { getFriendlyApiErrorMessage } from "../../../../utils/apiErrorMessage";
 import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import PageLoader from "../../../../components/PageLoader";
+import ReportCostCenterSelect from "../../../../components/ReportCostCenterSelect";
 import BankPayerModeBar from "../../../../components/BankPayerModeBar";
 import theme from "../../../../theme";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
@@ -597,7 +598,10 @@ export default function Payments() {
                   </TextField>
                 </TableCell>
                 <TableCell>
-                  <TextField size="small" value={row.costCenter} onChange={(e) => handleChange(row.id, "costCenter", e.target.value)} />
+                  <ReportCostCenterSelect
+                    value={row.costCenter}
+                    onChange={(val) => handleChange(row.id, "costCenter", val)}
+                  />
                 </TableCell>
                 <TableCell>
                   <FormattedNumberField size="small" value={row.amount} onChange={(e) => handleChange(row.id, "amount", e.target.value)} />

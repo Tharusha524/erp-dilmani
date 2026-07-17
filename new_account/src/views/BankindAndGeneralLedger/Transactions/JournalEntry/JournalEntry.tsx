@@ -884,8 +884,8 @@ export default function JournalEntry() {
               <TableCell>Account Code</TableCell>
               <TableCell>Account Description</TableCell>
               <TableCell>Cost Center</TableCell>
-              <TableCell>Debit</TableCell>
-              <TableCell>Credit</TableCell>
+              <TableCell width={130}>Debit</TableCell>
+              <TableCell width={130}>Credit</TableCell>
               <TableCell>Memo</TableCell>
               <TableCell align="center">Action</TableCell>
             </TableRow>
@@ -989,6 +989,8 @@ export default function JournalEntry() {
                 <TableCell>
                   <FormattedNumberField
                     size="small"
+                    fullWidth
+                    sx={{ minWidth: 110 }}
                     inputProps={{ step: "0.01" }}
                     placeholder="0.00"
                     value={row.debit}
@@ -998,6 +1000,8 @@ export default function JournalEntry() {
                 <TableCell>
                   <FormattedNumberField
                     size="small"
+                    fullWidth
+                    sx={{ minWidth: 110 }}
                     inputProps={{ step: "0.01" }}
                     placeholder="0.00"
                     value={row.credit}

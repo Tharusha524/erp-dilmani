@@ -501,7 +501,25 @@ export default function PurchaseOrderEntry() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <Stack
+      spacing={2}
+      sx={{
+        backgroundColor: "#ebfee6ff",
+        minHeight: "100%",
+        p: 4,
+        borderRadius: 5,
+        "& .MuiOutlinedInput-root": {
+          "& fieldset": {
+            borderColor: "#ddddddff",
+            borderWidth: "2px",
+          },
+          "&:hover fieldset": {
+            borderColor: "#a6dca8",
+            borderWidth: "2px",
+          },
+        }
+      }}
+    >
       {/* Header */}
       <Box
         sx={{
@@ -511,6 +529,8 @@ export default function PurchaseOrderEntry() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          backgroundColor: "#ffffffff",
+          border: "2px solid #ffffffff",
         }}
       >
         <Box>
@@ -524,7 +544,7 @@ export default function PurchaseOrderEntry() {
       </Box>
 
       {/* Form Fields */}
-      <Paper sx={{ p: 2, borderRadius: 2 }}>
+      <Paper sx={{ p: 2, borderRadius: 2, backgroundColor: "#ffffffff", border: "1px solid #ffffffff" }}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={4}>
             <Stack spacing={2}>
@@ -605,7 +625,7 @@ export default function PurchaseOrderEntry() {
         Order Items
       </Typography>
 
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ backgroundColor: "#ffffffff", border: "1px solid #ffffffff" }}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
             <TableRow>
@@ -793,7 +813,7 @@ export default function PurchaseOrderEntry() {
       ) : null}
 
       {/* Memo Section */}
-      <Paper sx={{ p: 2, borderRadius: 2 }}>
+      <Paper sx={{ p: 2, borderRadius: 2, backgroundColor: "#ffffffff", border: "1px solid #ffffffff" }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
           Memo
         </Typography>

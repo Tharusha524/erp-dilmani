@@ -217,17 +217,8 @@ class BankBalanceService
      */
     public function assertAllowedPaymentSource(int $bankAccountId): void
     {
-        if ($bankAccountId <= 0 || ! $this->isCashBankAccount($bankAccountId)) {
-            return;
-        }
-
-        $name = DB::table('bank_accounts')->where('id', $bankAccountId)->value('bank_account_name');
-        $label = $name ? (string) $name : 'Cash in Hand';
-
-        throw new \InvalidArgumentException(sprintf(
-            'Payments cannot be made from %s. Select the Current/Chequing bank account instead.',
-            $label
-        ));
+        // Validation bypassed: allow payments from any account, including Cash In Hand.
+        return;
     }
 
     /**
