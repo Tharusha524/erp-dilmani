@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -145,7 +146,7 @@ export default function WorkCentresTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -182,7 +183,6 @@ export default function WorkCentresTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search + Show Inactive */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -206,7 +206,6 @@ export default function WorkCentresTable() {
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -294,7 +293,6 @@ export default function WorkCentresTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -309,6 +307,6 @@ export default function WorkCentresTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -140,7 +141,7 @@ export default function ShippingCompanyTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -179,7 +180,6 @@ export default function ShippingCompanyTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search + Filter */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -209,7 +209,6 @@ export default function ShippingCompanyTable() {
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -304,7 +303,6 @@ export default function ShippingCompanyTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -322,6 +320,6 @@ export default function ShippingCompanyTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
@@ -145,7 +146,7 @@ export default function InventoryLocationTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -177,7 +178,6 @@ export default function InventoryLocationTable() {
           </Button>
         </Stack>
       </Box>
-
       {/*  Search + Show inactive toggle */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -203,7 +203,6 @@ export default function InventoryLocationTable() {
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search..." />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
@@ -293,7 +292,6 @@ export default function InventoryLocationTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -308,6 +306,6 @@ export default function InventoryLocationTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

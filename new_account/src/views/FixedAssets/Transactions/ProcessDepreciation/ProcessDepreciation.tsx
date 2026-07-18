@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -149,7 +150,7 @@ export default function ProcessDepreciation() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           p: 2,
@@ -174,7 +175,6 @@ export default function ProcessDepreciation() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ p: 2 }}>
         <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="flex-start">
           <TextField
@@ -309,6 +309,6 @@ export default function ProcessDepreciation() {
           </Button>
         </Stack>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
     Box,
@@ -107,7 +108,7 @@ export default function CostedInventoryMovementReportForm() {
     }
 
     return (
-        <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+        <FormPageLayout>
             <Paper
                 sx={{
                     p: 3,
@@ -250,6 +251,6 @@ export default function CostedInventoryMovementReportForm() {
                     </Button>
                 </Box>
             </Paper>
-        </Stack>
+        </FormPageLayout>
     );
 }

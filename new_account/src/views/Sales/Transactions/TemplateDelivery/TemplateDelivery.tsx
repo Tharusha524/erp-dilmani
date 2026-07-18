@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -245,7 +246,7 @@ export default function TemplateDelivery() {
   };
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -271,13 +272,11 @@ export default function TemplateDelivery() {
           Back
         </Button>
       </Box>
-
       <Alert severity="info">
         Template orders use the <strong>Template</strong> checkbox on{" "}
         <strong>Sales → Inquiries → Search All Sales Orders</strong>. Only orders marked as
         template (<code>type = 1</code>) appear here — not price list (<code>order_type</code>).
       </Alert>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={2}>
@@ -397,7 +396,6 @@ export default function TemplateDelivery() {
           </Grid>
         </Grid>
       </Paper>
-
       {rows.length === 0 && !isLoading && (
         <Alert severity="warning">
           No template orders found. Open{" "}
@@ -405,7 +403,6 @@ export default function TemplateDelivery() {
           <strong>Template</strong> column for an order, then return here.
         </Alert>
       )}
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -470,6 +467,6 @@ export default function TemplateDelivery() {
           </TableFooter>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

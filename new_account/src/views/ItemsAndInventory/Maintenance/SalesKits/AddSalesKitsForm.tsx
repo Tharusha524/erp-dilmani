@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getItemCategories } from "../../../../api/ItemCategories/ItemCategoriesApi";
@@ -463,7 +464,7 @@ export default function AddSalesKitsForm() {
   };
 
   return (
-    <Stack sx={{ width: "100%" }}>
+    <FormPageLayout>
       {/* Header similar to ForeignItemCodesTable */}
       <Box
         sx={{
@@ -516,7 +517,6 @@ export default function AddSalesKitsForm() {
           <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate('/itemsandinventory/maintenance/')}>Back</Button>
         </Box>
       </Box>
-
       {/* Main content */}
       <Stack alignItems="center" sx={{ mt: 0, px: isMobile ? 2 : 0 }}>
         <Paper
@@ -667,7 +667,7 @@ export default function AddSalesKitsForm() {
               </>
             ) : (
               // Update form: only show description and category
-              <>
+              (<>
                 <TextField
                   label="Description"
                   name="description"
@@ -678,7 +678,6 @@ export default function AddSalesKitsForm() {
                   error={!!errors.description}
                   helperText={errors.description || " "}
                 />
-
                 <FormControl size="small" fullWidth error={!!errors.category}>
                   <InputLabel>Category</InputLabel>
                   <Select
@@ -705,7 +704,7 @@ export default function AddSalesKitsForm() {
                   </Select>
                   <FormHelperText>{errors.category || " "}</FormHelperText>
                 </FormControl>
-              </>
+              </>)
             )}
           </Stack>
 
@@ -876,6 +875,6 @@ export default function AddSalesKitsForm() {
         deleteFunc={handleDeleteConfirm}
         onSuccess={() => {}}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

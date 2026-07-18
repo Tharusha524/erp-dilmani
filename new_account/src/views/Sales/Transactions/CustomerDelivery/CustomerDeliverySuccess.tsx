@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React from "react";
 import { Box, Button, Stack, Typography, Paper } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
@@ -17,7 +18,7 @@ export default function CustomerDeliverySuccess() {
     ];
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             <Box
                 sx={{
                     padding: 2,
@@ -42,7 +43,6 @@ export default function CustomerDeliverySuccess() {
                     Close
                 </Button>
             </Box>
-
             <Paper sx={{ p: 2 }}>
                 <Typography sx={{ mb: 2, textAlign: 'center' }}>
                     Delivery #{transNo} has been entered.
@@ -129,6 +129,6 @@ export default function CustomerDeliverySuccess() {
                     </Button>
                 </Stack>
             </Paper>
-        </Stack>
+        </FormPageLayout>
     );
 }

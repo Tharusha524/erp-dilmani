@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import { useQuery } from "@tanstack/react-query";
 import {
   Box,
@@ -501,25 +502,7 @@ export default function PurchaseOrderEntry() {
   ];
 
   return (
-    <Stack
-      spacing={2}
-      sx={{
-        backgroundColor: "#ebfee6ff",
-        minHeight: "100%",
-        p: 4,
-        borderRadius: 5,
-        "& .MuiOutlinedInput-root": {
-          "& fieldset": {
-            borderColor: "#ddddddff",
-            borderWidth: "2px",
-          },
-          "&:hover fieldset": {
-            borderColor: "#a6dca8",
-            borderWidth: "2px",
-          },
-        }
-      }}
-    >
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -828,6 +811,6 @@ export default function PurchaseOrderEntry() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

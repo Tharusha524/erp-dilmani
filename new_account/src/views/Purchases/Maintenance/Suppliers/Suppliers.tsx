@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -121,8 +122,7 @@ const AddAndManageSuppliers = () => {
   };
 
   return (
-    <Stack sx={{ minHeight: "100vh", backgroundColor: "#f0f0f0", p: { xs: 2, sm: 3, md: 5 } }} spacing={3}>
-      
+    <FormPageLayout>
       {/* Header + Dropdown + Back */}
       <Box
         sx={{
@@ -161,7 +161,6 @@ const AddAndManageSuppliers = () => {
           Back
         </Button>
       </Box>
-
       {/* Tabs */}
       <Tabs
         value={tabValue}
@@ -178,7 +177,6 @@ const AddAndManageSuppliers = () => {
         <Tab label="Purchase Orders" disabled={selectedSupplier === "new"} />
         <Tab label="Attachments" disabled={selectedSupplier === "new"} />
       </Tabs>
-
       {/* Tab Panels */}
       <TabPanel value={tabValue} index={0}>
         {selectedSupplier === "new" ? (
@@ -193,23 +191,19 @@ const AddAndManageSuppliers = () => {
           />
         )}
       </TabPanel>
-
       <TabPanel value={tabValue} index={1}>
         {selectedSupplier !== "new" && <SuppliersContactsTable supplierId={selectedSupplier} />}
       </TabPanel>
-
       <TabPanel value={tabValue} index={2}>
         {selectedSupplier !== "new" && <TransactionsTable supplierId={selectedSupplier} />}
       </TabPanel>
-
       <TabPanel value={tabValue} index={3}>
         {selectedSupplier !== "new" && <PurchaseOrdersTable supplierId={selectedSupplier} />}
       </TabPanel>
-
       <TabPanel value={tabValue} index={4}>
         {selectedSupplier !== "new" && <AttachmentsTable supplierId={selectedSupplier} />}
       </TabPanel>
-    </Stack>
+    </FormPageLayout>
   );
 };
 

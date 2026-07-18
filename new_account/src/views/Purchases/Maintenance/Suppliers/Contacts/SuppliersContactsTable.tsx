@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -141,7 +142,7 @@ export default function SuppliersContactsTable({ supplierId }: SupplierContacsPr
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -179,7 +180,6 @@ export default function SuppliersContactsTable({ supplierId }: SupplierContacsPr
           </Button>
         </Stack>
       </Box>
-
       {/* Checkbox & Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -201,7 +201,6 @@ export default function SuppliersContactsTable({ supplierId }: SupplierContacsPr
           />
         </Box>
       </Stack>
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
           <Table aria-label="contacts table">
@@ -288,6 +287,6 @@ export default function SuppliersContactsTable({ supplierId }: SupplierContacsPr
         deleteFunc={confirmDelete}
         onSuccess={() => console.log("Contact deleted successfully!")}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

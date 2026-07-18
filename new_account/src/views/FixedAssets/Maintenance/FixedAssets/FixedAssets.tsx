@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState } from "react";
 import {
   Box,
@@ -85,8 +86,7 @@ const FixedAssets = () => {
   );
 
   return (
-    <Stack sx={{ minHeight: "100vh", backgroundColor: "#f0f0f0", p: { xs: 2, sm: 3, md: 5 } }} spacing={3}>
-
+    <FormPageLayout>
       {/* Header + Dropdown + Back */}
       <Box
         sx={{
@@ -149,7 +149,6 @@ const FixedAssets = () => {
           Back
         </Button>
       </Box>
-
       {/* Tabs */}
       <Tabs
         value={tabValue}
@@ -164,7 +163,6 @@ const FixedAssets = () => {
         <Tab label="Transactions" disabled={selectedItem === "new"} />
         <Tab label="Attachments" disabled={selectedItem === "new"} />
       </Tabs>
-
       {/* Tab Panels */}
       <TabPanel value={tabValue} index={0}>
         {selectedItem === "new" ? (
@@ -173,15 +171,13 @@ const FixedAssets = () => {
           <UpdateFixedAssetsGeneralSettingsForm itemId={selectedItem} />
         )}
       </TabPanel>
-
       <TabPanel value={tabValue} index={1}>
         {selectedItem !== "new" && <FixedAssetsTransactionsTable itemId={selectedItem} />}
       </TabPanel>
-
       <TabPanel value={tabValue} index={2}>
         {selectedItem !== "new" && <FixedAssetsAttachmentsTable itemId={selectedItem} />}
       </TabPanel>
-    </Stack>
+    </FormPageLayout>
   );
 };
 

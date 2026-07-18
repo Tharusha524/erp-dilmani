@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -114,7 +115,7 @@ export default function CreateInvoice() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       {isLoading ? (
         <Typography>Loading invoice data...</Typography>
       ) : !selectedInvoice ? (
@@ -239,6 +240,6 @@ export default function CreateInvoice() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

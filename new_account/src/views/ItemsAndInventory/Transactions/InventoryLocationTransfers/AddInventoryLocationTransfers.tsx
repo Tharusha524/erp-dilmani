@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
@@ -357,7 +358,7 @@ export default function AddInventoryLocationTransfers() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/*  Header */}
       <Box
         sx={{
@@ -383,7 +384,6 @@ export default function AddInventoryLocationTransfers() {
           Back
         </Button>
       </Box>
-
       {/*  From/To Location, Date, Reference */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
@@ -462,7 +462,6 @@ export default function AddInventoryLocationTransfers() {
           </Grid>
         </Grid>
       </Paper>
-
       {/*  Table */}
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
@@ -583,7 +582,6 @@ export default function AddInventoryLocationTransfers() {
           </TableBody>
         </Table>
       </TableContainer>
-
       {/*  Memo Field */}
       <Box sx={{ mt: 2, pl: 1, pr: 1 }}>
         <Typography sx={{ mb: 1, fontWeight: 600 }}>Memo:</Typography>
@@ -596,7 +594,6 @@ export default function AddInventoryLocationTransfers() {
           onChange={(e) => setMemo(e.target.value)}
         />
       </Box>
-
       {/* Success/Error Messages */}
       {processSuccess && (
         <Alert severity="success" sx={{ mt: 2 }}>
@@ -613,7 +610,6 @@ export default function AddInventoryLocationTransfers() {
           The fiscal year is closed. Transfers cannot be processed.
         </Alert>
       )}
-
       {/*  Process Transfer Button */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2, pr: 1 }}>
         <Button 
@@ -638,6 +634,6 @@ export default function AddInventoryLocationTransfers() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -99,7 +100,7 @@ export default function OutstandingCostCenters() {
   }, [rows, page, rowsPerPage]);
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -125,7 +126,6 @@ export default function OutstandingCostCenters() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={3}>
@@ -191,7 +191,6 @@ export default function OutstandingCostCenters() {
           </Grid>
         </Grid>
       </Paper>
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table size={isMobile ? "small" : "medium"}>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -263,6 +262,6 @@ export default function OutstandingCostCenters() {
           </TableFooter>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

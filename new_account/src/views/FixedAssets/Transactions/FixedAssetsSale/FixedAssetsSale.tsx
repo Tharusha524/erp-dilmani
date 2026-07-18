@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
     Box,
@@ -490,7 +491,7 @@ export default function FixedAssetsSale() {
     const amountTotal = subTotal + shippingCharge;
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             {/* Header */}
             <Box
                 sx={{
@@ -511,7 +512,6 @@ export default function FixedAssetsSale() {
                     Back
                 </Button>
             </Box>
-
             {/* Form fields */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
@@ -621,7 +621,6 @@ export default function FixedAssetsSale() {
                     </Grid>
                 </Grid>
             </Paper>
-
             {/* Items Table */}
             <Typography variant="subtitle1" sx={{ mb: 2, textAlign: 'center' }}>Sales Invoice Items</Typography>
             <TableContainer component={Paper}>     
@@ -810,7 +809,6 @@ export default function FixedAssetsSale() {
                     </TableFooter>
                 </Table>
             </TableContainer>
-
             {/* Cash Payment Section */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Typography variant="subtitle1" sx={{ mb: 2, textAlign: 'center' }}>
@@ -915,6 +913,6 @@ export default function FixedAssetsSale() {
                     </Button>
                 </Box>
             </Paper>
-        </Stack>
+        </FormPageLayout>
     );
 }

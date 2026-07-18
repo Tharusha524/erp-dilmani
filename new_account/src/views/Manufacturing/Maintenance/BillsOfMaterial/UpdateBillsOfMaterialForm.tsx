@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getItems } from "../../../../api/Item/ItemApi";
@@ -214,7 +215,7 @@ export default function UpdateBillsOfMaterialForm() {
   });
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: theme.spacing(3),
@@ -336,6 +337,6 @@ export default function UpdateBillsOfMaterialForm() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

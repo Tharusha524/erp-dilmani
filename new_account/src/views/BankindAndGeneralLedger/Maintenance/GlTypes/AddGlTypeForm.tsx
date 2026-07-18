@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -60,7 +61,7 @@ export default function AddGlTypeForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: theme.spacing(3),
@@ -117,6 +118,6 @@ export default function AddGlTypeForm() {
         onSuccess={() => window.history.back()}
       />
       <ErrorModal open={errorOpen} onClose={() => setErrorOpen(false)} message={errorMessage} />
-    </Stack>
+    </FormPageLayout>
   );
 }

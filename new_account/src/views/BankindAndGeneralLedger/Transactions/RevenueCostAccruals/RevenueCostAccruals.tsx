@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState } from "react";
 import {
   Alert,
@@ -118,7 +119,7 @@ export default function RevenueCostAccruals() {
   };
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -144,7 +145,6 @@ export default function RevenueCostAccruals() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ p: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Spread revenue or cost across multiple periods. Each period posts a balanced journal entry
@@ -286,7 +286,6 @@ export default function RevenueCostAccruals() {
           </Button>
         </Stack>
       </Paper>
-
       {previewRows.length > 0 && (
         <TableContainer component={Paper}>
           <Table size="small">
@@ -317,6 +316,6 @@ export default function RevenueCostAccruals() {
           </Table>
         </TableContainer>
       )}
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -73,7 +74,7 @@ const CustomersBranches = () => {
   };
 
   return (
-    <Stack sx={{ minHeight: "100vh", backgroundColor: "#f0f0f0", p: { xs: 2, sm: 3, md: 5 } }} spacing={3}>
+    <FormPageLayout>
       {/* Header + Dropdown + Back */}
       <Box
         sx={{
@@ -90,7 +91,7 @@ const CustomersBranches = () => {
 
         {!isEditMode && (
           /* Customer dropdown - hide in edit mode */
-          <FormControl sx={{ minWidth: 250 }}>
+          (<FormControl sx={{ minWidth: 250 }}>
             <InputLabel>Select Customer</InputLabel>
             <Select
               value={selectedCustomer}
@@ -103,7 +104,7 @@ const CustomersBranches = () => {
                 </MenuItem>
               ))}
             </Select>
-          </FormControl>
+          </FormControl>)
         )}
 
         {/* Back Button */}
@@ -122,7 +123,6 @@ const CustomersBranches = () => {
           Back
         </Button>
       </Box>
-
       {/* Show the table directly when not in edit mode */}
       {!isEditMode ? (
         selectedCustomer && <CustomerBranchesTable customerId={selectedCustomer} />
@@ -156,7 +156,7 @@ const CustomersBranches = () => {
           </TabPanel>
         </>
       )}
-    </Stack>
+    </FormPageLayout>
   );
 };
 

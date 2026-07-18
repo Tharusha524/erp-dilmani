@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React from "react";
 import { Box, Button, Stack, Typography, Paper } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
@@ -16,7 +17,7 @@ export default function UpdatedSalesQuotationEntrySuccess() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: 2,
@@ -41,7 +42,6 @@ export default function UpdatedSalesQuotationEntrySuccess() {
           Close
         </Button>
       </Box>
-
       <Paper sx={{ p: 2 }}>
         <Typography sx={{ mb: 2, textAlign: 'center' }}>
           Quotation #{orderNo || ''} has been updated.
@@ -93,6 +93,6 @@ export default function UpdatedSalesQuotationEntrySuccess() {
           </Button>
         </Stack>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

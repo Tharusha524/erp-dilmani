@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React from "react";
 import { Box, Button, Paper, Stack, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +10,7 @@ export default function ClosingGlTransactions() {
   const navigate = useNavigate();
 
   return (
-    <Stack spacing={2} sx={{ p: 3 }}>
+    <FormPageLayout>
       <PageTitle title="Closing GL Transactions" />
       <Breadcrumb
         breadcrumbs={[
@@ -46,6 +47,6 @@ export default function ClosingGlTransactions() {
           </Button>
         </Stack>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

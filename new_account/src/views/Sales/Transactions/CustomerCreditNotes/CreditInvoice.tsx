@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
     Box,
@@ -502,7 +503,7 @@ export default function CreditInvoice() {
     ];
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             {/* Header */}
             <Box
                 sx={{
@@ -523,7 +524,6 @@ export default function CreditInvoice() {
                     Back
                 </Button>
             </Box>
-
             {/* Form fields */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
@@ -609,12 +609,10 @@ export default function CreditInvoice() {
                     </Grid>
                 </Grid>
             </Paper>
-
             {/* Items Table */}
             <Typography variant="subtitle1" sx={{ mb: 2, textAlign: "center" }}>
                 Customer Credit Note Items
             </Typography>
-
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -720,7 +718,6 @@ export default function CreditInvoice() {
                     </TableFooter>
                 </Table>
             </TableContainer>
-
             {/* Credit Note Type + Memo Section */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
@@ -776,6 +773,6 @@ export default function CreditInvoice() {
                     </Button>
                 </Box>
             </Paper>
-        </Stack>
+        </FormPageLayout>
     );
 }

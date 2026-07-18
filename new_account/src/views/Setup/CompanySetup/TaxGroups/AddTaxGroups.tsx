@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -143,7 +144,7 @@ export default function AddTaxGroupsForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: 2 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: theme.spacing(3),
@@ -239,7 +240,6 @@ export default function AddTaxGroupsForm() {
           </Button>
         </Box>
       </Paper>
-
       <AddedConfirmationModal
         open={open}
         title="Success"
@@ -248,12 +248,11 @@ export default function AddTaxGroupsForm() {
         handleClose={() => setOpen(false)}
         onSuccess={() => window.history.back()}
       />
-
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

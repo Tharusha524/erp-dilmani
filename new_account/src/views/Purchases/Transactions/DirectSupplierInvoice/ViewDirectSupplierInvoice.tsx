@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo } from "react";
 import {
   Box,
@@ -56,7 +57,7 @@ export default function ViewDirectSupplierInvoice() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -81,7 +82,6 @@ export default function ViewDirectSupplierInvoice() {
           Back
         </Button>
       </Box>
-
       {/* Invoice Information */}
       <Paper sx={{ p: 3 }}>
         <Typography
@@ -119,7 +119,6 @@ export default function ViewDirectSupplierInvoice() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Items Table */}
       <Paper sx={{ p: 2 }}>
         <Typography sx={{ mb: 1, fontWeight: 600 }}>
@@ -191,6 +190,6 @@ export default function ViewDirectSupplierInvoice() {
           </Button>
         </Stack>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

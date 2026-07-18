@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
@@ -157,7 +158,7 @@ function ItemCategoriesTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header with buttons */}
       <Box
         sx={{
@@ -190,7 +191,6 @@ function ItemCategoriesTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search + Show Inactive Toggle */}
       <Box
         sx={{
@@ -211,7 +211,6 @@ function ItemCategoriesTable() {
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search..." />
         </Box>
       </Box>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -325,21 +324,21 @@ function ItemCategoriesTable() {
           </Table>
         </TableContainer>
       </Stack>
-       <DeleteConfirmationModal
-              open={openDeleteModal}
-              title="Delete Item Category"
-              content="Are you sure you want to delete this item category? This action cannot be undone."
-              handleClose={() => setOpenDeleteModal(false)}
-              handleReject={() => setOpenDeleteModal(false)}
-              deleteFunc={handleDeleteConfirm}
-              onSuccess={() => {}}
-            />
-            <ErrorModal
-              open={errorOpen}
-              onClose={() => setErrorOpen(false)}
-              message={errorMessage}
-            />
-    </Stack>
+      <DeleteConfirmationModal
+             open={openDeleteModal}
+             title="Delete Item Category"
+             content="Are you sure you want to delete this item category? This action cannot be undone."
+             handleClose={() => setOpenDeleteModal(false)}
+             handleReject={() => setOpenDeleteModal(false)}
+             deleteFunc={handleDeleteConfirm}
+             onSuccess={() => {}}
+           />
+      <ErrorModal
+        open={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        message={errorMessage}
+      />
+    </FormPageLayout>
   );
 }
 

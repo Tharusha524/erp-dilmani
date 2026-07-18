@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -149,7 +150,7 @@ export default function AddSalesPricingForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper sx={{ p: theme.spacing(3), maxWidth: "500px", width: "100%", boxShadow: 2, borderRadius: 2 }}>
         <Typography variant="h6" sx={{ mb: 3, textAlign: isMobile ? "center" : "left" }}>
           Add Sales Pricing
@@ -238,6 +239,6 @@ export default function AddSalesPricingForm() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

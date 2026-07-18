@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useRef, useState } from "react";
 import {
     Box,
@@ -385,7 +386,7 @@ export default function UpdateGeneralSettingsForm({ customerId, onCustomerDelete
     };
 
     return (
-        <Stack alignItems="center" sx={{ p: { xs: 2, md: 3 } }}>
+        <FormPageLayout>
             <Box
                 sx={{
                     width: "100%",
@@ -651,12 +652,11 @@ export default function UpdateGeneralSettingsForm({ customerId, onCustomerDelete
                 handleClose={() => setOpen(false)}
                 onSuccess={() => window.history.back()}
             />
-
             <ErrorModal
                 open={errorOpen}
                 onClose={() => setErrorOpen(false)}
                 message={errorMessage}
             />
-        </Stack>
+        </FormPageLayout>
     );
 }

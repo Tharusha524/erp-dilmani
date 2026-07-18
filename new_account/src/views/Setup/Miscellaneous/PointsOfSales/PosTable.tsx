@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -159,7 +160,7 @@ export default function PosTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -196,7 +197,6 @@ export default function PosTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search + Filter */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -226,7 +226,6 @@ export default function PosTable() {
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -318,7 +317,6 @@ export default function PosTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -336,6 +334,6 @@ export default function PosTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

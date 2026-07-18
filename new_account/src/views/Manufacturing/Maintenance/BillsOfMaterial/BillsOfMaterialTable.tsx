@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState, useEffect } from "react";
 import {
     Box,
@@ -210,7 +211,7 @@ function BillsOfMaterialTable() {
     ];
 
     return (
-        <Stack>
+        <FormPageLayout>
             {/* Header */}
             <Box
                 sx={{
@@ -302,7 +303,6 @@ function BillsOfMaterialTable() {
                     </Button>
                 </Stack>
             </Box>
-
             {/* Table */}
             {selectedItem && (
                 <Stack sx={{ alignItems: "center" }}>
@@ -486,7 +486,7 @@ function BillsOfMaterialTable() {
                 onClose={() => setErrorOpen(false)}
                 message={errorMessage}
             />
-        </Stack>
+        </FormPageLayout>
     );
 }
 

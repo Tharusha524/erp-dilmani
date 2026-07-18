@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -267,7 +268,7 @@ export default function ItemLocationTransferDetails({ itemId }: ItemTransactionP
   ];
 
   return (
-    <Stack spacing={3}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -288,7 +289,6 @@ export default function ItemLocationTransferDetails({ itemId }: ItemTransactionP
           Back
         </Button>
       </Box>
-
       {/* Table 1: Transaction Info */}
       <Typography variant="h6" sx={{ px: 2 }}>
         Transaction Information
@@ -323,7 +323,6 @@ export default function ItemLocationTransferDetails({ itemId }: ItemTransactionP
           </TableBody>
         </Table>
       </TableContainer>
-
       {/* Table 2: Item Details */}
       <Typography variant="h6" sx={{ px: 2 }}>
         Item Details
@@ -358,6 +357,6 @@ export default function ItemLocationTransferDetails({ itemId }: ItemTransactionP
           </TableBody>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo } from "react";
 import {
     Box,
@@ -120,7 +121,7 @@ export default function SupplierPurchaseOrdersTable({ supplierId }: SupplierPurc
     ];
 
     return (
-        <Stack>
+        <FormPageLayout>
             <Box
                 sx={{
                     padding: theme.spacing(2),
@@ -148,7 +149,6 @@ export default function SupplierPurchaseOrdersTable({ supplierId }: SupplierPurc
                     </Button>
                 </Stack>
             </Box>
-
             <Grid container spacing={2} sx={{ px: 2, mb: 2 }}>
                 <Grid item xs={12} sm={2}>
                     <TextField
@@ -190,7 +190,6 @@ export default function SupplierPurchaseOrdersTable({ supplierId }: SupplierPurc
                     />
                 </Grid>
             </Grid>
-
             <Stack sx={{ alignItems: "center" }}>
                 <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
                     <Table aria-label="purchase orders table">
@@ -250,6 +249,6 @@ export default function SupplierPurchaseOrdersTable({ supplierId }: SupplierPurc
                     </Table>
                 </TableContainer>
             </Stack>
-        </Stack>
+        </FormPageLayout>
     );
 }

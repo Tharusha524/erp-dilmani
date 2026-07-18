@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -178,7 +179,7 @@ export default function UpdateTaxGroupsForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: 2 }}>
+    <FormPageLayout>
       <Paper sx={{ p: theme.spacing(3), width: "100%", maxWidth: isMobile ? "100%" : "500px", boxShadow: 2, borderRadius: 2 }}>
         <Typography variant="h6" sx={{ mb: 3, textAlign: isMobile ? "center" : "left" }}>
           Update Tax Group
@@ -240,9 +241,8 @@ export default function UpdateTaxGroupsForm() {
           <Button fullWidth={isMobile} variant="contained" sx={{ backgroundColor: "var(--pallet-blue)" }} onClick={handleSubmit}>Update</Button>
         </Box>
       </Paper>
-
       <UpdateConfirmationModal open={open} title="Success" content="Tax Group updated successfully!" handleClose={() => setOpen(false)} onSuccess={() => window.history.back()} />
       <ErrorModal open={errorOpen} onClose={() => setErrorOpen(false)} message={errorMessage} />
-    </Stack>
+    </FormPageLayout>
   );
 }

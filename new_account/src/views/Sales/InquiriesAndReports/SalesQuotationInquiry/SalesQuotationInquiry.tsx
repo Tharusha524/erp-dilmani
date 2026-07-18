@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -178,7 +179,7 @@ export default function SalesQuotationInquiry() {
   };
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box sx={{ padding: theme.spacing(2), boxShadow: 2, borderRadius: 1, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
         <Box>
           <PageTitle title="Search All Sales Quotations" />
@@ -187,7 +188,6 @@ export default function SalesQuotationInquiry() {
 
         <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>Back</Button>
       </Box>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={2} md={1}>
@@ -278,7 +278,6 @@ export default function SalesQuotationInquiry() {
           </Grid>
         </Grid>
       </Paper>
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -348,6 +347,6 @@ export default function SalesQuotationInquiry() {
           </TableFooter>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

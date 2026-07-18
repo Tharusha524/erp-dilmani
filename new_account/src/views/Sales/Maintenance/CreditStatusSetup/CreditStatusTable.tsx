@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
@@ -130,7 +131,7 @@ export default function CreditStatusTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -163,7 +164,6 @@ export default function CreditStatusTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search + Show Inactive */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -178,7 +178,6 @@ export default function CreditStatusTable() {
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search Description or Disallow Invoices" />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
@@ -264,7 +263,6 @@ export default function CreditStatusTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -279,6 +277,6 @@ export default function CreditStatusTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

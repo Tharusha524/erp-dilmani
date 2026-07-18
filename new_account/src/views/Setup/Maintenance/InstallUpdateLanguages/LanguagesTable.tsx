@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -92,7 +93,7 @@ export default function LanguagesTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -128,7 +129,6 @@ export default function LanguagesTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -143,7 +143,6 @@ export default function LanguagesTable() {
           />
         </Box>
       </Stack>
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
           component={Paper}
@@ -225,6 +224,6 @@ export default function LanguagesTable() {
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }

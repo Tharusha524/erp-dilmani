@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
@@ -98,7 +99,7 @@ export default function UpdatePrintersForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: 3,
@@ -204,6 +205,6 @@ export default function UpdatePrintersForm() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

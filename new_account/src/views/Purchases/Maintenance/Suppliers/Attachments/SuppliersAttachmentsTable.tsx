@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import { useState } from "react";
 import { Stack } from "@mui/material";
 import EntityAttachmentsTable from "../../../../../components/entityAttachments/EntityAttachmentsTable";
@@ -13,7 +14,7 @@ export default function SuppliersAttachmentsTable({ supplierId }: SuppliersAttac
   if (!supplierId) return null;
 
   return (
-    <Stack>
+    <FormPageLayout>
       {showForm ? (
         <EntityAttachmentsForm
           entityType="supplier"
@@ -29,6 +30,6 @@ export default function SuppliersAttachmentsTable({ supplierId }: SuppliersAttac
           onAdd={() => setShowForm(true)}
         />
       )}
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -82,7 +83,7 @@ export default function InstallChartOfAccounts() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -110,7 +111,6 @@ export default function InstallChartOfAccounts() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -125,7 +125,6 @@ export default function InstallChartOfAccounts() {
           />
         </Box>
       </Stack>
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
           component={Paper}
@@ -200,6 +199,6 @@ export default function InstallChartOfAccounts() {
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }

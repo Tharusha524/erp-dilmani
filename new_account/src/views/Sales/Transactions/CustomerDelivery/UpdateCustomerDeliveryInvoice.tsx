@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
@@ -341,7 +342,7 @@ export default function UpdateCustomerDeliveryInvoice() {
   }
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -362,7 +363,6 @@ export default function UpdateCustomerDeliveryInvoice() {
           Back
         </Button>
       </Box>
-
       {/* Form */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
@@ -455,12 +455,10 @@ export default function UpdateCustomerDeliveryInvoice() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Items Table */}
       <Typography variant="subtitle1" sx={{ mb: 2, textAlign: "center" }}>
         Delivery Items
       </Typography>
-
       <TableContainer component={Paper}>
         <Table size="small">
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -558,7 +556,6 @@ export default function UpdateCustomerDeliveryInvoice() {
           </TableFooter>
         </Table>
       </TableContainer>
-
       {/* Actions + Memo */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
@@ -600,6 +597,6 @@ export default function UpdateCustomerDeliveryInvoice() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React from "react";
 import { Box, Button, Stack, Typography, Paper } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -21,7 +22,7 @@ export default function DepositSuccess() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: 2,
@@ -46,7 +47,6 @@ export default function DepositSuccess() {
           Close
         </Button>
       </Box>
-
       <Paper sx={{ p: 2 }}>
         <Typography sx={{ mb: 2 }}>Your deposit has been processed successfully.</Typography>
 
@@ -93,6 +93,6 @@ export default function DepositSuccess() {
           </Button>
         </Stack>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

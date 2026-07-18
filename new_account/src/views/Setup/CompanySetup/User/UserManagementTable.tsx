@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState } from "react";
 import {
   Box,
@@ -113,7 +114,7 @@ export default function UserManagementTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -149,7 +150,6 @@ export default function UserManagementTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Checkbox & Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -164,7 +164,6 @@ export default function UserManagementTable() {
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search..." />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
@@ -244,7 +243,6 @@ export default function UserManagementTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -254,9 +252,8 @@ export default function UserManagementTable() {
         handleReject={() => setSelectedId(null)}
         deleteFunc={handleDelete}
       />
-
       {/* Error Modal */}
       <ErrorModal open={errorOpen} onClose={() => setErrorOpen(false)} message={errorMessage} />
-    </Stack>
+    </FormPageLayout>
   );
 }

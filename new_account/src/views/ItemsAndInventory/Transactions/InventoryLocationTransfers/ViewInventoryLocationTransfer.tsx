@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo } from "react";
 import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Stack, Button, CircularProgress } from "@mui/material";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -60,7 +61,7 @@ export default function ViewInventoryLocationTransfer() {
   }
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: 2,
@@ -81,7 +82,6 @@ export default function ViewInventoryLocationTransfer() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ p: 2 }}>
         <Typography sx={{ mb: 1, fontWeight: 600 }}>
           From location: {fromName ?? "-"} &nbsp;|&nbsp; To location: {toName ?? "-"} &nbsp;|&nbsp; Reference: {reference || "-"} &nbsp;|&nbsp; Date: {date || "-"}
@@ -116,6 +116,6 @@ export default function ViewInventoryLocationTransfer() {
           </Table>
         </TableContainer>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

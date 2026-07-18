@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState } from "react";
 import {
   Box,
@@ -128,7 +129,7 @@ export default function CreateAndPrintRecurrentInvoices() {
   };
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box sx={{ padding: theme.spacing(2), boxShadow: 2, borderRadius: 1, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
         <Box>
           <PageTitle title="Create and Print Recurrent Invoices" />
@@ -144,7 +145,6 @@ export default function CreateAndPrintRecurrentInvoices() {
           </Button>
         </Stack>
       </Box>
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -229,6 +229,6 @@ export default function CreateAndPrintRecurrentInvoices() {
           </TableFooter>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

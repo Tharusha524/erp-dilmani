@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -96,7 +97,7 @@ export default function UpdateAccountTags() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: 2 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: muiTheme.spacing(3),
@@ -174,6 +175,6 @@ export default function UpdateAccountTags() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

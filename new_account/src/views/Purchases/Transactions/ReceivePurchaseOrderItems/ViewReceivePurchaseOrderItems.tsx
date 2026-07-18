@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo } from "react";
 import {
   Box,
@@ -58,7 +59,7 @@ export default function ViewReceivePurchaseOrderItems() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box sx={{ padding: 2, boxShadow: 2, borderRadius: 1, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
         <Box>
           <PageTitle title={`Receive Purchase Order - ${reference || "-"}`} />
@@ -67,7 +68,6 @@ export default function ViewReceivePurchaseOrderItems() {
 
         <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>Back</Button>
       </Box>
-
       <Paper sx={{ p: 3 }}>
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: "var(--pallet-dark-blue)" }}>Receive Purchase Order</Typography>
 
@@ -82,7 +82,6 @@ export default function ViewReceivePurchaseOrderItems() {
           <Grid item xs={12} sm={6}><Typography><b>Order Comments:</b> {orderComments || "-"}</Typography></Grid>
         </Grid>
       </Paper>
-
       <Paper sx={{ p: 2 }}>
         <Typography sx={{ mb: 1, fontWeight: 600 }}>Line Details</Typography>
         <TableContainer component={Paper}>
@@ -135,11 +134,10 @@ export default function ViewReceivePurchaseOrderItems() {
           </Table>
         </TableContainer>
       </Paper>
-
       <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ pr: 2 }}>
         <Button variant="contained" color="primary">Print</Button>
         <Button variant="outlined" onClick={() => navigate(-1)}>Close</Button>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }

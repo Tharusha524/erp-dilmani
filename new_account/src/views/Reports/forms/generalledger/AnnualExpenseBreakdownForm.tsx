@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
@@ -86,7 +87,7 @@ export default function AnnualExpenseBreakdownForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: 3,
@@ -222,6 +223,6 @@ export default function AnnualExpenseBreakdownForm() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

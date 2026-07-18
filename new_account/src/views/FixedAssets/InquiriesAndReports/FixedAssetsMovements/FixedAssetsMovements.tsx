@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
     Box,
@@ -238,7 +239,7 @@ export default function FixedAssetsMovements({ itemId }: ItemTransactionProps) {
     ];
 
     return (
-        <Stack>
+        <FormPageLayout>
             <Box
                 sx={{
                     padding: theme.spacing(2),
@@ -286,7 +287,6 @@ export default function FixedAssetsMovements({ itemId }: ItemTransactionProps) {
                     Back
                 </Button>
             </Box>
-
             {/* Search & Filter */}
             <Stack
                 direction={isMobile ? "column" : "row"}
@@ -333,7 +333,6 @@ export default function FixedAssetsMovements({ itemId }: ItemTransactionProps) {
                     {loading ? "Loading..." : "Search"}
                 </Button>
             </Stack>
-
             <Stack sx={{ alignItems: "center" }}>
                 <TableContainer
                     component={Paper}
@@ -499,6 +498,6 @@ export default function FixedAssetsMovements({ itemId }: ItemTransactionProps) {
                     </Table>
                 </TableContainer>
             </Stack>
-        </Stack>
+        </FormPageLayout>
     );
 }

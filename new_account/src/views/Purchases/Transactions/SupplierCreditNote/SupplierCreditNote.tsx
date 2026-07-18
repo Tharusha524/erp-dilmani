@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
     Box,
@@ -762,7 +763,7 @@ export default function SupplierCreditNote() {
     ];
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             {/* Header */}
             <Box
                 sx={{
@@ -786,7 +787,6 @@ export default function SupplierCreditNote() {
                     Back
                 </Button>
             </Box>
-
             {/* Form */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
@@ -898,7 +898,6 @@ export default function SupplierCreditNote() {
                     </Grid>
                 </Grid>
             </Paper>
-
             {/* ======================== TABLE 1 ======================== */}
             <Box mb={2}>
                 <Typography variant="h6" textAlign="center">Delivery Item Selected For Adding To A Supplier Credit Note</Typography>
@@ -924,7 +923,6 @@ export default function SupplierCreditNote() {
                     </Button>
                 </Stack>
             </Box>
-
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -1013,7 +1011,6 @@ export default function SupplierCreditNote() {
                     </TableFooter>
                 </Table>
             </TableContainer>
-
             {/* ======================== TABLE 2: GL ITEMS ======================== */}
             <Box display="flex" justifyContent="center" position="relative" mb={2}>
                 <Typography variant="h6">GL Items for this Credit Note</Typography>
@@ -1045,13 +1042,11 @@ export default function SupplierCreditNote() {
                     </Button>
                 </Stack>
             </Box>
-
             <Alert severity="info" sx={{ mb: 1 }}>
                 GRN clearing and accounts payable lines are filled automatically when you
                 enter a quantity to credit above, click <strong>Add</strong>, or use{" "}
                 <strong>Add All Items</strong>.
             </Alert>
-
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -1221,7 +1216,6 @@ export default function SupplierCreditNote() {
                     </TableFooter>
                 </Table>
             </TableContainer>
-
             {/* ================= Memo + Buttons ================= */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Typography variant="subtitle1">Memo</Typography>
@@ -1239,6 +1233,6 @@ export default function SupplierCreditNote() {
                     </Button>
                 </Stack>
             </Paper>
-        </Stack>
+        </FormPageLayout>
     );
 }

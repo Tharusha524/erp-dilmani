@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -139,7 +140,7 @@ export default function UpdateTaxTypes() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: theme.spacing(3),
@@ -267,6 +268,6 @@ export default function UpdateTaxTypes() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

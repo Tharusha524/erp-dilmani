@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import { useState } from "react";
 import { Box, Stack } from "@mui/material";
 import Breadcrumb from "../../../../../components/BreadCrumb";
@@ -23,7 +24,7 @@ export default function AttachmentsTable({ customerId }: AttachmentsProps) {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -35,7 +36,6 @@ export default function AttachmentsTable({ customerId }: AttachmentsProps) {
         <PageTitle title="Attachments" />
         <Breadcrumb breadcrumbs={breadcrumbItems} />
       </Box>
-
       {showForm ? (
         <EntityAttachmentsForm
           entityType="customer"
@@ -51,6 +51,6 @@ export default function AttachmentsTable({ customerId }: AttachmentsProps) {
           onAdd={() => setShowForm(true)}
         />
       )}
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -159,7 +160,7 @@ function SalesPersonTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -195,7 +196,6 @@ function SalesPersonTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search Bar */}
       <Box
         sx={{
@@ -225,7 +225,6 @@ function SalesPersonTable() {
           />
         </Box>
       </Box>
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
           component={Paper}
@@ -345,7 +344,7 @@ function SalesPersonTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }
 

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
     Box,
@@ -72,7 +73,7 @@ export default function AddFiscalYear() {
 
 
     return (
-        <Stack alignItems="center" sx={{ mt: 4, px: 2 }}>
+        <FormPageLayout>
             <Paper
                 sx={{
                     p: theme.spacing(3),
@@ -192,6 +193,6 @@ export default function AddFiscalYear() {
                 onClose={() => setErrorOpen(false)}
                 message={errorMessage}
             />
-        </Stack>
+        </FormPageLayout>
     );
 }

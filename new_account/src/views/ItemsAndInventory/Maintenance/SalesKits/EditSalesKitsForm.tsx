@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getItemCategories } from "../../../../api/ItemCategories/ItemCategoriesApi";
@@ -263,7 +264,7 @@ export default function EditSalesKitsForm() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -289,7 +290,6 @@ export default function EditSalesKitsForm() {
           </Stack>
         </Box>
       </Box>
-
       {/* Form */}
       <Stack sx={{ alignItems: "center" }}>
         <Paper
@@ -547,6 +547,6 @@ export default function EditSalesKitsForm() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

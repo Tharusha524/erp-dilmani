@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
@@ -133,7 +134,7 @@ export default function UnitsOfMeasureTable() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -166,7 +167,6 @@ export default function UnitsOfMeasureTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search and Filter */}
       {/* Search & Filter Section */}
       <Box
@@ -207,8 +207,6 @@ export default function UnitsOfMeasureTable() {
           />
         </Box>
       </Box>
-
-
       {/* Table */}
       <TableContainer component={Paper} sx={{ overflowX: "auto", maxWidth: "100%", p: 1 }}>
         <Table>
@@ -296,7 +294,6 @@ export default function UnitsOfMeasureTable() {
           </TableFooter>
         </Table>
       </TableContainer>
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -311,6 +308,6 @@ export default function UnitsOfMeasureTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

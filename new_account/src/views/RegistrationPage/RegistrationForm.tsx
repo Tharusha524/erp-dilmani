@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import {
   Box,
   Checkbox,
@@ -161,14 +162,7 @@ function RegistrationForm() {
   };
 
   return (
-    <Stack
-      spacing={2}
-      sx={{
-        justifyContent: "center",
-        margin: "2.5rem",
-        marginBottom: isMdUp ? "2.5rem" : "22vh",
-      }}
-    >
+    <FormPageLayout>
       <Box>
         <img src={companyLogo} alt="logo" height={"65px"} />
         <img
@@ -183,7 +177,6 @@ function RegistrationForm() {
           Create an account to access the platform
         </Typography>
       </Box>
-
       <Stack spacing={2}>
         {/* TextFields */}
         <TextField
@@ -349,7 +342,7 @@ function RegistrationForm() {
           </CustomButton>
         </Box>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }
 

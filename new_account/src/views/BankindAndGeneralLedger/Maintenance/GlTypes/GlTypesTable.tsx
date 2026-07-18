@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState } from "react";
 import {
   Box,
@@ -82,7 +83,7 @@ function GlTypesTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -115,7 +116,6 @@ function GlTypesTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search */}
       <Box
         sx={{
@@ -130,7 +130,6 @@ function GlTypesTable() {
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search..." />
         </Box>
       </Box>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
@@ -204,7 +203,6 @@ function GlTypesTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       <DeleteConfirmationModal
         open={openDeleteModal}
         title="Delete Account Type"
@@ -213,7 +211,7 @@ function GlTypesTable() {
         handleReject={() => setSelectedId(null)}
         deleteFunc={handleDelete}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }
 

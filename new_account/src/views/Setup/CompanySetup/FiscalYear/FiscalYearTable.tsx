@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
@@ -151,7 +152,7 @@ export default function FiscalYearTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -196,25 +197,21 @@ export default function FiscalYearTable() {
           </Button>
         </Stack>
       </Box>
-
       {rolloverMessage && (
         <Alert severity="success" sx={{ mx: 2 }} onClose={() => setRolloverMessage("")}>
           {rolloverMessage}
         </Alert>
       )}
-
       {rolloverError && (
         <Alert severity="error" sx={{ mx: 2 }} onClose={() => setRolloverError("")}>
           {rolloverError}
         </Alert>
       )}
-
       <Alert severity="info" sx={{ mx: 2 }}>
         When a fiscal year end date passes, the system can automatically close that year,
         post year-end GL entries, create the next fiscal year, and update company setup.
         This also runs daily at 00:15 via the server scheduler, or click Run Year-End Rollover now.
       </Alert>
-
       {/* Search Bar */}
       <Box
         sx={{
@@ -234,7 +231,6 @@ export default function FiscalYearTable() {
           />
         </Box>
       </Box>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -322,7 +318,6 @@ export default function FiscalYearTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* ✅ Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -340,6 +335,6 @@ export default function FiscalYearTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

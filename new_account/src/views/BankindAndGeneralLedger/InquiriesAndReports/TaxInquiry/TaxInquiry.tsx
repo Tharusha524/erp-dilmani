@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -83,7 +84,7 @@ export default function TaxInquiry() {
   };
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box sx={{ padding: theme.spacing(2), boxShadow: 2, borderRadius: 1, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
         <Box>
           <PageTitle title="Tax Inquiry" />
@@ -92,7 +93,6 @@ export default function TaxInquiry() {
 
         <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>Back</Button>
       </Box>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={4}>
@@ -131,7 +131,6 @@ export default function TaxInquiry() {
           </Grid>
         </Grid>
       </Paper>
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -183,6 +182,6 @@ export default function TaxInquiry() {
           </TableFooter>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

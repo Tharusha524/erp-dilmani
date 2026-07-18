@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -107,7 +108,7 @@ export default function VoidTransactionTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -144,7 +145,6 @@ export default function VoidTransactionTable() {
           </Button>
         </Stack>
       </Box>
-
       <Stack
         direction={isMobile ? "column" : "row"}
         spacing={2}
@@ -200,7 +200,6 @@ export default function VoidTransactionTable() {
           {isFetching ? "Loading…" : "Refresh"}
         </Button>
       </Stack>
-
       <Stack sx={{ alignItems: "center", px: 2, pb: 2 }}>
         <TableContainer
           component={Paper}
@@ -279,6 +278,6 @@ export default function VoidTransactionTable() {
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }

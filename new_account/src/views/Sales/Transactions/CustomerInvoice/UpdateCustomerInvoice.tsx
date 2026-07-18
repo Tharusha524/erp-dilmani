@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
@@ -529,7 +530,7 @@ export default function UpdateCustomerInvoice() {
   }, [trans_no, debtorTransList, debtorTransDetails, customers, branches, salesTypes, items, itemUnits, itemTaxTypes, navReference, navDate]);
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -550,7 +551,6 @@ export default function UpdateCustomerInvoice() {
           Back
         </Button>
       </Box>
-
       {/* Form */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
@@ -665,12 +665,10 @@ export default function UpdateCustomerInvoice() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Items Table */}
       <Typography variant="subtitle1" sx={{ mb: 2, textAlign: "center" }}>
         {selectedPaymentType === 1 ? "Sales Order Items" : "Invoice Items"}
       </Typography>
-
       <TableContainer component={Paper}>
         <Table size="small">
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -763,7 +761,6 @@ export default function UpdateCustomerInvoice() {
           </TableFooter>
         </Table>
       </TableContainer>
-
       {/* Memo and Actions */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         {selectedPaymentType === 1 && (
@@ -824,6 +821,6 @@ export default function UpdateCustomerInvoice() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

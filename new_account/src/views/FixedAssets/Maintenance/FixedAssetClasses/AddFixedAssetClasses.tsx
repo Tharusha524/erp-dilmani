@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -95,7 +96,7 @@ export default function AddFixedAssetClasses() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: theme.spacing(3),
@@ -201,12 +202,11 @@ export default function AddFixedAssetClasses() {
           window.history.back();
         }}
       />
-
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

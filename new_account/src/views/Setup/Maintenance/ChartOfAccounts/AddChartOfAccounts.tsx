@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -117,7 +118,7 @@ export default function AddChartofAccounts() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: theme.spacing(3),
@@ -270,7 +271,6 @@ export default function AddChartofAccounts() {
           </Button>
         </Box>
       </Paper>
-
       {/* Success Modal */}
       <SuccessModal
         open={open}
@@ -280,13 +280,12 @@ export default function AddChartofAccounts() {
         }}
         message="Chart of Accounts added successfully!"
       />
-
       {/* Error Modal */}
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

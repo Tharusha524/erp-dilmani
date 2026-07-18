@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -240,7 +241,7 @@ export default function UserLoginLogs() {
   };
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -266,14 +267,12 @@ export default function UserLoginLogs() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ px: 2, pt: 1 }}>
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
           <Tab label="Daily Activity" />
           <Tab label="Full Activity Log" />
         </Tabs>
       </Paper>
-
       {tab === 0 && (
         <>
           <Paper sx={{ p: 2 }}>
@@ -479,7 +478,6 @@ export default function UserLoginLogs() {
           </Grid>
         </>
       )}
-
       {tab === 1 && (
         <>
           <Paper sx={{ p: 2 }}>
@@ -665,7 +663,6 @@ export default function UserLoginLogs() {
           </TableContainer>
         </>
       )}
-
       <UserActivityDetailDialog
         open={detailOpen}
         onClose={() => {
@@ -675,7 +672,6 @@ export default function UserLoginLogs() {
         loading={detailLoading}
         detail={detailData ?? null}
       />
-
       <UserActivityDayDialog
         open={dayDialogOpen}
         onClose={() => {
@@ -685,6 +681,6 @@ export default function UserLoginLogs() {
         date={dailyDate}
         user={dayUser}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

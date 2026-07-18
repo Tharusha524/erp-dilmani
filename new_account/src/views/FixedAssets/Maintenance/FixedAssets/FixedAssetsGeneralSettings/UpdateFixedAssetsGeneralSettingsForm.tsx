@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -412,7 +413,7 @@ export default function UpdateFixedAssetsGeneralSettingsForm({ itemId }: ItemGen
     );
   }
   return (
-    <Stack alignItems="center" sx={{ p: { xs: 2, md: 3 } }}>
+    <FormPageLayout>
       <Box
         sx={{
           width: "100%",
@@ -842,6 +843,6 @@ export default function UpdateFixedAssetsGeneralSettingsForm({ itemId }: ItemGen
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

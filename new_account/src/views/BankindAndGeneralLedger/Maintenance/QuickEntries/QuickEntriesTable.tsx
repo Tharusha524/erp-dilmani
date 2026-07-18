@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState } from "react";
 import {
   Box,
@@ -83,7 +84,7 @@ function QuickEntriesTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -119,7 +120,6 @@ function QuickEntriesTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search */}
       <Box
         sx={{
@@ -138,7 +138,6 @@ function QuickEntriesTable() {
           />
         </Box>
       </Box>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -217,7 +216,7 @@ function QuickEntriesTable() {
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }
 

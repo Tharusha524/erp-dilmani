@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 // src/components/BackupRestore/BackupRestore.tsx
 
 import React, { useState, useEffect } from "react";
@@ -251,7 +252,7 @@ export default function BackupRestore() {
     };
 
     return (
-        <Stack alignItems="center" sx={{ p: { xs: 2, md: 3 } }}>
+        <FormPageLayout>
             {/* Success/Error Messages */}
             <Snackbar 
                 open={!!successMessage} 
@@ -263,7 +264,6 @@ export default function BackupRestore() {
                     {successMessage}
                 </Alert>
             </Snackbar>
-            
             <Snackbar 
                 open={!!error} 
                 autoHideDuration={10000}
@@ -274,7 +274,6 @@ export default function BackupRestore() {
                     {error}
                 </Alert>
             </Snackbar>
-
             {/* Confirmation Dialog */}
             <Dialog
                 open={confirmDialog.open}
@@ -298,7 +297,6 @@ export default function BackupRestore() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
             <Box
                 sx={{
                     width: "100%",
@@ -640,6 +638,6 @@ export default function BackupRestore() {
                     </Grid>
                 </Grid>
             </Box>
-        </Stack>
+        </FormPageLayout>
     );
 }

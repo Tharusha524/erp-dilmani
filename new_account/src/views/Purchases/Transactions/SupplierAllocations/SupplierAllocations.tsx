@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo } from "react";
 import {
   Box,
@@ -149,7 +150,7 @@ export default function SupplierAllocations() {
   const openCount = rows.length - settledCount;
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -226,7 +227,6 @@ export default function SupplierAllocations() {
           </Button>
         </Stack>
       </Box>
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -426,6 +426,6 @@ export default function SupplierAllocations() {
           </TableFooter>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
     Box,
@@ -144,7 +145,7 @@ export default function SalesOrdersTable({ customerId }: SalesOrdersProps) {
     ];
 
     return (
-        <Stack>
+        <FormPageLayout>
             <Box
                 sx={{
                     padding: theme.spacing(2),
@@ -164,7 +165,6 @@ export default function SalesOrdersTable({ customerId }: SalesOrdersProps) {
 
                 
             </Box>
-
             {/* Search & Filter */}
             <Grid container spacing={2} sx={{ px: 2, mb: 2 }}>
                 {/* Order # */}
@@ -262,8 +262,6 @@ export default function SalesOrdersTable({ customerId }: SalesOrdersProps) {
                     </Box>
                 </Grid>
             </Grid>
-
-
             <Stack sx={{ alignItems: "center" }}>
                 <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
                     <Table aria-label="sales orders table">
@@ -381,6 +379,6 @@ export default function SalesOrdersTable({ customerId }: SalesOrdersProps) {
                     </Table>
                 </TableContainer>
             </Stack>
-        </Stack>
+        </FormPageLayout>
     );
 }

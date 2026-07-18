@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -262,7 +263,7 @@ export default function SupplierGeneralSettingsForm({ supplierId, onSupplierAdde
   };
 
   return (
-    <Stack alignItems="center" sx={{ p: { xs: 2, md: 3 } }}>
+    <FormPageLayout>
       <Box
         sx={{
           width: "100%",
@@ -691,12 +692,11 @@ export default function SupplierGeneralSettingsForm({ supplierId, onSupplierAdde
         handleClose={() => setOpen(false)}
         onSuccess={() => setOpen(false)}
       />
-
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

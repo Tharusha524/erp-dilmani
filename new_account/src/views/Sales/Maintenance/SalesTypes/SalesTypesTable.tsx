@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -137,7 +138,7 @@ function SalesTypesTable() {
     ];
 
     return (
-        <Stack>
+        <FormPageLayout>
             {/* Header with buttons */}
             <Box
                 sx={{
@@ -174,7 +175,6 @@ function SalesTypesTable() {
                     </Button>
                 </Stack>
             </Box>
-
             {/* Search + Show Inactive Toggle */}
             <Box
                 sx={{
@@ -205,7 +205,6 @@ function SalesTypesTable() {
                     />
                 </Box>
             </Box>
-
             {/* Table */}
             <Stack sx={{ alignItems: "center" }}>
                 <TableContainer
@@ -315,7 +314,7 @@ function SalesTypesTable() {
                 onClose={() => setErrorOpen(false)}
                 message={errorMessage}
             />
-        </Stack>
+        </FormPageLayout>
     );
 }
 

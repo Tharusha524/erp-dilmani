@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Table,
@@ -103,7 +104,7 @@ export default function CompanyTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -139,7 +140,6 @@ export default function CompanyTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -154,7 +154,6 @@ export default function CompanyTable() {
           />
         </Box>
       </Stack>
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
           component={Paper}
@@ -240,6 +239,6 @@ export default function CompanyTable() {
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
@@ -297,7 +298,7 @@ export default function ViewFinalInvoice() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -322,7 +323,6 @@ export default function ViewFinalInvoice() {
           Back
         </Button>
       </Box>
-
       {/* Invoice Info */}
       <Paper sx={{ p: 3 }}>
         <Typography
@@ -390,7 +390,6 @@ export default function ViewFinalInvoice() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Items Table */}
       <Paper sx={{ p: 2 }}>
         <Typography sx={{ mb: 1, fontWeight: 600 }}>Item Details</Typography>
@@ -472,7 +471,6 @@ export default function ViewFinalInvoice() {
           </Table>
         </TableContainer>
       </Paper>
-
       {/* Payments Table */}
       <Paper sx={{ p: 2 }}>
         {/* Buttons */}
@@ -485,6 +483,6 @@ export default function ViewFinalInvoice() {
           </Button>
         </Stack>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

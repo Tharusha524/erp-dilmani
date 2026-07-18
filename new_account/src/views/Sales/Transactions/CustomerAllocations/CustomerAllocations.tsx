@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState } from "react";
 import {
   Box,
@@ -258,7 +259,7 @@ export default function CustomerAllocations() {
   const selectedRow = rows.find((r) => r.id === selectedRowId) ?? null;
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -358,7 +359,6 @@ export default function CustomerAllocations() {
           </Button>
         </Stack>
       </Box>
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -503,12 +503,11 @@ export default function CustomerAllocations() {
           </TableFooter>
         </Table>
       </TableContainer>
-
       {!isLoading && openAllocateRows.length > 0 && (
         <Typography variant="caption" color="text.secondary">
           Tip: click a row to select it, then use Allocate Selected or the row action button.
         </Typography>
       )}
-    </Stack>
+    </FormPageLayout>
   );
 }

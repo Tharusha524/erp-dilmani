@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -97,7 +98,7 @@ export default function SystemDiagnostics() {
   const hasWarnings = (summary?.warning ?? 0) > 0;
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -135,7 +136,6 @@ export default function SystemDiagnostics() {
           </Button>
         </Stack>
       </Box>
-
       {error && (
         <Alert severity="error" sx={{ mx: 2 }}>
           Could not load diagnostics. Ensure Laravel is running on port 8000 and you are logged in.
@@ -146,7 +146,6 @@ export default function SystemDiagnostics() {
           )}
         </Alert>
       )}
-
       {summary && !isLoading && (
         <Stack direction="row" spacing={1} sx={{ px: 2, mb: 1, flexWrap: "wrap" }}>
           <Chip label={`${summary.ok} OK`} color="success" variant="outlined" />
@@ -159,7 +158,6 @@ export default function SystemDiagnostics() {
           )}
         </Stack>
       )}
-
       {!isLoading && summary && (
         <Box sx={{ px: 2, mb: 1 }}>
           {hasErrors ? (
@@ -175,7 +173,6 @@ export default function SystemDiagnostics() {
           )}
         </Box>
       )}
-
       <Stack
         direction={isMobile ? "column" : "row"}
         spacing={2}
@@ -189,7 +186,6 @@ export default function SystemDiagnostics() {
           />
         </Box>
       </Stack>
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
           component={Paper}
@@ -257,6 +253,6 @@ export default function SystemDiagnostics() {
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }

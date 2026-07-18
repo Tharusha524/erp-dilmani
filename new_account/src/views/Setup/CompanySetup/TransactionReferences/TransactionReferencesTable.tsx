@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState } from "react";
 import {
   Box,
@@ -159,7 +160,7 @@ function TransactionReferencesTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -198,7 +199,6 @@ function TransactionReferencesTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search + Show Default Toggle */}
       <Box
         sx={{
@@ -228,7 +228,6 @@ function TransactionReferencesTable() {
           />
         </Box>
       </Box>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -310,7 +309,7 @@ function TransactionReferencesTable() {
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }
 

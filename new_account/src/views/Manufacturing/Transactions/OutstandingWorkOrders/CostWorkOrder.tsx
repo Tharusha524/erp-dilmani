@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -240,7 +241,7 @@ export default function CostWorkOrder() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box sx={{ padding: theme.spacing(2), boxShadow: 2, borderRadius: 1, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
         <Box>
           <PageTitle title="Work Order Additional Costs" />
@@ -249,7 +250,6 @@ export default function CostWorkOrder() {
 
         <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>Back</Button>
       </Box>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         {loadingError && <Alert severity="error">{loadingError}</Alert>}
 
@@ -351,6 +351,6 @@ export default function CostWorkOrder() {
           </Grid>
         </Grid>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

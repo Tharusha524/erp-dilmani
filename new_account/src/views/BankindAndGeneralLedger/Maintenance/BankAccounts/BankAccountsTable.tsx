@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState } from "react";
 import {
   Box,
@@ -131,7 +132,7 @@ function BankAccountsTable() {
     );
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -168,7 +169,6 @@ function BankAccountsTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search + Show Inactive Toggle */}
       <Box
         sx={{
@@ -198,7 +198,6 @@ function BankAccountsTable() {
           />
         </Box>
       </Box>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -335,8 +334,7 @@ function BankAccountsTable() {
         deleteFunc={confirmDelete}
         onSuccess={() => console.log("Bank account deleted successfully!")}
       />
-
-    </Stack>
+    </FormPageLayout>
   );
 }
 

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -169,7 +170,7 @@ export default function PaymentTermsTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header Section */}
       <Box
         sx={{
@@ -206,7 +207,6 @@ export default function PaymentTermsTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Filters */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -231,7 +231,6 @@ export default function PaymentTermsTable() {
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -327,7 +326,6 @@ export default function PaymentTermsTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -338,13 +336,12 @@ export default function PaymentTermsTable() {
         deleteFunc={handleDelete}
         onSuccess={() => console.log("Payment Term deleted successfully!")}
       />
-
       {/* Error Modal */}
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

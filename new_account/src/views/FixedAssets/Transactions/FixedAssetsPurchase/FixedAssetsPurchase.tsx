@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
@@ -341,7 +342,7 @@ export default function FixedAssetsPurchase() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -362,7 +363,6 @@ export default function FixedAssetsPurchase() {
           Back
         </Button>
       </Box>
-
       {/* Form Fields */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
@@ -427,12 +427,10 @@ export default function FixedAssetsPurchase() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Order Items Table */}
       <Typography variant="subtitle1" sx={{ mb: 1, textAlign: "center" }}>
         Order Items
       </Typography>
-
       <TableContainer component={Paper}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -548,7 +546,6 @@ export default function FixedAssetsPurchase() {
           </TableFooter>
         </Table>
       </TableContainer>
-
       {/* Payment Section */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
@@ -611,7 +608,6 @@ export default function FixedAssetsPurchase() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Memo Section */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
@@ -628,6 +624,6 @@ export default function FixedAssetsPurchase() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

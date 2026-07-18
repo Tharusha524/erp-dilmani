@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useCallback } from "react";
 import {
   Box,
@@ -239,7 +240,7 @@ export default function SupplierTransactionInquiry() {
   };
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -265,7 +266,6 @@ export default function SupplierTransactionInquiry() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={6} md={2}>
@@ -348,7 +348,6 @@ export default function SupplierTransactionInquiry() {
           </Grid>
         </Grid>
       </Paper>
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table size={isMobile ? "small" : "medium"}>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -612,6 +611,6 @@ export default function SupplierTransactionInquiry() {
           </TableFooter>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

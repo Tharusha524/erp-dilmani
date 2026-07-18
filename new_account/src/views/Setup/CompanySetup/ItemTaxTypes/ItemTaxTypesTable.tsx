@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -144,7 +145,7 @@ export default function ItemTaxTypesTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -180,7 +181,6 @@ export default function ItemTaxTypesTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Global checkbox & Search Bar */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -205,7 +205,6 @@ export default function ItemTaxTypesTable() {
           />
         </Box>
       </Stack>
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
           component={Paper}
@@ -290,7 +289,6 @@ export default function ItemTaxTypesTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* ✅ Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -308,6 +306,6 @@ export default function ItemTaxTypesTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

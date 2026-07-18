@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -140,7 +141,7 @@ export default function CurrenciesTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -177,7 +178,6 @@ export default function CurrenciesTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search & Filter */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -193,7 +193,6 @@ export default function CurrenciesTable() {
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search..." />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
@@ -283,7 +282,6 @@ export default function CurrenciesTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -298,6 +296,6 @@ export default function CurrenciesTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

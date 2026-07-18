@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -166,7 +167,7 @@ export default function AddSuppliersContactsForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper sx={{ p: 3, maxWidth: 600, width: "100%", boxShadow: 2, borderRadius: 2 }}>
         <Typography variant="h6" sx={{ mb: 3, textAlign: isMobile ? "center" : "left" }}>
           Add Supplier Contact
@@ -316,7 +317,6 @@ export default function AddSuppliersContactsForm() {
           </Button>
         </Box>
       </Paper>
-
       <AddedConfirmationModal
         open={open}
         title="Success"
@@ -325,12 +325,11 @@ export default function AddSuppliersContactsForm() {
         onSuccess={() => navigate(-1)}
         addFunc={async () => {}}
       />
-
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

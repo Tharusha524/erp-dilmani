@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
@@ -354,7 +355,7 @@ export default function AddInventoryAdjustments() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -380,7 +381,6 @@ export default function AddInventoryAdjustments() {
           Back
         </Button>
       </Box>
-
       {/*  Location, Date, and Reference Fields */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
@@ -438,7 +438,6 @@ export default function AddInventoryAdjustments() {
           </Grid>
         </Grid>
       </Paper>
-
       {/*  Table */}
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
@@ -607,7 +606,6 @@ export default function AddInventoryAdjustments() {
           </TableFooter>
         </Table>
       </TableContainer>
-
       {/*  Memo Field */}
       <Box sx={{ mt: 2, pl: 1, pr: 1 }}>
         <Typography sx={{ mb: 1, fontWeight: 600 }}>Memo:</Typography>
@@ -620,7 +618,6 @@ export default function AddInventoryAdjustments() {
           onChange={(e) => setMemo(e.target.value)}
         />
       </Box>
-
       {/* Success/Error Messages */}
       {saveSuccess && (
         <Alert severity="success" sx={{ mt: 2 }}>
@@ -632,7 +629,6 @@ export default function AddInventoryAdjustments() {
           {saveError}
         </Alert>
       )}
-
       {/*  Submit Button */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2, pr: 1 }}>
         <Button
@@ -657,6 +653,6 @@ export default function AddInventoryAdjustments() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

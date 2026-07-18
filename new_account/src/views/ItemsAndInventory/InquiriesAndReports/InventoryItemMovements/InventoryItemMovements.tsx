@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
     Box,
@@ -168,7 +169,7 @@ export default function InventoryItemMovements({ itemId }: ItemTransactionProps)
     };
 
     return (
-        <Stack>
+        <FormPageLayout>
             <Box
                 sx={{
                     padding: theme.spacing(2),
@@ -224,7 +225,6 @@ export default function InventoryItemMovements({ itemId }: ItemTransactionProps)
                     Back
                 </Button>
             </Box>
-
             <Stack
                 direction={isMobile ? "column" : "row"}
                 spacing={2}
@@ -277,7 +277,6 @@ export default function InventoryItemMovements({ itemId }: ItemTransactionProps)
                     Search
                 </Button>
             </Stack>
-
             <Stack sx={{ alignItems: "center" }}>
                 <TableContainer
                     component={Paper}
@@ -425,6 +424,6 @@ export default function InventoryItemMovements({ itemId }: ItemTransactionProps)
                     </Table>
                 </TableContainer>
             </Stack>
-        </Stack>
+        </FormPageLayout>
     );
 }

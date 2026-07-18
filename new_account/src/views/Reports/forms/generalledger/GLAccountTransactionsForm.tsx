@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import { useApplyFiscalYearDates } from "../../../../hooks/useApplyFiscalYearDates";
 import {
@@ -138,7 +139,7 @@ export default function GLAccountTransactionsForm() {
   }
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: 3,
@@ -332,6 +333,6 @@ export default function GLAccountTransactionsForm() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

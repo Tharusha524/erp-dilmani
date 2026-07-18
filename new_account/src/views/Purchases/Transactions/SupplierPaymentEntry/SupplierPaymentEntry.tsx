@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
@@ -557,7 +558,7 @@ export default function SupplierPaymentEntry() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -582,7 +583,6 @@ export default function SupplierPaymentEntry() {
           Back
         </Button>
       </Box>
-
       {/* ================== FORM FIELDS ================== */}
       <Paper sx={{ p: 3 }}>
         <Grid container spacing={2}>
@@ -689,7 +689,6 @@ export default function SupplierPaymentEntry() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* ================== TABLE ================== */}
       <Typography
         variant="subtitle1"
@@ -697,7 +696,6 @@ export default function SupplierPaymentEntry() {
       >
         Allocated amounts in {currencyCode}:
       </Typography>
-
       <TableContainer component={Paper}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -770,7 +768,6 @@ export default function SupplierPaymentEntry() {
           </TableBody>
         </Table>
       </TableContainer>
-
       {/* ================== PAYMENT + DISCOUNT + MEMO ================== */}
       <Paper sx={{ p: 3 }}>
         <Grid container spacing={2}>
@@ -821,6 +818,6 @@ export default function SupplierPaymentEntry() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

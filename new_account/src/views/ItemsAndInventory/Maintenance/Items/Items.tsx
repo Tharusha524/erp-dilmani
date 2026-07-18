@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -87,8 +88,7 @@ const Items = () => {
   };
 
   return (
-    <Stack sx={{ minHeight: "100vh", backgroundColor: "#f0f0f0", p: { xs: 2, sm: 3, md: 5 } }} spacing={3}>
-
+    <FormPageLayout>
       {/* Header + Dropdown + Back */}
       <Box
         sx={{
@@ -164,7 +164,6 @@ const Items = () => {
           Back
         </Button>
       </Box>
-
       {/* Tabs */}
       <Tabs
         value={tabValue}
@@ -184,7 +183,6 @@ const Items = () => {
         <Tab label="Status" disabled={selectedItem === "new"} />
         <Tab label="Attachments" disabled={selectedItem === "new"} />
       </Tabs>
-
       {/* Tab Panels */}
       <TabPanel value={tabValue} index={0}>
         {selectedItem === "new" ? (
@@ -193,35 +191,28 @@ const Items = () => {
           <UpdateItemGeneralSettingsForm itemId={selectedItem} />
         )}
       </TabPanel>
-
       <TabPanel value={tabValue} index={1}>
         {selectedItem !== "new" && <SalesPricingTable itemId={selectedItem} />}
       </TabPanel>
-
       <TabPanel value={tabValue} index={2}>
         {selectedItem !== "new" && <PurchasingPricingTable itemId={selectedItem} />}
       </TabPanel>
-
       <TabPanel value={tabValue} index={3}>
         {selectedItem !== "new" && <AddStandardCostForm itemId={selectedItem} />}
       </TabPanel>
-
       <TabPanel value={tabValue} index={4}>
         {selectedItem !== "new" && !isService && <ReOrderLevelsForm itemId={selectedItem} />}
       </TabPanel>
-
       <TabPanel value={tabValue} index={5}>
         {selectedItem !== "new" && <ItemTransactionsTable itemId={selectedItem} />}
       </TabPanel>
-
       <TabPanel value={tabValue} index={6}>
         {selectedItem !== "new" && <StatusTable itemId={selectedItem} />}
       </TabPanel>
-
       <TabPanel value={tabValue} index={7}>
         {selectedItem !== "new" && <ItemAttachmentsTable itemId={selectedItem} />}
       </TabPanel>
-    </Stack>
+    </FormPageLayout>
   );
 };
 

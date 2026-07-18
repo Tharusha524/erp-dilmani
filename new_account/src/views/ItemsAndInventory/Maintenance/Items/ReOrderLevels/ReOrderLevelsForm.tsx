@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
@@ -185,7 +186,7 @@ export default function ReOrderLevelsForm({ itemId }: ItemReOderlevelProps) {
   }
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -213,7 +214,6 @@ export default function ReOrderLevelsForm({ itemId }: ItemReOderlevelProps) {
           </Button>
         </Stack>
       </Box>
-
       {/* Search */}
       <Stack
         direction="row"
@@ -227,7 +227,6 @@ export default function ReOrderLevelsForm({ itemId }: ItemReOderlevelProps) {
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         {/* Item Info */}
@@ -311,6 +310,6 @@ export default function ReOrderLevelsForm({ itemId }: ItemReOderlevelProps) {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

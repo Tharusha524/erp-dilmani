@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -103,7 +104,7 @@ export default function AddAttachmentsForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: 3,
@@ -200,7 +201,6 @@ export default function AddAttachmentsForm() {
           </Button>
         </Box>
       </Paper>
-
       {/* Success Modal */}
       <SuccessModal
         open={open}
@@ -210,13 +210,12 @@ export default function AddAttachmentsForm() {
         }}
         message="Attachment added successfully!"
       />
-
       {/* Error Modal */}
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

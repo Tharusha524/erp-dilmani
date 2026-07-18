@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -711,7 +712,7 @@ export default function AddUserAccessForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       {/* Dropdown to select existing roles */}
       <Box sx={{ width: "100%", maxWidth: "600px", mb: 3 }}>
         <FormControl fullWidth size="small">
@@ -731,7 +732,6 @@ export default function AddUserAccessForm() {
           </Select>
         </FormControl>
       </Box>
-
       <Paper
         sx={{
           p: theme.spacing(3),
@@ -1270,6 +1270,6 @@ export default function AddUserAccessForm() {
           </Box>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

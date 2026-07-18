@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -283,7 +284,7 @@ export default function CustomerBranchesTable({ customerId }: CustomerBranchesTa
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -311,7 +312,6 @@ export default function CustomerBranchesTable({ customerId }: CustomerBranchesTa
           </Button>
         </Stack>
       </Box>
-
       {/* Checkbox & Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -328,7 +328,6 @@ export default function CustomerBranchesTable({ customerId }: CustomerBranchesTa
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search Branches" />
         </Box>
       </Stack>
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
           <Table aria-label="branches table">
@@ -421,6 +420,6 @@ export default function CustomerBranchesTable({ customerId }: CustomerBranchesTa
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }

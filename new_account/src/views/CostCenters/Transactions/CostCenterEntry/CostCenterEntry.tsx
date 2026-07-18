@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -102,7 +103,7 @@ function CostCenterEntry() {
   };
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -128,7 +129,6 @@ function CostCenterEntry() {
           Back
         </Button>
       </Box>
-
       <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
         <Paper sx={{ p: theme.spacing(3), maxWidth: "600px", width: "100%", boxShadow: 2, borderRadius: 2 }}>
           {saveError && (
@@ -218,7 +218,7 @@ function CostCenterEntry() {
           </Box>
         </Paper>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }
 

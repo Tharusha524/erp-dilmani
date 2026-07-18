@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
@@ -145,7 +146,7 @@ export default function TransactionsTable({ customerId }: TransactionsProps) {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -163,7 +164,6 @@ export default function TransactionsTable({ customerId }: TransactionsProps) {
           <Breadcrumb breadcrumbs={breadcrumbItems} />
         </Box>
       </Box>
-
       {/* Search & Filter */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -198,8 +198,6 @@ export default function TransactionsTable({ customerId }: TransactionsProps) {
           />
         </Stack>
       </Stack>
-
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
           component={Paper}
@@ -273,6 +271,6 @@ export default function TransactionsTable({ customerId }: TransactionsProps) {
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }

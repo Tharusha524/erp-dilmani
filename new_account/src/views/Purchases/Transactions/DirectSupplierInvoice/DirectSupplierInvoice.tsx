@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import { useQuery } from "@tanstack/react-query";
 import {
   Box,
@@ -488,7 +489,7 @@ export default function DirectSupplierInvoice() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -816,6 +817,6 @@ export default function DirectSupplierInvoice() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

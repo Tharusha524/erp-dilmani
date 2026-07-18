@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import {
   Box,
   Button,
@@ -95,15 +96,7 @@ function LoginForm() {
   };
 
   return (
-    <Stack
-      spacing={2}
-      sx={{
-        height: isMdUp ? "100vh" : "auto",
-        justifyContent: "center",
-        margin: "2.5rem",
-        marginBottom: isMdUp ? "2.5rem" : "22vh",
-      }}
-    >
+    <FormPageLayout>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <img src={companyLogo} alt="logo" height={"65em"} />
         <Typography variant="h4" sx={{ fontWeight: 800, color: 'var(--pallet-blue)', letterSpacing: '-0.05em' }}>
@@ -258,7 +251,7 @@ function LoginForm() {
         open={openForgotPasswordDialog}
         handleClose={() => setOpenForgotPasswordDialog(false)}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }
 

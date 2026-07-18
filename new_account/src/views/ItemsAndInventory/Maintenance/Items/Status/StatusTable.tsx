@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
     Box,
@@ -140,7 +141,7 @@ function StatusTable({ itemId }: ItemStatusProps) {
     ];
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             {/* Header */}
             <Box
                 sx={{
@@ -170,7 +171,6 @@ function StatusTable({ itemId }: ItemStatusProps) {
                     </Button>
                 </Stack>
             </Box>
-
             {/* Search */}
             <Stack
                 direction="row"
@@ -184,7 +184,6 @@ function StatusTable({ itemId }: ItemStatusProps) {
                     />
                 </Box>
             </Stack>
-
             {/* Table */}
             <Stack sx={{ alignItems: "center" }}>
                 <TableContainer
@@ -245,7 +244,7 @@ function StatusTable({ itemId }: ItemStatusProps) {
                     </Table>
                 </TableContainer>
             </Stack>
-        </Stack>
+        </FormPageLayout>
     );
 }
 

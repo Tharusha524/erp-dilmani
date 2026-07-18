@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -135,7 +136,7 @@ export default function AccountTagsTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -174,7 +175,6 @@ export default function AccountTagsTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -201,7 +201,6 @@ export default function AccountTagsTable() {
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -289,7 +288,6 @@ export default function AccountTagsTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -304,6 +302,6 @@ export default function AccountTagsTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

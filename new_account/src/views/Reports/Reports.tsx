@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -90,7 +91,7 @@ export default function Reports() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -115,7 +116,6 @@ export default function Reports() {
           Back
         </Button>
       </Box>
-
       {/* 3-Column Layout */}
       <Grid container spacing={2}>
         {/*  Left Column — Report Classes */}
@@ -245,6 +245,6 @@ export default function Reports() {
           </Paper>
         </Grid>
       </Grid>
-    </Stack>
+    </FormPageLayout>
   );
 }

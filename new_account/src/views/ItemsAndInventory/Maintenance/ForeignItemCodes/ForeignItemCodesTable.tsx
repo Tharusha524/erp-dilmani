@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState, useEffect } from "react";
 import {
     Box,
@@ -160,7 +161,7 @@ function ForeignItemCodesTable() {
     ];
 
     return (
-        <Stack>
+        <FormPageLayout>
             {/* Header */}
             <Box
                 sx={{
@@ -247,7 +248,6 @@ function ForeignItemCodesTable() {
                     </Button>
                 </Stack>
             </Box>
-
             {/* Search bar only visible if item is selected */}
             {selectedItem && (
                 <Box sx={{ display: "flex", justifyContent: "flex-end", px: 2, mb: 2 }}>
@@ -259,7 +259,6 @@ function ForeignItemCodesTable() {
                     />
                 </Box>
             )}
-
             {/* Table */}
             {selectedItem && (
                 <Stack sx={{ alignItems: "center" }}>
@@ -373,7 +372,7 @@ function ForeignItemCodesTable() {
                 onClose={() => setErrorOpen(false)}
                 message={errorMessage}
             />
-        </Stack>
+        </FormPageLayout>
     );
 }
 

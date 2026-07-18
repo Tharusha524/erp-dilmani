@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -211,7 +212,7 @@ export default function ViewSupplierAllocations() {
     noTargetsReason?.severity !== "success";
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -236,7 +237,6 @@ export default function ViewSupplierAllocations() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ p: 3 }}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -262,7 +262,6 @@ export default function ViewSupplierAllocations() {
           </Grid>
         </Grid>
       </Paper>
-
       {noTargetsReason ? (
         <Alert severity={noTargetsReason.severity}>
           <Typography variant="body2" sx={{ mb: showCreateInvoiceActions ? 1 : 0 }}>
@@ -311,7 +310,6 @@ export default function ViewSupplierAllocations() {
           ) : null}
         </Alert>
       ) : null}
-
       <TableContainer component={Paper}>
         <Table size="small">
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -394,7 +392,6 @@ export default function ViewSupplierAllocations() {
           </TableBody>
         </Table>
       </TableContainer>
-
       <Stack direction="row" spacing={2} justifyContent="flex-end">
         <Button variant="contained" onClick={() => refetch()}>
           Refresh
@@ -416,6 +413,6 @@ export default function ViewSupplierAllocations() {
           Back to list
         </Button>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getItemCategories } from "../../../../api/ItemCategories/ItemCategoriesApi";
@@ -164,7 +165,7 @@ export default function AddForeignItemCodesForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: theme.spacing(3),
@@ -320,6 +321,6 @@ export default function AddForeignItemCodesForm() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

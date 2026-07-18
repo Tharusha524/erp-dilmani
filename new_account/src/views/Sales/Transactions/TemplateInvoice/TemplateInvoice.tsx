@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -240,7 +241,7 @@ export default function TemplateInvoice() {
   };
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -266,13 +267,11 @@ export default function TemplateInvoice() {
           Back
         </Button>
       </Box>
-
       <Alert severity="info">
         Mark orders as template via <strong>Sales Order Entry</strong> (checkbox) or{" "}
         <strong>Sales Order Inquiry</strong> (Template column). Only <code>type = 1</code> orders
         appear here.
       </Alert>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={2}>
@@ -392,13 +391,11 @@ export default function TemplateInvoice() {
           </Grid>
         </Grid>
       </Paper>
-
       {rows.length === 0 && !isLoading && (
         <Alert severity="warning">
           No template orders found. Mark an order as template first, then return here.
         </Alert>
       )}
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -463,6 +460,6 @@ export default function TemplateInvoice() {
           </TableFooter>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
@@ -99,7 +100,7 @@ const [errorOpen, setErrorOpen] = useState(false);
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -136,7 +137,6 @@ const [errorOpen, setErrorOpen] = useState(false);
           </Button>
         </Stack>
       </Box>
-
       {/* Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -147,7 +147,6 @@ const [errorOpen, setErrorOpen] = useState(false);
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search Tags" />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
@@ -219,7 +218,6 @@ const [errorOpen, setErrorOpen] = useState(false);
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -234,6 +232,6 @@ const [errorOpen, setErrorOpen] = useState(false);
               onClose={() => setErrorOpen(false)}
               message={errorMessage}
             />
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
     Box,
@@ -823,7 +824,7 @@ export default function DirectDelivery() {
     }, [cashAccount, cashBankAccounts]);
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             {/* Header */}
             <Box
                 sx={{
@@ -844,7 +845,6 @@ export default function DirectDelivery() {
                     Back
                 </Button>
             </Box>
-
             {/* Form fields */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
@@ -962,7 +962,6 @@ export default function DirectDelivery() {
                     </Grid>
                 </Grid>
             </Paper>
-
             {/* Items Table */}
             <Typography variant="subtitle1" sx={{ mb: 2, textAlign: 'center' }}>Delivery Note Items</Typography>
             <TableContainer component={Paper}>
@@ -1152,7 +1151,6 @@ export default function DirectDelivery() {
                     </TableFooter>
                 </Table>
             </TableContainer>
-
             {/* Cash Payment Section */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Typography variant="subtitle1" sx={{ mb: 2, textAlign: 'center' }}>
@@ -1345,6 +1343,6 @@ export default function DirectDelivery() {
 
                 }}
             />
-        </Stack>
+        </FormPageLayout>
     );
 }

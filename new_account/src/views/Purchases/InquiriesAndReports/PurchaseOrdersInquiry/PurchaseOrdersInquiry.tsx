@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box,
@@ -211,7 +212,7 @@ export default function PurchaseOrdersInquiry() {
   };
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box sx={{ padding: theme.spacing(2), boxShadow: 2, borderRadius: 1, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
         <Box>
           <PageTitle title="Search Purchase Orders" />
@@ -220,7 +221,6 @@ export default function PurchaseOrdersInquiry() {
 
         <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>Back</Button>
       </Box>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2} alignItems="center">
           {/* First row: #, From, To, Into Location */}
@@ -327,7 +327,6 @@ export default function PurchaseOrdersInquiry() {
           </Grid>
         </Grid>
       </Paper>
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -435,6 +434,6 @@ export default function PurchaseOrdersInquiry() {
           </TableFooter>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

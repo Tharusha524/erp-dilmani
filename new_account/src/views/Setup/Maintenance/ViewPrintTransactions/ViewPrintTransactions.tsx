@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -105,7 +106,7 @@ export default function ViewPrintTransactions() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -133,7 +134,6 @@ export default function ViewPrintTransactions() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search Filters */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -175,7 +175,6 @@ export default function ViewPrintTransactions() {
           onChange={(e) => setToRef(e.target.value)}
         />
       </Stack>
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
           component={Paper}
@@ -230,6 +229,6 @@ export default function ViewPrintTransactions() {
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }

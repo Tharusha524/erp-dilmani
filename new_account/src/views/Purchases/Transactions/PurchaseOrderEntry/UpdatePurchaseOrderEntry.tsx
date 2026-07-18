@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -434,7 +435,7 @@ export default function UpdatePurchaseOrderEntry() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -455,7 +456,6 @@ export default function UpdatePurchaseOrderEntry() {
           Back
         </Button>
       </Box>
-
       {/* Form Fields */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
@@ -519,12 +519,10 @@ export default function UpdatePurchaseOrderEntry() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Order Items Table */}
       <Typography variant="subtitle1" sx={{ mb: 1, textAlign: "center" }}>
         Order Items
       </Typography>
-
       <TableContainer component={Paper}>
         <Table>
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -677,7 +675,6 @@ export default function UpdatePurchaseOrderEntry() {
           </TableFooter>
         </Table>
       </TableContainer>
-
       {/* Memo Section */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
@@ -700,14 +697,14 @@ export default function UpdatePurchaseOrderEntry() {
           </Button>
         </Box>
       </Paper>
-        <AddedConfirmationModal
-          open={openSuccess}
-          title="Success"
-          content="Purchase order updated successfully."
-          addFunc={async () => {}}
-          handleClose={() => setOpenSuccess(false)}
-          onSuccess={() => navigate(-1)}
-        />
-    </Stack>
+      <AddedConfirmationModal
+        open={openSuccess}
+        title="Success"
+        content="Purchase order updated successfully."
+        addFunc={async () => {}}
+        handleClose={() => setOpenSuccess(false)}
+        onSuccess={() => navigate(-1)}
+      />
+    </FormPageLayout>
   );
 }

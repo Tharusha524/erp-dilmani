@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React from "react";
 import { Box, Button, Stack, Typography, Paper } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
@@ -19,7 +20,7 @@ export default function WorkOrderEntrySuccess() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: 2,
@@ -44,7 +45,6 @@ export default function WorkOrderEntrySuccess() {
           Close
         </Button>
       </Box>
-
       <Paper sx={{ p: 2 }}>
         {deleted ? (
           <>
@@ -84,7 +84,7 @@ export default function WorkOrderEntrySuccess() {
             <Stack spacing={3} direction="column" alignItems="center">
               {successMode === 'manufacture' ? (
                 // Manufacturing success: show only the required options
-                <>
+                (<>
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -92,7 +92,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     View This Work Order
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -100,7 +99,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     View the GL Journal Entries for This Work Order
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -108,7 +106,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Print the GL Journal Entries for This Work Order
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -116,10 +113,10 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Select another Work Order to Process
                   </Button>
-                </>
+                </>)
               ) : successMode === 'update' ? (
                 // Update success: show only Enter New and Select Existing (same as delete)
-                <>
+                (<>
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -127,7 +124,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Enter a New Work Order
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -135,7 +131,7 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Select an Existing Work Order
                   </Button>
-                </>
+                </>)
               ) : Number(type) === 2 ? (
                 <>
                   <Button
@@ -180,7 +176,7 @@ export default function WorkOrderEntrySuccess() {
                 </>
               ) : successMode === 'cost' ? (
                 // Cost processing success: show limited cost-related options
-                <>
+                (<>
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -188,7 +184,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     View This Work Order
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -196,7 +191,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     View the GL Journal Entries for This Work Order
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -204,7 +198,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Enter another additional cost
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -212,10 +205,10 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Select another Work Order to Process
                   </Button>
-                </>
+                </>)
               ) : (
                 // Non-advanced: show full options
-                <>
+                (<>
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -234,7 +227,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Print This Work Order
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -242,7 +234,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Email This Work Order
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -252,7 +243,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     View the GL Journal Entries for This Work Order
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -264,7 +254,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Print the GL Journal Entries for This Work Order
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -272,7 +261,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Add an Attachment
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -280,7 +268,6 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Enter a New Work Order
                   </Button>
-
                   <Button
                     variant="outlined"
                     sx={{ width: '500px' }}
@@ -288,12 +275,12 @@ export default function WorkOrderEntrySuccess() {
                   >
                     Select an Existing Work Order
                   </Button>
-                </>
+                </>)
               )}
             </Stack>
           </>
         )}
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

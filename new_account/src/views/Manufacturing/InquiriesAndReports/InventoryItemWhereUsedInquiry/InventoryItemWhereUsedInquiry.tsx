@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState, useEffect } from "react";
 import {
     Box,
@@ -95,7 +96,7 @@ function InventoryItemWhereUsedInquiry() {
     ];
 
     return (
-        <Stack>
+        <FormPageLayout>
             <Box
                 sx={{
                     padding: theme.spacing(2),
@@ -147,7 +148,6 @@ function InventoryItemWhereUsedInquiry() {
                     </Button>
                 </Stack>
             </Box>
-
             {selectedItem && (
                 <Stack sx={{ alignItems: "center" }}>
                     <TableContainer
@@ -214,7 +214,7 @@ function InventoryItemWhereUsedInquiry() {
                     </TableContainer>
                 </Stack>
             )}
-        </Stack>
+        </FormPageLayout>
     );
 }
 

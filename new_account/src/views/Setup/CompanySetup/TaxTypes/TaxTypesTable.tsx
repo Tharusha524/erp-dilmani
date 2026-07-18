@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -168,7 +169,7 @@ export default function TaxTypesTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -203,7 +204,6 @@ export default function TaxTypesTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Checkbox & Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -227,7 +227,6 @@ export default function TaxTypesTable() {
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -322,7 +321,6 @@ export default function TaxTypesTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -337,6 +335,6 @@ export default function TaxTypesTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

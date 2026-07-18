@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
@@ -153,7 +154,7 @@ export default function FixedAssetClassesTable() {
   };
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -195,7 +196,6 @@ export default function FixedAssetClassesTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search + Filters */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -225,7 +225,6 @@ export default function FixedAssetClassesTable() {
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -325,7 +324,6 @@ export default function FixedAssetClassesTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Error modal */}
       <ErrorModal
         open={errorOpen}
@@ -341,6 +339,6 @@ export default function FixedAssetClassesTable() {
         deleteFunc={() => selectedTypeId !== null && handleDelete(selectedTypeId)}
         onSuccess={() => console.log("Sales Type deleted successfully!")}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

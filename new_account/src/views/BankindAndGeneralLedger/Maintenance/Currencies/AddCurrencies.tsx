@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -117,7 +118,7 @@ export default function AddCurrencies() {
 
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: 2 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: theme.spacing(3),
@@ -240,6 +241,6 @@ export default function AddCurrencies() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

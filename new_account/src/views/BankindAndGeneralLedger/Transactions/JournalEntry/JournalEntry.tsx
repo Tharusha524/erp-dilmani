@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
@@ -705,7 +706,7 @@ export default function JournalEntry() {
   }
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -731,7 +732,6 @@ export default function JournalEntry() {
           Back
         </Button>
       </Box>
-
       {/* Journal Entry Header Fields */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
@@ -859,7 +859,6 @@ export default function JournalEntry() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Tabs */}
       <Tabs
         value={tabValue}
@@ -873,7 +872,6 @@ export default function JournalEntry() {
         <Tab label="GL Posting" />
         <Tab label="Tax Register" disabled={!includeInTaxRegister} />
       </Tabs>
-
       {/* Tab Panels */}
       <TabPanel value={tabValue} index={0}>
       <TableContainer component={Paper} sx={{ p: 1 }}>
@@ -1141,7 +1139,6 @@ export default function JournalEntry() {
         </Table>
       </TableContainer>
       </TabPanel>
-
       <TabPanel value={tabValue} index={1}>
         <Alert severity="info" sx={{ mb: 2 }}>
           Enter net amount and input tax (purchases) or output tax (sales). Tax is saved to the register and
@@ -1241,7 +1238,6 @@ export default function JournalEntry() {
           onChange={(e) => setMemo(e.target.value)}
         />
       </Box>
-
       {/* Success/Error Messages */}
       {saveSuccess && (
         <Alert severity="success" sx={{ mt: 2 }}>
@@ -1253,7 +1249,6 @@ export default function JournalEntry() {
           {saveError}
         </Alert>
       )}
-
       {/*  Submit Button */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2, p: 1 }}>
         <Button
@@ -1269,6 +1264,6 @@ export default function JournalEntry() {
               : "Process Journal Entry"}
         </Button>
       </Box>
-    </Stack>
+    </FormPageLayout>
   );
 }

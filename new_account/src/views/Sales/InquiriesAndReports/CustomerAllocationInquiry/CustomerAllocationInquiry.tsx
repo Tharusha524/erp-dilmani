@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -197,7 +198,7 @@ export default function CustomerAllocationInquiry() {
   }, [filteredRows.length, rowsPerPage, page]);
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -224,7 +225,6 @@ export default function CustomerAllocationInquiry() {
           Back
         </Button>
       </Box>
-
       {/* Filters */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2} alignItems="center">
@@ -331,7 +331,6 @@ export default function CustomerAllocationInquiry() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Table */}
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
@@ -451,6 +450,6 @@ export default function CustomerAllocationInquiry() {
           </TableFooter>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

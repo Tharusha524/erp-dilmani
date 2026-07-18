@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React from "react";
 import { Box, Button, Stack, Typography, Paper } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -16,7 +17,7 @@ export default function FixedAssetsLocationTransfersSuccess() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: 2,
@@ -41,7 +42,6 @@ export default function FixedAssetsLocationTransfersSuccess() {
           Close
         </Button>
       </Box>
-
       <Paper sx={{ p: 2 }}>
         <Typography sx={{ mb: 2 }}>
           Your inventory transfer has been processed successfully.
@@ -65,6 +65,6 @@ export default function FixedAssetsLocationTransfersSuccess() {
           </Button>
         </Stack>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

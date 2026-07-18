@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getItems } from "../../../../api/Item/ItemApi";
@@ -115,7 +116,7 @@ export default function AddSalesKitComponentPage() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper sx={{ p: theme.spacing(3), maxWidth: "800px", width: "100%", boxShadow: 2, borderRadius: 2 }}>
         <Typography variant="h6" sx={{ mb: 3 }}>{componentRow ? "Update Component" : "Add Component"}</Typography>
 
@@ -208,6 +209,6 @@ export default function AddSalesKitComponentPage() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

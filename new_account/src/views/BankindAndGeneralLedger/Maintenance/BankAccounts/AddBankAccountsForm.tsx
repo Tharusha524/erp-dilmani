@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -161,7 +162,7 @@ const [open, setOpen] = useState(false);
   ]);
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper sx={{ p: theme.spacing(3), maxWidth: "600px", width: "100%", boxShadow: 2, borderRadius: 2 }}>
         <Typography variant="h6" sx={{ mb: 3, textAlign: isMobile ? "center" : "left" }}>
           Add Bank Account
@@ -285,11 +286,11 @@ const [open, setOpen] = useState(false);
               handleClose={() => setOpen(false)}
               onSuccess={() => window.history.back()}
             />
-            <ErrorModal
-              open={errorOpen}
-              onClose={() => setErrorOpen(false)}
-              message={errorMessage}
-            />
-    </Stack>
+      <ErrorModal
+        open={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        message={errorMessage}
+      />
+    </FormPageLayout>
   );
 }

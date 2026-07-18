@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import {
     Box,
     Button,
@@ -581,7 +582,7 @@ export default function SalesQuotationEntry() {
     }, [selectedFiscalYear]);
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             {/* Header */}
             <Box
                 sx={{
@@ -1074,6 +1075,6 @@ export default function SalesQuotationEntry() {
                 addFunc={async () => { }}
                 handleClose={() => setOpen(false)}
             />
-        </Stack>
+        </FormPageLayout>
     );
 }

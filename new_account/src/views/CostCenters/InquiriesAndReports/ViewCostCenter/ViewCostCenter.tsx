@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -116,7 +117,7 @@ export default function ViewCostCenter() {
   }
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -152,7 +153,6 @@ export default function ViewCostCenter() {
           </Button>
         </Stack>
       </Box>
-
       <Paper sx={{ p: 2 }}>
         <Typography variant="h6" gutterBottom>
           CostCenter #{costCenter.id}
@@ -227,7 +227,6 @@ export default function ViewCostCenter() {
           </Alert>
         )}
       </Paper>
-
       <Paper sx={{ p: 2 }}>
         <Typography variant="subtitle1" fontWeight={700} gutterBottom>
           Balance for this CostCenter
@@ -312,6 +311,6 @@ export default function ViewCostCenter() {
           </Table>
         </TableContainer>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

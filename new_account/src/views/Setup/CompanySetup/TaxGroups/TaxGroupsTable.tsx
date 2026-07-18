@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -106,7 +107,7 @@ export default function TaxGroupTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -142,7 +143,6 @@ export default function TaxGroupTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Global checkbox & Search Bar */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -167,7 +167,6 @@ export default function TaxGroupTable() {
           />
         </Box>
       </Stack>
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
           component={Paper}
@@ -259,6 +258,6 @@ export default function TaxGroupTable() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

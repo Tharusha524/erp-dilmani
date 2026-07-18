@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -167,7 +168,7 @@ export default function UpdateGlAccount() {
   }
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: theme.spacing(3),
@@ -305,7 +306,6 @@ export default function UpdateGlAccount() {
           </Button>
         </Box>
       </Paper>
-
       {/*  Success modal */}
       <UpdateConfirmationModal
         open={open}
@@ -314,14 +314,12 @@ export default function UpdateGlAccount() {
         handleClose={() => setOpen(false)}
         onSuccess={() => window.history.back()}
       />
-
       {/*  Error modal */}
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-
       {/* Delete confirmation modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -332,6 +330,6 @@ export default function UpdateGlAccount() {
         deleteFunc={handleDelete}
         onSuccess={() => console.log("GL Account deleted successfully!")}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

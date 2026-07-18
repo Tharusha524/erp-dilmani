@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import {
     Box,
     Button,
@@ -737,7 +738,7 @@ export function SalesOrderEntry() {
     );
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             {/* Header */}
             <Box
                 sx={{
@@ -1226,7 +1227,7 @@ export function SalesOrderEntry() {
                    navigate("/sales/transactions/sales-order-entry/success", { state: { orderNo: actualOrderNo, reference, orderDate } });
                 }}
             />
-        </Stack>
+        </FormPageLayout>
     );
 }
 

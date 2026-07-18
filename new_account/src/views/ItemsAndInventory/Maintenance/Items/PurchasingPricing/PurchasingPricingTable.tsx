@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
@@ -165,7 +166,7 @@ function PurchasingPricingTable({ itemId }: ItemPurchasinPricingProps) {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -195,7 +196,6 @@ function PurchasingPricingTable({ itemId }: ItemPurchasinPricingProps) {
           </Button>
         </Stack>
       </Box>
-
       {itemId ? (
         <Box sx={{ px: 2 }}>
           <ItemUsdSupplierPricingPanel
@@ -204,7 +204,6 @@ function PurchasingPricingTable({ itemId }: ItemPurchasinPricingProps) {
           />
         </Box>
       ) : null}
-
       {/* Search */}
       <Stack
         direction="row"
@@ -218,7 +217,6 @@ function PurchasingPricingTable({ itemId }: ItemPurchasinPricingProps) {
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -325,7 +323,7 @@ function PurchasingPricingTable({ itemId }: ItemPurchasinPricingProps) {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }
 

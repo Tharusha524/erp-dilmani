@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
     Box,
@@ -126,7 +127,7 @@ function SalesPricingTable({ itemId }: ItemSalesPricingProps) {
     ];
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             {/* Header */}
             <Box sx={{ padding: theme.spacing(2), boxShadow: 2, marginY: 2, borderRadius: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <Box>
@@ -140,7 +141,6 @@ function SalesPricingTable({ itemId }: ItemSalesPricingProps) {
                     </Button>
                 </Stack>
             </Box>
-
             {itemId ? (
                 <Box sx={{ px: 2 }}>
                     <ItemUsdSalesPricingPanel
@@ -149,14 +149,12 @@ function SalesPricingTable({ itemId }: ItemSalesPricingProps) {
                     />
                 </Box>
             ) : null}
-
             {/* Search */}
             <Stack direction="row" sx={{ px: 2, mb: 2, width: "100%", justifyContent: "flex-end" }}>
                 <Box sx={{ width: isMobile ? "100%" : "300px" }}>
                     <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search Sales Type or Price..." />
                 </Box>
             </Stack>
-
             {/* Table */}
             <Stack sx={{ alignItems: "center" }}>
                 <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
@@ -227,13 +225,12 @@ function SalesPricingTable({ itemId }: ItemSalesPricingProps) {
                 deleteFunc={handleDeleteConfirm}
                 onSuccess={() => { }}
             />
-
             <ErrorModal
                 open={errorOpen}
                 onClose={() => setErrorOpen(false)}
                 message={errorMessage}
             />
-        </Stack>
+        </FormPageLayout>
     );
 }
 

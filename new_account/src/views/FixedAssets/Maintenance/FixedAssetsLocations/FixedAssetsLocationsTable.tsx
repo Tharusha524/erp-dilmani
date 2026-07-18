@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -141,7 +142,7 @@ export default function FixedAssetsLocationsTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -178,7 +179,6 @@ export default function FixedAssetsLocationsTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Checkbox + Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -195,7 +195,6 @@ export default function FixedAssetsLocationsTable() {
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search Locations" />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
@@ -285,7 +284,6 @@ export default function FixedAssetsLocationsTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -300,6 +298,6 @@ export default function FixedAssetsLocationsTable() {
               onClose={() => setErrorOpen(false)}
               message={errorMessage}
             />
-    </Stack>
+    </FormPageLayout>
   );
 }

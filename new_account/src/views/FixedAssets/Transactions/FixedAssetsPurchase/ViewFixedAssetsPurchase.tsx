@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo } from "react";
 import {
   Box,
@@ -58,7 +59,7 @@ export default function ViewFixedAssetsPurchase() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: 2,
@@ -82,7 +83,6 @@ export default function ViewFixedAssetsPurchase() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ p: 3 }}>
         <Typography
           variant="h6"
@@ -131,7 +131,6 @@ export default function ViewFixedAssetsPurchase() {
           ) : null}
         </Grid>
       </Paper>
-
       <Paper sx={{ p: 2 }}>
         <Typography sx={{ mb: 1, fontWeight: 600 }}>
           Fixed Asset Items on this Invoice
@@ -222,6 +221,6 @@ export default function ViewFixedAssetsPurchase() {
           </Button>
         </Stack>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

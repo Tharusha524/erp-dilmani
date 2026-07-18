@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState } from "react";
 import {
   Box,
@@ -116,7 +117,7 @@ function GlAccountClassesTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -151,7 +152,6 @@ function GlAccountClassesTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search + Show Inactive Toggle */}
       <Box
         sx={{
@@ -177,7 +177,6 @@ function GlAccountClassesTable() {
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search..." />
         </Box>
       </Box>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -278,7 +277,6 @@ function GlAccountClassesTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/*  Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -288,7 +286,7 @@ function GlAccountClassesTable() {
         handleReject={() => setSelectedCid(null)}
         deleteFunc={handleDelete}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }
 

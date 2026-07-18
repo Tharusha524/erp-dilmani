@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
     Box,
@@ -438,7 +439,7 @@ export default function FixedAssetsDisposal() {
     ];
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             {/*  Header */}
             <Box
                 sx={{
@@ -464,7 +465,6 @@ export default function FixedAssetsDisposal() {
                     Back
                 </Button>
             </Box>
-
             {/*  From/To Location, Date, Reference */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
@@ -524,7 +524,6 @@ export default function FixedAssetsDisposal() {
                     </Grid>
                 </Grid>
             </Paper>
-
             {/*  Table */}
             <TableContainer component={Paper} sx={{ p: 1 }}>
                 <Table>
@@ -661,7 +660,6 @@ export default function FixedAssetsDisposal() {
                     </TableBody>
                 </Table>
             </TableContainer>
-
             {/*  Memo Field */}
             <Box sx={{ mt: 2, pl: 1, pr: 1 }}>
                 <Typography sx={{ mb: 1, fontWeight: 600 }}>Memo:</Typography>
@@ -674,7 +672,6 @@ export default function FixedAssetsDisposal() {
                     onChange={(e) => setMemo(e.target.value)}
                 />
             </Box>
-
             {/* Success/Error Messages */}
             {processSuccess && (
                 <Alert severity="success" sx={{ mt: 2 }}>
@@ -686,7 +683,6 @@ export default function FixedAssetsDisposal() {
                     {processError}
                 </Alert>
             )}
-
             {/*  Process Transfer Button */}
             <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2, pr: 1 }}>
                 <Button
@@ -698,6 +694,6 @@ export default function FixedAssetsDisposal() {
                     {isProcessing ? "Processing..." : "Process Disposal"}
                 </Button>
             </Box>
-        </Stack>
+        </FormPageLayout>
     );
 }

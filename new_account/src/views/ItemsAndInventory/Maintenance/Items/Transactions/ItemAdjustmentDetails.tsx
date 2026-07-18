@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -153,7 +154,7 @@ export default function ItemAdjustmentDetails({ itemId }: ItemAdjustmentDetailsP
   ];
 
   return (
-    <Stack spacing={3}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -174,7 +175,6 @@ export default function ItemAdjustmentDetails({ itemId }: ItemAdjustmentDetailsP
           Back
         </Button>
       </Box>
-
       {/* Table 1: Adjustment Info */}
       <Typography variant="h6" sx={{ px: 2 }}>
         Adjustment Information
@@ -207,7 +207,6 @@ export default function ItemAdjustmentDetails({ itemId }: ItemAdjustmentDetailsP
           </TableBody>
         </Table>
       </TableContainer>
-
       {/* Table 2: Item Details */}
       <Typography variant="h6" sx={{ px: 2 }}>
         Item Details
@@ -244,6 +243,6 @@ export default function ItemAdjustmentDetails({ itemId }: ItemAdjustmentDetailsP
           </TableBody>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

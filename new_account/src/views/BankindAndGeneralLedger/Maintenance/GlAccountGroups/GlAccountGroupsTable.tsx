@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState } from "react";
 import {
   Box,
@@ -131,7 +132,7 @@ function GlAccountGroupsTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -164,7 +165,6 @@ function GlAccountGroupsTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search + Show Inactive Toggle */}
       <Box
         sx={{
@@ -185,7 +185,6 @@ function GlAccountGroupsTable() {
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} placeholder="Search..." />
         </Box>
       </Box>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer component={Paper} elevation={2} sx={{ overflowX: "auto", maxWidth: isMobile ? "88vw" : "100%" }}>
@@ -273,7 +272,6 @@ function GlAccountGroupsTable() {
           </Table>
         </TableContainer>
       </Stack>
-
       {/* ✅ Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -283,7 +281,7 @@ function GlAccountGroupsTable() {
         handleReject={() => setSelectedId(null)}
         deleteFunc={handleDelete}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }
 

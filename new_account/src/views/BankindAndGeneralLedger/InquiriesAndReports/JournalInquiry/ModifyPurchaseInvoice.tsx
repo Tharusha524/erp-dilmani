@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
     Box,
@@ -255,7 +256,7 @@ export default function ModifyPurchaseInvoice() {
     ];
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             {/* Header */}
             <Box
                 sx={{
@@ -279,7 +280,6 @@ export default function ModifyPurchaseInvoice() {
                     Back
                 </Button>
             </Box>
-
             {/* Form */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
@@ -382,7 +382,6 @@ export default function ModifyPurchaseInvoice() {
                     </Grid>
                 </Grid>
             </Paper>
-
             {/* ======================== TABLE 1 ======================== */}
             <Box display="flex" justifyContent="center" position="relative" mb={2}>
                 <Typography variant="h6">Items Received Yet to be Invoiced</Typography>
@@ -390,7 +389,6 @@ export default function ModifyPurchaseInvoice() {
                     Add All Item
                 </Button>
             </Box>
-
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -538,7 +536,6 @@ export default function ModifyPurchaseInvoice() {
                     </TableFooter>
                 </Table>
             </TableContainer>
-
             {/* ======================== TABLE 2: GL ITEMS ======================== */}
             <Box display="flex" justifyContent="center" position="relative" mb={2}>
                 <Typography variant="h6">GL Items for this Invoice</Typography>
@@ -550,7 +547,6 @@ export default function ModifyPurchaseInvoice() {
                     <Button variant="contained">GO</Button>
                 </Stack>
             </Box>
-
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -709,7 +705,6 @@ export default function ModifyPurchaseInvoice() {
                     </TableFooter>
                 </Table>
             </TableContainer>
-
             {/* ================= Memo + Buttons ================= */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Typography variant="subtitle1">Memo</Typography>
@@ -727,6 +722,6 @@ export default function ModifyPurchaseInvoice() {
                     </Button>
                 </Stack>
             </Paper>
-        </Stack>
+        </FormPageLayout>
     );
 }

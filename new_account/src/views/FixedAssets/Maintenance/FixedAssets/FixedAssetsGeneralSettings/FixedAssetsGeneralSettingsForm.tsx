@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -373,7 +374,7 @@ export default function FixedAssetsGeneralSettingsForm({ itemId }: ItemGeneralSe
 
 
   return (
-    <Stack alignItems="center" sx={{ p: { xs: 2, md: 3 } }}>
+    <FormPageLayout>
       <Box
         sx={{
           width: "100%",
@@ -799,23 +800,22 @@ export default function FixedAssetsGeneralSettingsForm({ itemId }: ItemGeneralSe
           </Button>
         </Box>
       </Box>
-        <AddedConfirmationModal
-              open={open}
-              title="Success"
-              content="Fixed Assets has been added successfully!"
-              addFunc={async () => { }}
-              handleClose={() => setOpen(false)}
-              onSuccess={() => {
-                // Form was already cleared on successful submission
-                setOpen(false);
-              }}
-            />
-      
-            <ErrorModal
-              open={errorOpen}
-              onClose={() => setErrorOpen(false)}
-              message={errorMessage}
-            />
-    </Stack>
+      <AddedConfirmationModal
+            open={open}
+            title="Success"
+            content="Fixed Assets has been added successfully!"
+            addFunc={async () => { }}
+            handleClose={() => setOpen(false)}
+            onSuccess={() => {
+              // Form was already cleared on successful submission
+              setOpen(false);
+            }}
+          />
+      <ErrorModal
+        open={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        message={errorMessage}
+      />
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
@@ -436,7 +437,7 @@ export default function WorkOrderEntry() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -462,7 +463,6 @@ export default function WorkOrderEntry() {
           Back
         </Button>
       </Box>
-
       {/* Work Order Form */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
@@ -783,14 +783,12 @@ export default function WorkOrderEntry() {
           )}
         </Grid>
       </Paper>
-
       {/* Success/Error Messages */}
       {saveError && (
         <Alert severity="error" sx={{ mt: 2 }}>
           {saveError}
         </Alert>
       )}
-
       {/* Submit Button */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2, p: 1 }}>
         <Button
@@ -802,6 +800,6 @@ export default function WorkOrderEntry() {
           {isSaving ? "Adding..." : "Add Work Order"}
         </Button>
       </Box>
-    </Stack>
+    </FormPageLayout>
   );
 }

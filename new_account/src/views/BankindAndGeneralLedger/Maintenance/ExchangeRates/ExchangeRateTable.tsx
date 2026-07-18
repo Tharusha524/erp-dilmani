@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
@@ -115,7 +116,7 @@ function ExchangeRateTable() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -154,7 +155,6 @@ function ExchangeRateTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Currency Selector + Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -184,7 +184,6 @@ function ExchangeRateTable() {
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -267,7 +266,7 @@ function ExchangeRateTable() {
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }
 

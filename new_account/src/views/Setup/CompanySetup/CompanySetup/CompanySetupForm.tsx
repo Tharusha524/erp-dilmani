@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -227,7 +228,7 @@ export default function CompanySetupForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ p: { xs: 1, md: 3 } }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: theme.spacing(3),
@@ -740,6 +741,6 @@ export default function CompanySetupForm() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

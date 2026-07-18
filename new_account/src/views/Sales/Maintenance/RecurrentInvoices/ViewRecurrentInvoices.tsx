@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -131,7 +132,7 @@ function ViewRecurrentInvoices() {
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -168,7 +169,6 @@ function ViewRecurrentInvoices() {
           </Button>
         </Stack>
       </Box>
-
       <Box
         sx={{
           display: "flex",
@@ -187,7 +187,6 @@ function ViewRecurrentInvoices() {
           />
         </Box>
       </Box>
-
       <Stack sx={{ alignItems: "center" }}>
         {!hasTemplateOrders ? (
           <Paper
@@ -320,7 +319,7 @@ function ViewRecurrentInvoices() {
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }
 

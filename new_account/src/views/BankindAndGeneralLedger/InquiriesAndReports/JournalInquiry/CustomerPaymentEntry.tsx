@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -153,7 +154,7 @@ export default function CustomerPaymentEntry() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -178,7 +179,6 @@ export default function CustomerPaymentEntry() {
           Back
         </Button>
       </Box>
-
       {/* Form Section */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
@@ -285,7 +285,6 @@ export default function CustomerPaymentEntry() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Allocation Table */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Typography
@@ -339,7 +338,6 @@ export default function CustomerPaymentEntry() {
           </Table>
         </TableContainer>
       </Paper>
-
       {/* Payment Section */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Typography
@@ -406,6 +404,6 @@ export default function CustomerPaymentEntry() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

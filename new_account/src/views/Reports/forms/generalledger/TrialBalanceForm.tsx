@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import { useReportGenerate } from "../../../../hooks/useReportGenerate";
 import { useApplyFiscalYearDates } from "../../../../hooks/useApplyFiscalYearDates";
@@ -64,7 +65,7 @@ export default function TrialBalanceForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: 3,
@@ -206,6 +207,6 @@ export default function TrialBalanceForm() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -105,7 +106,7 @@ export default function UpdateAttachmentsForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: 3,
@@ -214,7 +215,6 @@ export default function UpdateAttachmentsForm() {
           </Button>
         </Box>
       </Paper>
-
       {/* Success Modal */}
       <SuccessModal
         open={open}
@@ -224,13 +224,12 @@ export default function UpdateAttachmentsForm() {
         }}
         message="Attachment updated successfully!"
       />
-
       {/* Error Modal */}
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

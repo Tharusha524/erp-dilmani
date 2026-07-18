@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -873,7 +874,7 @@ export default function SupplierInvoice() {
     ];
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             {/* Header */}
             <Box
                 sx={{
@@ -897,7 +898,6 @@ export default function SupplierInvoice() {
                     Back
                 </Button>
             </Box>
-
             {grnDeliverySummary ? (
                 <Paper sx={{ p: 2, borderRadius: 2 }}>
                     <Typography variant="h6" gutterBottom>
@@ -939,7 +939,6 @@ export default function SupplierInvoice() {
                     </Grid>
                 </Paper>
             ) : null}
-
             {/* Form */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Grid container spacing={2}>
@@ -1046,21 +1045,18 @@ export default function SupplierInvoice() {
                     </Grid>
                 </Grid>
             </Paper>
-
             {focusGrnBatchId != null ? (
                 <Alert severity="info">
                     Showing uninvoiced lines for delivery #{focusGrnBatchId}
                     {grnNav.reference ? ` (reference ${grnNav.reference})` : ""}.
                 </Alert>
             ) : null}
-
             {deliveryFullyInvoiced ? (
                 <Alert severity="warning">
                     This delivery has already been fully invoiced. Check Purchases → Supplier
                     Transactions to view the invoice, or receive new goods before invoicing again.
                 </Alert>
             ) : null}
-
             {/* ======================== TABLE 1 ======================== */}
             <Box display="flex" justifyContent="center" position="relative" mb={2}>
                 <Typography variant="h6">Items Received Yet to be Invoiced</Typography>
@@ -1068,7 +1064,6 @@ export default function SupplierInvoice() {
                     Add All Item
                 </Button>
             </Box>
-
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -1166,7 +1161,6 @@ export default function SupplierInvoice() {
                     </TableFooter>
                 </Table>
             </TableContainer>
-
             {/* ======================== TABLE 2: GL ITEMS ======================== */}
             <Box display="flex" justifyContent="center" position="relative" mb={2}>
                 <Typography variant="h6">GL Items for this Invoice</Typography>
@@ -1198,7 +1192,6 @@ export default function SupplierInvoice() {
                     </Button>
                 </Stack>
             </Box>
-
             <TableContainer component={Paper}>
                 <Table>
                     <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -1348,7 +1341,6 @@ export default function SupplierInvoice() {
                     </TableFooter>
                 </Table>
             </TableContainer>
-
             {/* ================= Memo + Buttons ================= */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Typography variant="subtitle1">Memo</Typography>
@@ -1370,6 +1362,6 @@ export default function SupplierInvoice() {
                     </Button>
                 </Stack>
             </Paper>
-        </Stack>
+        </FormPageLayout>
     );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -339,7 +340,7 @@ export default function SystemGLSetupForm() {
   );
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: 2 }}>
+    <FormPageLayout>
       <Paper sx={{ p: theme.spacing(3), width: "100%", maxWidth: "1200px", boxShadow: 2, borderRadius: 2 }}>
         <Typography variant="h6" sx={{ mb: 3, textAlign: "center" }}>
           System & General GL Setup
@@ -373,6 +374,6 @@ export default function SystemGLSetupForm() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

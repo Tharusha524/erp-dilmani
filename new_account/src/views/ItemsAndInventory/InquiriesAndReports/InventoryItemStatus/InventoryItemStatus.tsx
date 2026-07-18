@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo } from "react";
 import {
     Box,
@@ -87,7 +88,7 @@ function InventoryItemStatus({ itemId }: ItemStatusProps) {
     ];
 
     return (
-        <Stack spacing={2}>
+        <FormPageLayout>
             <Box
                 sx={{
                     padding: theme.spacing(2),
@@ -130,7 +131,6 @@ function InventoryItemStatus({ itemId }: ItemStatusProps) {
                     Back
                 </Button>
             </Box>
-
             {selectedItemId && (
                 <Box sx={{ display: "flex", justifyContent: "flex-end", px: 2 }}>
                     <TextField
@@ -141,7 +141,6 @@ function InventoryItemStatus({ itemId }: ItemStatusProps) {
                     />
                 </Box>
             )}
-
             <Stack sx={{ alignItems: "center" }}>
                 <TableContainer
                     component={Paper}
@@ -215,7 +214,7 @@ function InventoryItemStatus({ itemId }: ItemStatusProps) {
                     </Table>
                 </TableContainer>
             </Stack>
-        </Stack>
+        </FormPageLayout>
     );
 }
 

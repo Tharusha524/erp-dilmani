@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -260,7 +261,7 @@ export default function ViewCustomerAllocations() {
     (error as { message?: string })?.message;
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -286,7 +287,6 @@ export default function ViewCustomerAllocations() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ p: 3 }}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -315,21 +315,18 @@ export default function ViewCustomerAllocations() {
           </Grid>
         </Grid>
       </Paper>
-
       {noTargetsReason ? (
         <Alert severity={noTargetsReason.severity}>
           <Typography variant="subtitle2">{noTargetsReason.title}</Typography>
           <Typography variant="body2">{noTargetsReason.detail}</Typography>
         </Alert>
       ) : null}
-
       {targetScope === "invoices_and_deliveries" && rows.length > 0 ? (
         <Alert severity="info">
           {isCredit ? "Credit notes" : "Payments"} can be allocated to open{" "}
           <b>sales invoices</b> and <b>delivery notes</b> that are not already covered by a paid invoice.
         </Alert>
       ) : null}
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table size="small">
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -419,7 +416,6 @@ export default function ViewCustomerAllocations() {
           </TableBody>
         </Table>
       </TableContainer>
-
       <Stack direction="row" spacing={2} justifyContent="flex-end">
         {!isCredit && leftOnFrom > 0.001 && rows.length === 0 && (
           <Button
@@ -457,7 +453,6 @@ export default function ViewCustomerAllocations() {
           Back to list
         </Button>
       </Stack>
-
       <ConfirmDialog
         open={voidDialogOpen}
         onClose={() => setVoidDialogOpen(false)}
@@ -475,6 +470,6 @@ export default function ViewCustomerAllocations() {
         reasonPlaceholder="e.g. Wrong amount entered"
         loading={voidMutation.isPending}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

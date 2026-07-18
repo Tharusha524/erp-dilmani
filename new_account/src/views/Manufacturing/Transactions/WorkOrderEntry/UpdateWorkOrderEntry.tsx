@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -306,7 +307,7 @@ export default function UpdateWorkOrderEntry() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box sx={{ padding: theme.spacing(2), boxShadow: 2, borderRadius: 1, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
         <Box>
           <PageTitle title="Update Work Order" />
@@ -315,7 +316,6 @@ export default function UpdateWorkOrderEntry() {
 
         <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}>Back</Button>
       </Box>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         {loadingError && <Alert severity="error">{loadingError}</Alert>}
         {saveError && <Alert severity="error" sx={{ mt: 2 }}>{saveError}</Alert>}
@@ -423,6 +423,6 @@ export default function UpdateWorkOrderEntry() {
           </Grid>
         </Grid>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

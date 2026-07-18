@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
@@ -135,7 +136,7 @@ export default function SuppliersTransactionsTable({ supplierId }: SupplierTrans
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -163,7 +164,6 @@ export default function SuppliersTransactionsTable({ supplierId }: SupplierTrans
           </Button>
         </Stack>
       </Box>
-
       <Stack
         direction={isMobile ? "column" : "row"}
         spacing={2}
@@ -193,7 +193,6 @@ export default function SuppliersTransactionsTable({ supplierId }: SupplierTrans
           />
         </Stack>
       </Stack>
-
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
           component={Paper}
@@ -261,6 +260,6 @@ export default function SuppliersTransactionsTable({ supplierId }: SupplierTrans
           </Table>
         </TableContainer>
       </Stack>
-    </Stack>
+    </FormPageLayout>
   );
 }

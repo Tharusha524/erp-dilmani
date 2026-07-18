@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import { useState } from "react";
 import { Stack } from "@mui/material";
 import EntityAttachmentsTable from "../../../../../components/entityAttachments/EntityAttachmentsTable";
@@ -13,7 +14,7 @@ export default function ItemAttachmentsTable({ itemId }: ItemAttachmentProps) {
   if (!itemId) return null;
 
   return (
-    <Stack>
+    <FormPageLayout>
       {showForm ? (
         <EntityAttachmentsForm
           entityType="item"
@@ -25,6 +26,6 @@ export default function ItemAttachmentsTable({ itemId }: ItemAttachmentProps) {
       ) : (
         <EntityAttachmentsTable entityType="item" entityId={itemId} onAdd={() => setShowForm(true)} />
       )}
-    </Stack>
+    </FormPageLayout>
   );
 }

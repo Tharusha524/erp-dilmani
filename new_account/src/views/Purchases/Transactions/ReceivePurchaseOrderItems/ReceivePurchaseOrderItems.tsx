@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -452,7 +453,7 @@ export default function ReceivePurchaseOrderItems() {
   };
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -473,7 +474,6 @@ export default function ReceivePurchaseOrderItems() {
           Back
         </Button>
       </Box>
-
       {!navigatedOrderNo && (
         <Alert severity="info">
           Select an outstanding purchase order below, or open this screen from{" "}
@@ -481,7 +481,6 @@ export default function ReceivePurchaseOrderItems() {
           success page after entering a new PO.
         </Alert>
       )}
-
       {/* Form Section */}
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         {!navigatedOrderNo && (
@@ -624,12 +623,10 @@ export default function ReceivePurchaseOrderItems() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Items Table */}
       <Typography variant="subtitle1" sx={{ mb: 2, textAlign: "center" }}>
         Items to Receive
       </Typography>
-
       <TableContainer component={Paper} sx={{ px: 2 }}>
         <Table size="small">
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -724,7 +721,6 @@ export default function ReceivePurchaseOrderItems() {
           </TableFooter>
         </Table>
       </TableContainer>
-
       {/* Buttons */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, pr: 2, mb: 4 }}>
         <Button variant="contained" color="primary" onClick={handleUpdate} disabled={!!dateReceivedError || isProcessing}>
@@ -740,6 +736,6 @@ export default function ReceivePurchaseOrderItems() {
           )}
         </Button>
       </Box>
-    </Stack>
+    </FormPageLayout>
   );
 }

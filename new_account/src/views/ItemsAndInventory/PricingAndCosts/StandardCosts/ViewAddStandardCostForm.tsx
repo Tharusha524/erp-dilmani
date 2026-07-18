@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -187,7 +188,7 @@ export default function ViewAddStandardCostForm({ itemId }: ItemStandardCostProp
   }
 
   return (
-    <Stack spacing={2} sx={{ px: isMobile ? 2 : 3, py: 2 }}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -205,7 +206,6 @@ export default function ViewAddStandardCostForm({ itemId }: ItemStandardCostProp
           <Breadcrumb breadcrumbs={breadcrumbItems} />
         </Box>
       </Box>
-
       <Stack alignItems="center" spacing={2}>
         <Paper
           sx={{
@@ -344,7 +344,6 @@ export default function ViewAddStandardCostForm({ itemId }: ItemStandardCostProp
           </Box>
         </Paper>
       </Stack>
-
       <UpdateConfirmationModal
         open={open}
         title="Success"
@@ -357,6 +356,6 @@ export default function ViewAddStandardCostForm({ itemId }: ItemStandardCostProp
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

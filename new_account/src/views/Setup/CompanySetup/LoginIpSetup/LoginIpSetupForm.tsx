@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -86,7 +87,7 @@ export default function LoginIpSetupForm() {
   };
 
   return (
-    <Stack spacing={2} sx={{ p: { xs: 2, md: 3 } }}>
+    <FormPageLayout>
       <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
         <Box>
           <PageTitle title="Login IP Restriction" />
@@ -102,12 +103,10 @@ export default function LoginIpSetupForm() {
           Back
         </Button>
       </Box>
-
       <Alert severity="info" icon={<SecurityIcon />}>
         When enabled, only users connecting from allowed IP addresses can sign in or use the system.
         Blocked attempts are recorded in User Login &amp; Daily Activity.
       </Alert>
-
       {detectedIp && (
         <Alert severity="warning">
           Your current IP detected by the server: <strong>{detectedIp}</strong>. Add this IP to the
@@ -115,7 +114,6 @@ export default function LoginIpSetupForm() {
           local development.
         </Alert>
       )}
-
       <Paper sx={{ p: 3 }}>
         {isLoading ? (
           <Typography>Loading...</Typography>
@@ -172,6 +170,6 @@ export default function LoginIpSetupForm() {
           </Stack>
         )}
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

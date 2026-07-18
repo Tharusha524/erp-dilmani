@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo } from "react";
 import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Stack, Button } from "@mui/material";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -43,7 +44,7 @@ export default function ViewFixedAssetsLocationTransfers() {
   }, [locations, toLocation]);
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: 2,
@@ -64,7 +65,6 @@ export default function ViewFixedAssetsLocationTransfers() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ p: 2 }}>
         <Typography sx={{ mb: 1, fontWeight: 600 }}>
           From location: {fromName ?? "-"} &nbsp;|&nbsp; To location: {toName ?? "-"} &nbsp;|&nbsp; Reference: {reference || "-"} &nbsp;|&nbsp; Date: {date || "-"}
@@ -99,6 +99,6 @@ export default function ViewFixedAssetsLocationTransfers() {
           </Table>
         </TableContainer>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

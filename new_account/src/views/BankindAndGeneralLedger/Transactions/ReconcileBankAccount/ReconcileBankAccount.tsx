@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
@@ -152,7 +153,7 @@ export default function ReconcileBankAccount() {
   }, [transactionRows, page, rowsPerPage]);
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -174,10 +175,8 @@ export default function ReconcileBankAccount() {
           Back
         </Button>
       </Box>
-
       {error && <Alert severity="error">{error}</Alert>}
       {success && <Alert severity="success">{success}</Alert>}
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={6}>
@@ -205,7 +204,6 @@ export default function ReconcileBankAccount() {
           </Grid>
         </Grid>
       </Paper>
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table size="small">
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -257,7 +255,6 @@ export default function ReconcileBankAccount() {
           </TableBody>
         </Table>
       </TableContainer>
-
       {selectedBankAccount && (
         <Paper sx={{ p: 2 }}>
           <Typography variant="subtitle1" align="center">
@@ -268,7 +265,6 @@ export default function ReconcileBankAccount() {
           </Typography>
         </Paper>
       )}
-
       <TableContainer component={Paper}>
         <Table size="small">
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -333,7 +329,6 @@ export default function ReconcileBankAccount() {
           </TableFooter>
         </Table>
       </TableContainer>
-
       <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
         <Button
           variant="contained"
@@ -343,6 +338,6 @@ export default function ReconcileBankAccount() {
           {saving ? "Saving..." : "Reconcile"}
         </Button>
       </Box>
-    </Stack>
+    </FormPageLayout>
   );
 }

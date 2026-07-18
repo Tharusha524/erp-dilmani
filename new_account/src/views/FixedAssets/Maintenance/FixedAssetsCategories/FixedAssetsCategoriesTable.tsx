@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -137,7 +138,7 @@ export default function FixedAssetsCategoriesTable() {
   };
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -179,7 +180,6 @@ export default function FixedAssetsCategoriesTable() {
           </Button>
         </Stack>
       </Box>
-
       {/* Search + Filters */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -204,7 +204,6 @@ export default function FixedAssetsCategoriesTable() {
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -303,8 +302,6 @@ export default function FixedAssetsCategoriesTable() {
           </Table>
         </TableContainer>
       </Stack>
-
-
       {/* Confirmation + Error Modals */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -314,12 +311,11 @@ export default function FixedAssetsCategoriesTable() {
         handleReject={() => setSelectedId(null)}
         deleteFunc={handleDelete}
       />
-
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

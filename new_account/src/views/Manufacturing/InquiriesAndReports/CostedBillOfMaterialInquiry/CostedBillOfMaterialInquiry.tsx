@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useMemo, useState, useEffect } from "react";
 import {
     Box,
@@ -91,7 +92,7 @@ function CostedBillOfMaterialInquiry() {
     ];
 
     return (
-        <Stack>
+        <FormPageLayout>
             <Box
                 sx={{
                     padding: theme.spacing(2),
@@ -143,7 +144,6 @@ function CostedBillOfMaterialInquiry() {
                     </Button>
                 </Stack>
             </Box>
-
             {selectedItem && (
                 <Stack sx={{ alignItems: "center" }} spacing={1}>
                     {currency && (
@@ -210,7 +210,7 @@ function CostedBillOfMaterialInquiry() {
                     </TableContainer>
                 </Stack>
             )}
-        </Stack>
+        </FormPageLayout>
     );
 }
 

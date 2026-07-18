@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -169,7 +170,7 @@ export default function ContactsTable({ customerId, onRefreshNeeded }: ContacsPr
   ];
 
   return (
-    <Stack>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -198,7 +199,6 @@ export default function ContactsTable({ customerId, onRefreshNeeded }: ContacsPr
             </Button>
           </Stack>
       </Box>
-
       {/* Checkbox + Search */}
       <Stack
         direction={isMobile ? "column" : "row"}
@@ -222,7 +222,6 @@ export default function ContactsTable({ customerId, onRefreshNeeded }: ContacsPr
           />
         </Box>
       </Stack>
-
       {/* Table */}
       <Stack sx={{ alignItems: "center" }}>
         <TableContainer
@@ -312,7 +311,6 @@ export default function ContactsTable({ customerId, onRefreshNeeded }: ContacsPr
           </Table>
         </TableContainer>
       </Stack>
-
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         open={openDeleteModal}
@@ -323,13 +321,12 @@ export default function ContactsTable({ customerId, onRefreshNeeded }: ContacsPr
         deleteFunc={handleDelete}
         onSuccess={() => console.log("Contact deleted successfully!")}
       />
-
       {/* Error Modal */}
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

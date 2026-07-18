@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -133,12 +134,11 @@ export default function EmailSetupForm() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box>
         <PageTitle title="Email Setup" />
         <Breadcrumb breadcrumbs={breadcrumbs} />
       </Box>
-
       <Paper sx={{ p: 3 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Configure outgoing email for invoices, receipts, and other PDF documents. Settings are
@@ -285,6 +285,6 @@ export default function EmailSetupForm() {
           </Button>
         </Stack>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

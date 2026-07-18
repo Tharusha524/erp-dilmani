@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -241,7 +242,7 @@ export default function AddCustomerBranchesGeneralSettingForm() {
 
 
   return (
-    <Stack alignItems="center" sx={{ p: { xs: 2, md: 3 } }}>
+    <FormPageLayout>
       <Box sx={{
         width: "100%",
         maxWidth: "1200px",
@@ -627,12 +628,11 @@ export default function AddCustomerBranchesGeneralSettingForm() {
         handleClose={() => setOpen(false)}
         onSuccess={() => window.history.back()}
       />
-
       <ErrorModal
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         message={errorMessage}
       />
-    </Stack>
+    </FormPageLayout>
   );
 }

@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
@@ -202,7 +203,7 @@ export default function BudgetEntry() {
   ];
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       {/* Header */}
       <Box
         sx={{
@@ -228,13 +229,11 @@ export default function BudgetEntry() {
           Back
         </Button>
       </Box>
-
       {/* Budget Entry Form */}
       <Alert severity="info" sx={{ mb: 1 }}>
         Budget amounts are stored per fiscal year, GL account, and month (FrontAccounting budget_trans). Select
         fiscal year and account, click Get, enter amounts, then Save.
       </Alert>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={3}>
@@ -319,7 +318,6 @@ export default function BudgetEntry() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Budget Periods Table */}
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
@@ -388,7 +386,6 @@ export default function BudgetEntry() {
           </TableFooter>
         </Table>
       </TableContainer>
-
       {/* Success/Error Messages */}
       {saveSuccess && (
         <Alert severity="success" sx={{ mt: 2 }}>
@@ -400,7 +397,6 @@ export default function BudgetEntry() {
           {saveError}
         </Alert>
       )}
-
       {/* Save and Delete Buttons */}
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2, p: 1 }}>
         <Button
@@ -419,6 +415,6 @@ export default function BudgetEntry() {
           Delete
         </Button>
       </Box>
-    </Stack>
+    </FormPageLayout>
   );
 }

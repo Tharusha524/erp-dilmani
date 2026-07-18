@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import { useCostCenters, costCenterLabel } from "../../../../hooks/useCostCenters";
 import { useReportGenerate } from "../../../../hooks/useReportGenerate";
@@ -60,7 +61,7 @@ export default function CostCenterSummaryForm() {
   };
 
   return (
-    <Stack alignItems="center" sx={{ mt: 4, px: isMobile ? 2 : 0 }}>
+    <FormPageLayout>
       <Paper
         sx={{
           p: 3,
@@ -195,6 +196,6 @@ export default function CostCenterSummaryForm() {
           </Button>
         </Box>
       </Paper>
-    </Stack>
+    </FormPageLayout>
   );
 }

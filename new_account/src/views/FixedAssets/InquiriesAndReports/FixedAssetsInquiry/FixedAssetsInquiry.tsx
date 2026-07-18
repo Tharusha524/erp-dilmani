@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState } from "react";
 import {
   Box,
@@ -89,7 +90,7 @@ export default function FixedAssetsInquiry() {
   }, [rows, page, rowsPerPage]);
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box
         sx={{
           padding: theme.spacing(2),
@@ -114,7 +115,6 @@ export default function FixedAssetsInquiry() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Stack direction={isMobile ? "column" : "row"} spacing={2} alignItems="center">
           <FormControlLabel
@@ -133,12 +133,10 @@ export default function FixedAssetsInquiry() {
           </Button>
         </Stack>
       </Paper>
-
       {error && <Alert severity="error">{error}</Alert>}
       {searched && !loading && rows.length === 0 && !error && (
         <Alert severity="info">No fixed assets found. Register assets under Fixed Assets maintenance (item type Fixed Asset).</Alert>
       )}
-
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table size="small">
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -188,6 +186,6 @@ export default function FixedAssetsInquiry() {
           />
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

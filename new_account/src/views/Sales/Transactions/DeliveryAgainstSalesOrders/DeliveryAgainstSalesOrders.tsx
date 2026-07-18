@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -192,7 +193,7 @@ export default function DeliveryAgainstSalesOrders() {
   }, [selectedItem, items]);
 
   return (
-    <Stack spacing={2}>
+    <FormPageLayout>
       <Box sx={{ padding: theme.spacing(2), boxShadow: 2, borderRadius: 1, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
         <Box>
           <PageTitle title="Search Outstanding Sales Orders" />
@@ -203,7 +204,6 @@ export default function DeliveryAgainstSalesOrders() {
           Back
         </Button>
       </Box>
-
       <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} sm={2}>
@@ -276,7 +276,6 @@ export default function DeliveryAgainstSalesOrders() {
           </Grid>
         </Grid>
       </Paper>
-
       {/* Table */}
       <TableContainer component={Paper} sx={{ p: 1 }}>
         <Table>
@@ -350,6 +349,6 @@ export default function DeliveryAgainstSalesOrders() {
           </TableFooter>
         </Table>
       </TableContainer>
-    </Stack>
+    </FormPageLayout>
   );
 }

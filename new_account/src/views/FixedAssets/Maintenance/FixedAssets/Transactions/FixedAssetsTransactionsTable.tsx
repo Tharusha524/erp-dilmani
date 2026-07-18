@@ -1,3 +1,4 @@
+import { FormPageLayout } from "../../../../../components/Layout/FormPageLayout";
 import React, { useState, useEffect, useMemo } from "react";
 import {
     Box,
@@ -233,7 +234,7 @@ export default function FixedAssetsTransactionsTable({ itemId }: ItemTransaction
     ];
 
     return (
-        <Stack>
+        <FormPageLayout>
             <Box
                 sx={{
                     padding: theme.spacing(2),
@@ -252,7 +253,6 @@ export default function FixedAssetsTransactionsTable({ itemId }: ItemTransaction
                 </Box>
 
             </Box>
-
             {/* Search & Filter */}
             <Stack
                 direction={isMobile ? "column" : "row"}
@@ -296,7 +296,6 @@ export default function FixedAssetsTransactionsTable({ itemId }: ItemTransaction
                     onChange={(date) => handleDateChange("toDate", date)}
                 />
             </Stack>
-
             <Stack sx={{ alignItems: "center" }}>
                 <TableContainer
                     component={Paper}
@@ -456,6 +455,6 @@ export default function FixedAssetsTransactionsTable({ itemId }: ItemTransaction
                     </Table>
                 </TableContainer>
             </Stack>
-        </Stack>
+        </FormPageLayout>
     );
 }
