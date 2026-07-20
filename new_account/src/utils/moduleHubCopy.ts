@@ -215,6 +215,7 @@ export const HUB_MODULE_INTRO: Partial<Record<HubSectionKey, ScreenCopy>> = {
 export const HUB_CARD_DESCRIPTIONS: Record<string, string> = {
   // Sales transactions
   "/sales/transactions/sales-quotation-entry": "Price quote for customer — no stock or GL yet",
+  "/sales/transactions/apparel-order-sheet": "Record custom apparel order sizing and designs",
   "/sales/transactions/sales-order-entry": "Customer order — reserves sales workflow",
   "/sales/transactions/direct-delivery": "Deliver goods without prior order",
   "/sales/transactions/direct-invoice": "Invoice customer directly",

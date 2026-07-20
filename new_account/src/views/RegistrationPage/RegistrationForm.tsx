@@ -1,4 +1,4 @@
-import { FormPageLayout } from "../../components/Layout/FormPageLayout";
+
 import {
   Box,
   Checkbox,
@@ -15,8 +15,8 @@ import {
   useTheme,
 } from "@mui/material";
 import { useState } from "react";
-import companyLogo from "../../assets/company-logo.jpg";
-import groupLogo from "../../assets/group-logo.png";
+import companyLogo from "../../assets/Untitled design (27).png";
+
 import CustomButton from "../../components/CustomButton";
 import LoginIcon from "@mui/icons-material/Login";
 import { useSnackbar } from "notistack";
@@ -162,15 +162,17 @@ function RegistrationForm() {
   };
 
   return (
-    <FormPageLayout>
+    <Stack
+      spacing={2}
+      sx={{
+        justifyContent: "center",
+        margin: "2.5rem",
+        marginBottom: isMdUp ? "2.5rem" : "22vh",
+      }}
+    >
       <Box>
         <img src={companyLogo} alt="logo" height={"65px"} />
-        <img
-          src={groupLogo}
-          alt="logo"
-          style={{ marginLeft: "1rem" }}
-          height={"45px"}
-        />
+
       </Box>
       <Box>
         <Typography variant={"body2"}>
@@ -342,7 +344,7 @@ function RegistrationForm() {
           </CustomButton>
         </Box>
       </Stack>
-    </FormPageLayout>
+    </Stack>
   );
 }
 

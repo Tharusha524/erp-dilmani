@@ -493,3 +493,14 @@ Route::post('/reports/aged-customer-analysis', [\App\Http\Controllers\ReportCont
 Route::post('/reports/customer-trial-balance', [\App\Http\Controllers\ReportController::class, 'customerTrialBalance']);
 Route::post('/reports/customer-detail-listing', [\App\Http\Controllers\ReportController::class, 'customerDetailListing']);
 Route::post('/reports/sales-summary', [\App\Http\Controllers\ReportController::class, 'salesSummary']);
+
+// Public routes for Registration dropdowns (Stubs)
+Route::get('departments', function () {
+    return response()->json([]);
+});
+Route::get('factory', function () {
+    return response()->json([]);
+});
+Route::get('job-positions', function () {
+    return response()->json([]);
+});

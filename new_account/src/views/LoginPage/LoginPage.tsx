@@ -7,9 +7,12 @@ import LoginForm from "./LoginForm";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import PageLoader from "../../components/PageLoader";
 import { useLocation, useNavigate } from "react-router";
-import index1 from "../../assets/new1.png";
-import index2 from "../../assets/new2.png";
-import index3 from "../../assets/new3.png";
+import index1 from "../../assets/645bd8c2478c94d2d379d7388b069fad.png";
+import index2 from "../../assets/2016e0ff123f8731d5507f751adbb24d.png";
+import index3 from "../../assets/58629c28c29af472c2e7f5a7527ec6af.png";
+import index4 from "../../assets/99925897a696e03d965d544901fc8746.png";
+import index5 from "../../assets/e2104bc248c4786a229b9a5cf8b00b1c.png";
+import index6 from "../../assets/f7f7e9ff7fbd9f51474d40d41eb11867.png";
 
 function LoginPage() {
   const theme = useTheme();
@@ -54,9 +57,12 @@ function LoginPage() {
         >
           <ImageCarousel
             images={[
-              { src: index1, alt: "Welcome" },
-              { src: index2, alt: "Health & Safety" },
-              { src: index3, alt: "Employee Engagement" },
+              { src: index1, alt: "Slide 1" },
+              { src: index2, alt: "Slide 2" },
+              { src: index3, alt: "Slide 3" },
+              { src: index4, alt: "Slide 4" },
+              { src: index5, alt: "Slide 5" },
+              { src: index6, alt: "Slide 6" },
             ]}
           />
           <Typography
@@ -81,7 +87,7 @@ function LoginPage() {
               textAlign: "center",
             }}
           >
-            copyright © 2025 Sky Smart Technology, All Rights Reserved
+            copyright © 2026 DIO SOLUTIONS, All Rights Reserved
           </Typography>
           <Typography
             variant="subtitle2"
@@ -94,10 +100,7 @@ function LoginPage() {
               marginBottom: "2rem",
             }}
           >
-            Our dedicated teams of engineers, architects, and tech consultants
-            are here to support your bold ideas, guide you through our
-            cutting-edge solutions, and provide answers to your technical and
-            business questions. Let's build smarter, together.
+            Our comprehensive ERP platform streamlines your business operations, seamlessly integrating financials, inventory, and supply chain management. Gain real-time insights and unparalleled control to drive efficiency across your entire organization. Let's grow smarter, together.
           </Typography>
         </Stack>
         <Stack sx={{ flex: isMdUp ? 2 : 1 }}>

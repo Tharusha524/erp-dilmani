@@ -2,9 +2,12 @@ import { Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
 import leftLandingLeave from "../../assets/b_leaf_l.svg";
 import rightLandingLeave from "../../assets/b_leaf_r.svg";
 import ImageCarousel from "../../components/ImageCarousel";
-import sliderImage1 from "../../assets//welcome.png";
-import sliderImage2 from "../../assets/health_safety.png";
-import sliderImage3 from "../../assets/employee_engage.png";
+import sliderImage1 from "../../assets/645bd8c2478c94d2d379d7388b069fad.png";
+import sliderImage2 from "../../assets/2016e0ff123f8731d5507f751adbb24d.png";
+import sliderImage3 from "../../assets/58629c28c29af472c2e7f5a7527ec6af.png";
+import sliderImage4 from "../../assets/99925897a696e03d965d544901fc8746.png";
+import sliderImage5 from "../../assets/e2104bc248c4786a229b9a5cf8b00b1c.png";
+import sliderImage6 from "../../assets/f7f7e9ff7fbd9f51474d40d41eb11867.png";
 import RegistrationForm from "./RegistrationForm";
 import useCurrentUser from "../../hooks/useCurrentUser";
 import PageLoader from "../../components/PageLoader";
@@ -17,7 +20,7 @@ function RegistrationPage() {
 
   const { user, status } = useCurrentUser();
 
-  if (status === "loading" || status === "idle" || status === "pending") {
+  if (status === "loading" || status === "idle") {
     return <PageLoader />;
   }
 
@@ -49,9 +52,12 @@ function RegistrationPage() {
         >
           <ImageCarousel
             images={[
-              { src: sliderImage1, alt: "Welcome" },
-              { src: sliderImage2, alt: "Health & Safety" },
-              { src: sliderImage3, alt: "Employee Engagement" },
+              { src: sliderImage1, alt: "Slide 1" },
+              { src: sliderImage2, alt: "Slide 2" },
+              { src: sliderImage3, alt: "Slide 3" },
+              { src: sliderImage4, alt: "Slide 4" },
+              { src: sliderImage5, alt: "Slide 5" },
+              { src: sliderImage6, alt: "Slide 6" },
             ]}
           />
           <Typography
@@ -76,7 +82,7 @@ function RegistrationPage() {
               textAlign: "center",
             }}
           >
-            copyright © 2024 Chasseur-Dynamics, All Rights Reserved
+            copyright © 2026 DIO SOLUTIONS, All Rights Reserved
           </Typography>
           <Typography
             variant="subtitle2"

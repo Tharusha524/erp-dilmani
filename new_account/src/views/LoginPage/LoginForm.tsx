@@ -1,4 +1,4 @@
-import { FormPageLayout } from "../../components/Layout/FormPageLayout";
+
 import {
   Box,
   Button,
@@ -12,7 +12,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useState } from "react";
-import companyLogo from "../../assets/company-logo1.jpg";
+import companyLogo from "../../assets/Untitled design (27).png";
 import groupLogo from "../../assets/group-logo.png";
 import { useForm } from "react-hook-form";
 import CustomButton from "../../components/CustomButton";
@@ -96,7 +96,14 @@ function LoginForm() {
   };
 
   return (
-    <FormPageLayout>
+    <Stack
+      sx={{
+        justifyContent: "center",
+        height: "100%",
+        padding: "0 10%",
+      }}
+      spacing={2}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <img src={companyLogo} alt="logo" height={"65em"} />
         <Typography variant="h4" sx={{ fontWeight: 800, color: 'var(--pallet-blue)', letterSpacing: '-0.05em' }}>
@@ -251,7 +258,7 @@ function LoginForm() {
         open={openForgotPasswordDialog}
         handleClose={() => setOpenForgotPasswordDialog(false)}
       />
-    </FormPageLayout>
+    </Stack>
   );
 }
 
