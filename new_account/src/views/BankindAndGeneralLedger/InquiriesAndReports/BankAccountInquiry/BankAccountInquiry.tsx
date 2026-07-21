@@ -236,7 +236,7 @@ export default function BankAccountInquiry() {
           </TableHead>
 
           <TableBody>
-            <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+            <TableRow sx={{ backgroundColor: "action.hover" }}>
               <TableCell colSpan={4} sx={{ fontWeight: "bold", borderRight: "1px solid #e0e0e0" }}>
                 Opening Balance — {fromDate || "start"}
               </TableCell>
@@ -288,7 +288,7 @@ export default function BankAccountInquiry() {
               </TableRow>
             ))}
 
-            <TableRow sx={{ backgroundColor: "#f5f5f5", borderTop: "2px solid #e0e0e0" }}>
+            <TableRow sx={{ backgroundColor: "action.hover", borderTop: "2px solid #e0e0e0" }}>
               <TableCell colSpan={4} sx={{ fontWeight: "bold", borderRight: "1px solid #e0e0e0" }}>
                 Ending Balance — {toDate || "end"}
               </TableCell>

@@ -394,7 +394,7 @@ function TrialBalancePage() {
                           </TableRow>
                         ))}
 
-                        <TableRow sx={{ backgroundColor: "#f5f5f5", borderTop: "1px solid #e0e0e0" }}>
+                        <TableRow sx={{ backgroundColor: "action.hover", borderTop: "1px solid #e0e0e0" }}>
                           <TableCell colSpan={2} sx={{ fontWeight: "bold", borderRight: "2px solid #e0e0e0", paddingLeft: 4 }}>
                             Subtotal - {typeName}:
                           </TableCell>

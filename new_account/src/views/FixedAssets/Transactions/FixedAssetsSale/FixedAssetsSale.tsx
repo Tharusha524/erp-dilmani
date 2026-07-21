@@ -378,6 +378,10 @@ export default function FixedAssetsSale() {
             enqueueSnackbar("Select a customer.", { variant: "warning" });
             return;
         }
+        if (!branch) {
+            enqueueSnackbar("Select a branch.", { variant: "warning" });
+            return;
+        }
         if (!deliverFrom) {
             enqueueSnackbar("Select deliver from location.", { variant: "warning" });
             return;

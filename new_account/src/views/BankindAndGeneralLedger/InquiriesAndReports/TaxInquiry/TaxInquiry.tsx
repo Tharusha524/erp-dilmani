@@ -153,7 +153,7 @@ export default function TaxInquiry() {
             ))}
 
             {/* Total Row */}
-            <TableRow sx={{ backgroundColor: "#f5f5f5", borderTop: "2px solid #e0e0e0" }}>
+            <TableRow sx={{ backgroundColor: "action.hover", borderTop: "2px solid #e0e0e0" }}>
               <TableCell></TableCell>
               <TableCell sx={{ fontWeight: "bold" }}>
                 Total payable or refund:

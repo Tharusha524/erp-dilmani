@@ -193,15 +193,15 @@ function CostedBillOfMaterialInquiry() {
                                         </TableRow>
                                     ))
                                 )}
-                                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                                <TableRow sx={{ backgroundColor: "action.hover" }}>
                                     <TableCell colSpan={6}>Standard Labour Cost</TableCell>
                                     <TableCell>{Number(standardLabourCost).toFixed(2)}</TableCell>
                                 </TableRow>
-                                <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                                <TableRow sx={{ backgroundColor: "action.hover" }}>
                                     <TableCell colSpan={6}>Standard Overhead Cost</TableCell>
                                     <TableCell>{Number(standardOverheadCost).toFixed(2)}</TableCell>
                                 </TableRow>
-                                <TableRow sx={{ backgroundColor: "#f5f5f5", fontWeight: "bold" }}>
+                                <TableRow sx={{ backgroundColor: "action.selected", fontWeight: "bold" }}>
                                     <TableCell colSpan={6} sx={{ fontWeight: "bold" }}>Total Cost</TableCell>
                                     <TableCell sx={{ fontWeight: "bold" }}>{Number(totalCost).toFixed(2)}</TableCell>
                                 </TableRow>

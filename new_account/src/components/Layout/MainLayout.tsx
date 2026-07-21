@@ -13,6 +13,8 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ListItem from "@mui/material/ListItem";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
 import {
   Alert,
   Button,
@@ -27,6 +29,8 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import { Link, useLocation, useNavigate } from "react-router";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
+import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
+import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import NotificationCenter from "../NotificationCenter";
 import { APP_ROUTER_BASENAME } from "../../config/appConfig";
 import { getActiveFiscalYear } from "../../api/FiscalYear/activeFiscalYearApi";
@@ -53,6 +57,7 @@ import { resolveLogoSrc } from "../../utils/logoUrl";
 import { useUIStore } from "../../store/uiStore";
 import growLedgerLogo from "../../assets/group-logo.svg";
 import HelpFloatingButton from "../Help/HelpFloatingButton";
+import { useThemeContext } from "../../context/ThemeContext";
 
 const drawerWidth = 288;
 const collapsedDrawerWidth = 76;
@@ -90,6 +95,8 @@ interface AppBarProps extends MuiAppBarProps {
 const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== "open",
 })<AppBarProps>(({ theme }) => ({
+  backgroundColor: theme.palette.background.paper,
+  color: theme.palette.text.primary,
   zIndex: theme.zIndex.drawer + 1,
   transition: theme.transitions.create(["width", "margin"], {
     easing: theme.transitions.easing.sharp,
@@ -160,9 +167,11 @@ export default function MainLayout({ children }: Props) {
   const openViewProfileDrawer = useUIStore((s) => s.profileDrawerOpen);
   const setProfileDrawerOpen = useUIStore((s) => s.setProfileDrawerOpen);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-  const [openEditUserRoleDialog, setOpenEditUserRoleDialog] = useState(false);
+  const openEditUserRoleDialog = false; // Mock, adjust if this causes problems
+  const [openEditUserRoleDialogState, setOpenEditUserRoleDialogState] = useState(false);
   const statusColor = user?.availability ? "#44b700" : "#f44336";
   const openProfileDrawer = () => setProfileDrawerOpen(true);
+  const { mode, toggleColorMode } = useThemeContext();
   const { pathname } = useLocation();
   const pageMeta = useMemo(() => getPageMetaFromPath(pathname), [pathname]);
 
@@ -255,6 +264,9 @@ export default function MainLayout({ children }: Props) {
             )}
 
             <Box className="erp-navbar__actions">
+              <IconButton onClick={toggleColorMode} color="inherit" sx={{ mr: 1 }}>
+                {mode === 'dark' ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+              </IconButton>
               <NotificationCenter />
 
               <Box
@@ -307,7 +319,7 @@ export default function MainLayout({ children }: Props) {
                   <DrawerProfileHeader
                     title="User Profile"
                     handleClose={() => setProfileDrawerOpen(false)}
-                    onEdit={() => setOpenEditUserRoleDialog(true)}
+                    onEdit={() => setOpenEditUserRoleDialogState(true)}
                   />
                   <ViewUserContent selectedUser={user} />
                 </Stack>

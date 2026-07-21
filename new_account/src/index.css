@@ -180,3 +180,23 @@
 .scrollable-div {
   -ms-overflow-style: scrollbar; /* Force visible scrollbar in IE */
 }
+
+/* Dark mode palette overrides */
+body[data-theme="dark"] {
+  color-scheme: dark; /* Fixes native calendar icon colors */
+  --pallet-lighter-blue: #1e293b; /* Dark slate for table headers */
+  --pallet-light-blue: #334155;
+  --pallet-blue: #90caf9; /* Light blue for labels and buttons */
+  --pallet-dark-blue: #e2e8f0;
+  --pallet-main-blue: #f8fafc;
+  --pallet-border-blue: #475569;
+  --pallet-dark-color: #f4f4f4;
+  --pallet-light-color: #333;
+  --pallet-grey: #cbd5e1;
+  --pallet-dark-grey: #94a3b8;
+  --pallet-light-grey: #475569;
+  --pallet-lighter-grey: #334155;
+  --font-color: #f4f4f4;
+  --font-color-dark: #f4f4f4;
+  --font-color-light: #333;
+}

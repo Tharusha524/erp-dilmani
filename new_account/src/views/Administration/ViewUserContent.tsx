@@ -81,7 +81,7 @@ function ViewUserContent({ selectedUser }: { selectedUser: User }) {
         sx={{
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#fff",
+          bgcolor: "background.paper",
           flex: 2,
           boxShadow: 3,
           p: "3rem",
@@ -91,7 +91,7 @@ function ViewUserContent({ selectedUser }: { selectedUser: User }) {
           sx={{
             display: "flex",
             flexDirection: "row",
-            backgroundColor: "#fff",
+            bgcolor: "background.paper",
             flex: 1,
           }}
         >
@@ -111,7 +111,7 @@ function ViewUserContent({ selectedUser }: { selectedUser: User }) {
           sx={{
             display: "flex",
             flexDirection: "row",
-            backgroundColor: "#fff",
+            bgcolor: "background.paper",
             flex: 1,
           }}
         >
@@ -131,7 +131,7 @@ function ViewUserContent({ selectedUser }: { selectedUser: User }) {
           sx={{
             display: "flex",
             flexDirection: "row",
-            backgroundColor: "#fff",
+            bgcolor: "background.paper",
             flex: 1,
           }}
         >
@@ -150,7 +150,7 @@ function ViewUserContent({ selectedUser }: { selectedUser: User }) {
           sx={{
             display: "flex",
             flexDirection: "row",
-            backgroundColor: "#fff",
+            bgcolor: "background.paper",
             flex: 1,
           }}
         >
@@ -169,7 +169,7 @@ function ViewUserContent({ selectedUser }: { selectedUser: User }) {
           sx={{
             display: "flex",
             flexDirection: "row",
-            backgroundColor: "#fff",
+            bgcolor: "background.paper",
             flex: 1,
           }}
         >
@@ -183,7 +183,7 @@ function ViewUserContent({ selectedUser }: { selectedUser: User }) {
           sx={{
             display: "flex",
             flexDirection: "row",
-            backgroundColor: "#fff",
+            bgcolor: "background.paper",
             flex: 1,
           }}
         >

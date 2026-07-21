@@ -47,7 +47,19 @@ const StatCard: React.FC<StatCardProps> = ({
         </Box>
         <Box
           className={`erp-stat-card__change ${isPositive ? "erp-stat-card__change--up" : "erp-stat-card__change--down"}`}
-          sx={{ visibility: showChange ? "visible" : "hidden" }}
+          sx={{
+            visibility: showChange ? "visible" : "hidden",
+            bgcolor: isPositive ? "success.light" : "error.light",
+            color: isPositive ? "success.dark" : "error.dark",
+            ...(isPositive && {
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(5, 150, 105, 0.16)' : '#ecfdf5',
+              color: (theme) => theme.palette.mode === 'dark' ? '#34d399' : '#059669',
+            }),
+            ...(!isPositive && {
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(220, 38, 38, 0.16)' : '#fef2f2',
+              color: (theme) => theme.palette.mode === 'dark' ? '#f87171' : '#dc2626',
+            })
+          }}
         >
           {isPositive ? (
             <TrendingUpIcon sx={{ fontSize: 14, mr: 0.25 }} />
@@ -63,7 +75,7 @@ const StatCard: React.FC<StatCardProps> = ({
       >
         {title}
       </Typography>
-      <Typography variant="h6" fontWeight={800} sx={{ mt: 0.75, color: "#0f172a", letterSpacing: "-0.02em" }}>
+      <Typography variant="h6" fontWeight={800} sx={{ mt: 0.75, color: "text.primary", letterSpacing: "-0.02em" }}>
         {value}
       </Typography>
       {subtitle && (

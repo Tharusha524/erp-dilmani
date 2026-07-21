@@ -169,7 +169,7 @@ const AddAndManageSuppliers = () => {
         scrollButtons="auto"
         textColor="primary"
         indicatorColor="primary"
-        sx={{ backgroundColor: "#fff", borderRadius: 1 }}
+        sx={{ bgcolor: "background.paper", borderRadius: 1 }}
       >
         <Tab label="General Settings" />
         <Tab label="Contacts" disabled={selectedSupplier === "new"} />

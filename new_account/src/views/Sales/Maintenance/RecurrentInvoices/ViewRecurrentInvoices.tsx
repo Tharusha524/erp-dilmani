@@ -196,11 +196,11 @@ function ViewRecurrentInvoices() {
               maxWidth: "600px",
               width: "100%",
               textAlign: "center",
-              backgroundColor: "#fff3cd",
-              border: "1px solid #ffeaa7"
+              backgroundColor: theme.palette.mode === 'dark' ? "rgba(255, 234, 167, 0.08)" : "#fff3cd",
+              border: `1px solid ${theme.palette.mode === 'dark' ? "rgba(255, 234, 167, 0.2)" : "#ffeaa7"}`
             }}
           >
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography variant="h6" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? 'warning.main' : 'text.secondary' }}>
               No Template Orders Available
             </Typography>
             <Typography variant="body1">

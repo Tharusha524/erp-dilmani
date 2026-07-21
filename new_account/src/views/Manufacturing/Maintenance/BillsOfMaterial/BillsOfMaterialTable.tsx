@@ -396,7 +396,7 @@ function BillsOfMaterialTable() {
                                         </TableRow>
                                     ))
                                 ) : null}
-                                {/* <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                                {/* <TableRow sx={{ backgroundColor: "action.hover" }}>
                                     <TableCell colSpan={4} sx={{ fontWeight: "bold", borderRight: "1px solid #ddd" }}>
                                         Copy BOM to another manufacturable item
                                     </TableCell>

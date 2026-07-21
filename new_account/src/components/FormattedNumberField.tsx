@@ -35,6 +35,8 @@ export default function FormattedNumberField({
   return (
     <TextField
       {...rest}
+      error={!!rest.error}
+      helperText={typeof rest.error === 'string' ? rest.error : rest.helperText}
       value={text}
       inputMode="decimal"
       onFocus={onFocus}

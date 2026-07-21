@@ -35,6 +35,7 @@ import { createBranch } from "../../../../../api/CustomerBranch/CustomerBranchAp
 import ErrorModal from "../../../../../components/ErrorModal";
 import AddedConfirmationModal from "../../../../../components/AddedConfirmationModal";
 import { getPaymentTerms } from "../../../../../api/PaymentTerm/PaymentTermApi";
+import { getSysPrefs } from "../../../../../api/OrganizationSettings/SysPrefsApi";
 import CostCenterSelect from "../../../../../components/CostCenterSelect";
 import { getFriendlyApiErrorMessage } from "../../../../../utils/apiErrorMessage";
 
@@ -243,6 +244,9 @@ export default function GeneralSettingsForm({ customerId, onCustomerAdded }: Gen
         InventoryLocations[0]?.loc_code ||
         "";
 
+      const sysPrefs = await getSysPrefs();
+      const getPref = (name: string) => sysPrefs.find((p: any) => p.name === name)?.value || '';
+
       const branchPayload = {
         debtor_no: customer.debtor_no,
         br_name: `${formData.customerName} Main Branch`,
@@ -258,6 +262,11 @@ export default function GeneralSettingsForm({ customerId, onCustomerAdded }: Gen
         shipping_company: ShippingCompanies.find(
           s => s.shipper_name === formData.defaultShippingCompany
         )?.shipper_id || null,
+        sales_account: getPref('default_sales_act'),
+        sales_discount_account: getPref('default_sales_discount_act'),
+        receivables_account: getPref('debtors_act'),
+        payment_discount_account: getPref('default_prompt_payment_act'),
+        contact_person: formData.customerName,
         inactive: false,
       };
 

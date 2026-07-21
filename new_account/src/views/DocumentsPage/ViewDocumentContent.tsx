@@ -72,7 +72,7 @@ function ViewDocumentContent({ document }: { document: Document }) {
         sx={{
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#fff",
+          bgcolor: "background.paper",
           flex: { lg: 3, md: 1 },
           boxShadow: "0 0 10px rgba(0,0,0,0.1)",
           padding: "0.5rem",
@@ -361,7 +361,7 @@ function ViewDocumentContent({ document }: { document: Document }) {
           display: "flex",
           flex: { lg: 1, md: 1 },
           flexDirection: "column",
-          backgroundColor: "#fff",
+          bgcolor: "background.paper",
           boxShadow: "0 0 10px rgba(0,0,0,0.1)",
           padding: "1rem",
           borderRadius: "0.3rem",

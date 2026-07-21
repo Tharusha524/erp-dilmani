@@ -48,6 +48,7 @@ export default function DashboardAlertList({ alerts, onNavigate, compact }: Prop
                 borderColor: isWarning ? alpha("#f59e0b", 0.35) : alpha("#024271", 0.2),
                 py: compact ? 1 : 1.5,
                 px: compact ? 1.25 : 1.5,
+                bgcolor: "background.paper",
               }}
             >
               {inner}
@@ -68,6 +69,7 @@ export default function DashboardAlertList({ alerts, onNavigate, compact }: Prop
               px: compact ? 1.25 : 1.5,
               width: "100%",
               textAlign: "left",
+              bgcolor: "background.paper",
             }}
           >
             {inner}

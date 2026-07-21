@@ -65,7 +65,7 @@ function ViewOrganizationContent({
         sx={{
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#fff",
+          bgcolor: "background.paper",
           flex: { lg: 3, md: 1 },
           boxShadow: "0 0 10px rgba(0,0,0,0.1)",
           borderRadius: "0.3rem",

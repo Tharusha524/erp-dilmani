@@ -512,8 +512,6 @@ export default function PurchaseOrderEntry() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          backgroundColor: "#ffffffff",
-          border: "2px solid #ffffffff",
         }}
       >
         <Box>
@@ -527,7 +525,7 @@ export default function PurchaseOrderEntry() {
       </Box>
 
       {/* Form Fields */}
-      <Paper sx={{ p: 2, borderRadius: 2, backgroundColor: "#ffffffff", border: "1px solid #ffffffff" }}>
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={4}>
             <Stack spacing={2}>
@@ -608,8 +606,8 @@ export default function PurchaseOrderEntry() {
         Order Items
       </Typography>
 
-      <TableContainer component={Paper} sx={{ backgroundColor: "#ffffffff", border: "1px solid #ffffffff" }}>
-        <Table>
+      <TableContainer component={Paper} sx={{ border: "1px solid", borderColor: "divider" }}>
+        <Table size="small">
           <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
             <TableRow>
               <TableCell>No</TableCell>
@@ -796,7 +794,7 @@ export default function PurchaseOrderEntry() {
       ) : null}
 
       {/* Memo Section */}
-      <Paper sx={{ p: 2, borderRadius: 2, backgroundColor: "#ffffffff", border: "1px solid #ffffffff" }}>
+      <Paper sx={{ p: 2, borderRadius: 2 }}>
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
           Memo
         </Typography>

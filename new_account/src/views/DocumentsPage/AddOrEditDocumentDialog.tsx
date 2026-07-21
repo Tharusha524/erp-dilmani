@@ -159,7 +159,7 @@ export default function AddOrEditDocumentDialog({
             sx={{
               display: "flex",
               flexDirection: "column",
-              backgroundColor: "#fff",
+              bgcolor: "background.paper",
               flex: { lg: 3, md: 1 },
               boxShadow: "0 0 10px rgba(0,0,0,0.1)",
               padding: "0.5rem",
@@ -374,7 +374,7 @@ export default function AddOrEditDocumentDialog({
               display: "flex",
               flex: { lg: 1, md: 1 },
               flexDirection: "column",
-              backgroundColor: "#fff",
+              bgcolor: "background.paper",
               boxShadow: "0 0 10px rgba(0,0,0,0.1)",
               padding: "0.5rem",
               borderRadius: "0.3rem",

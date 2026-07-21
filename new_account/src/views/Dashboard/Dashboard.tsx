@@ -246,7 +246,7 @@ const Dashboard = () => {
                   startIcon={action.icon}
                   onClick={() => navigate(action.href)}
                   sx={{
-                    bgcolor: '#fff',
+                    bgcolor: "background.paper",
                     color: PRIMARY,
                     fontWeight: 700,
                     '&:hover': { bgcolor: alpha('#fff', 0.9) },
@@ -296,8 +296,8 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* Report shortcuts */}
-      <Box className="erp-dashboard__report-strip" sx={{ mb: 2.5 }}>
+      {/* Report Strip */}
+      <Box className="erp-dashboard__report-strip" sx={{ mb: 2.5, bgcolor: "background.paper" }}>
         <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1, display: 'block' }}>
           Financial reports
         </Typography>
@@ -415,7 +415,16 @@ const Dashboard = () => {
                     color={salesChange >= 0 ? 'success' : 'error'}
                     variant="outlined"
                   />
-                  <span className="erp-dashboard__card-badge">Analytics</span>
+                  <Box 
+                    component="span" 
+                    className="erp-dashboard__card-badge"
+                    sx={{
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(2, 66, 113, 0.2)' : 'rgba(2, 66, 113, 0.08)',
+                      color: (theme) => theme.palette.mode === 'dark' ? '#60a5fa' : '#024271'
+                    }}
+                  >
+                    Analytics
+                  </Box>
                 </Stack>
               </Box>
               {salesVsPurchasesData.length === 0 ? (
@@ -457,7 +466,16 @@ const Dashboard = () => {
                   <Typography className="erp-dashboard__section-title">Transactions by Module</Typography>
                   <Typography className="erp-dashboard__section-subtitle">This month</Typography>
                 </Box>
-                <span className="erp-dashboard__card-badge">Distribution</span>
+                <Box 
+                  component="span" 
+                  className="erp-dashboard__card-badge"
+                  sx={{
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(2, 66, 113, 0.2)' : 'rgba(2, 66, 113, 0.08)',
+                    color: (theme) => theme.palette.mode === 'dark' ? '#60a5fa' : '#024271'
+                  }}
+                >
+                  Distribution
+                </Box>
               </Box>
               {moduleDistribution.length === 0 ? (
                 <Typography variant="body2" color="text.secondary" sx={{ py: 8, textAlign: 'center' }}>
@@ -606,6 +624,7 @@ const Dashboard = () => {
                 elevation={0}
                 className="erp-dashboard__quick-card"
                 sx={{
+                  bgcolor: "background.paper",
                   '&:hover': {
                     borderColor: alpha(mod.color, 0.5),
                     boxShadow: `0 8px 24px ${alpha(mod.color, 0.12)}`,
@@ -631,7 +650,7 @@ const Dashboard = () => {
                   </ListItemIcon>
                   <ListItemText
                     primary={
-                      <Typography variant="subtitle2" fontWeight={700} color="#1e293b">
+                      <Typography variant="subtitle2" fontWeight={700} color="text.primary">
                         {mod.title}
                       </Typography>
                     }

@@ -9,13 +9,13 @@ export const FormPageLayout: React.FC<FormPageLayoutProps> = ({ children }) => {
   return (
     <Stack
       spacing={2}
-      sx={{
-        backgroundColor: "#ebfee6ff",
+      sx={(theme) => ({
+        backgroundColor: theme.palette.mode === 'dark' ? 'transparent' : "#ebfee6ff",
         minHeight: "100%",
         p: 4,
         borderRadius: 5,
         "& > .MuiBox-root:first-of-type": {
-          backgroundColor: "#ffffffff",
+          backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : "#ffffffff",
         },
         "& .MuiOutlinedInput-root": {
           "& fieldset": {
@@ -27,7 +27,7 @@ export const FormPageLayout: React.FC<FormPageLayoutProps> = ({ children }) => {
             borderWidth: "2px",
           },
         }
-      }}
+      })}
     >
       {children}
     </Stack>

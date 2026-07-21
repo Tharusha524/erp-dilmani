@@ -220,7 +220,7 @@ function ViewUserContent({ selectedUser }: { selectedUser: User }) {
         sx={{
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#fff",
+          bgcolor: "background.paper",
           flex: 2,
           p: "3rem",
         }}

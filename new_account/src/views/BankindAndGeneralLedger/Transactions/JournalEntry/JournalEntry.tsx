@@ -867,7 +867,7 @@ export default function JournalEntry() {
         scrollButtons="auto"
         textColor="primary"
         indicatorColor="primary"
-        sx={{ backgroundColor: "#fff", borderRadius: 1 }}
+        sx={{ bgcolor: "background.paper", borderRadius: 1 }}
       >
         <Tab label="GL Posting" />
         <Tab label="Tax Register" disabled={!includeInTaxRegister} />
@@ -1062,7 +1062,7 @@ export default function JournalEntry() {
                 </Typography>
               </TableCell>
             </TableRow>
-            <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+            <TableRow sx={{ backgroundColor: "action.hover" }}>
               <TableCell colSpan={4}>
                 <Typography align="right" sx={{ pr: 2, fontWeight: 600, fontSize: "0.85rem" }}>
                   Posted to GL

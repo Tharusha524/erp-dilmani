@@ -82,7 +82,7 @@ function SubtotalRow({
   const { formatAmount } = useGlReportMoney();
   const sx = bold
     ? { fontWeight: 700, backgroundColor: "#e8eaf6", color: "#3f51b5" }
-    : { fontWeight: 600, backgroundColor: "#f5f5f5" };
+    : { fontWeight: 600, backgroundColor: "action.hover" };
 
   return (
     <TableRow sx={sx}>

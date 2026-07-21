@@ -72,7 +72,7 @@ function AlertRow({
         sx={{
           p: 1.25,
           borderRadius: 1.5,
-          bgcolor: "#fff",
+          bgcolor: "background.paper",
           border: "1px solid",
           borderColor: isWarning ? alpha("#f59e0b", 0.35) : alpha("#3b82f6", 0.25),
         }}
@@ -88,7 +88,7 @@ function AlertRow({
       sx={{
         p: 1.25,
         borderRadius: 1.5,
-        bgcolor: "#fff",
+        bgcolor: "background.paper",
         border: "1px solid",
         borderColor: isWarning ? alpha("#f59e0b", 0.35) : alpha("#3b82f6", 0.25),
         "&:hover": { bgcolor: alpha("#fef3c7", 0.35) },

@@ -19,7 +19,7 @@ export default function DashboardCard({ text, description, icon, change, onClick
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        backgroundColor: "#fff",
+        bgcolor: "background.paper",
         border: "3px solid #A5D6A7",
         borderRadius: 3,
         mb: 2,
@@ -96,7 +96,7 @@ export default function DashboardCard({ text, description, icon, change, onClick
             height: 50,
           }}
         >
-          {React.cloneElement(icon, { sx: { color: "#000", fontSize: 24 } })}
+          {React.cloneElement(icon, { sx: { color: "text.primary", fontSize: 24 } })}
         </Box>
         <ArrowForwardIosIcon fontSize="small" sx={{ color: "gray", fontSize: 20 }} />
       </Box>

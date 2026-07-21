@@ -369,13 +369,11 @@
 
 /* Professional ERP top navbar */
 .erp-navbar {
-  background: rgba(255, 255, 255, 0.92) !important;
   backdrop-filter: blur(16px);
   border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
   box-shadow:
     0 1px 0 rgba(15, 23, 42, 0.04),
     0 8px 24px rgba(15, 23, 42, 0.04);
-  color: #0f172a !important;
 }
 
 .erp-navbar__toolbar {
@@ -385,11 +383,10 @@
 }
 
 .erp-navbar__menu-btn {
-  color: #024271 !important;
-  background: rgba(2, 66, 113, 0.06) !important;
   border: 1px solid rgba(2, 66, 113, 0.08);
   margin-right: 12px !important;
   border-radius: 10px !important;
+  transition: all 0.2s ease !important;
 }
 
 .erp-navbar__menu-btn:hover {
@@ -470,12 +467,35 @@
 .erp-navbar__profile-name {
   font-size: 0.82rem !important;
   font-weight: 700 !important;
-  color: #0f172a !important;
   line-height: 1.2 !important;
 }
 
 .erp-navbar__profile-role {
   font-size: 0.68rem !important;
-  color: #64748b !important;
   font-weight: 500 !important;
+}
+
+/* Dark mode overrides */
+body[data-theme="dark"] .erp-navbar__profile {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+body[data-theme="dark"] .erp-navbar__profile:hover {
+  background: #334155;
+  border-color: #475569;
+}
+
+body[data-theme="dark"] .erp-navbar__pill {
+  color: #90caf9;
+  border-color: rgba(144, 202, 249, 0.2);
+  background: rgba(144, 202, 249, 0.08);
+}
+
+body[data-theme="dark"] .erp-navbar__page-title {
+  color: #f1f5f9 !important;
+}
+
+body[data-theme="dark"] .erp-navbar__breadcrumb {
+  color: #94a3b8 !important;
 }

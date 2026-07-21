@@ -106,7 +106,7 @@ const ApparelOrderSheet = () => {
                 cursor: "pointer",
                 overflow: "hidden",
                 position: "relative",
-                "&:hover": { backgroundColor: "#f5f5f5" },
+                "&:hover": { backgroundColor: "action.hover" },
               }}
               component="label"
             >
@@ -133,7 +133,7 @@ const ApparelOrderSheet = () => {
                 cursor: "pointer",
                 overflow: "hidden",
                 position: "relative",
-                "&:hover": { backgroundColor: "#f5f5f5" },
+                "&:hover": { backgroundColor: "action.hover" },
               }}
               component="label"
             >
