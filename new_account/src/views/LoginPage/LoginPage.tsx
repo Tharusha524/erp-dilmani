@@ -49,7 +49,7 @@ function LoginPage() {
         <Stack
           sx={{
             flex: isMdUp ? 3 : 1,
-            backgroundColor: "#f2f2f2",
+            backgroundColor: theme.palette.mode === "dark" ? "#0f172a" : "#f2f2f2",
             height: isMdUp ? "100vh" : "auto",
             justifyContent: "center",
             alignItems: "center",
@@ -69,7 +69,7 @@ function LoginPage() {
             variant={isMdUp ? "h2" : "h3"}
             sx={{
               fontWeight: "700",
-              color: "#525252",
+              color: theme.palette.mode === "dark" ? "#f8fafc" : "#525252",
               marginTop: "1rem",
               marginLeft: "1rem",
               marginRight: "1rem",
@@ -82,7 +82,7 @@ function LoginPage() {
             variant="subtitle2"
             sx={{
               fontWeight: "600",
-              color: "#525252",
+              color: theme.palette.mode === "dark" ? "#cbd5e1" : "#525252",
               margin: "1rem",
               textAlign: "center",
             }}
@@ -93,7 +93,7 @@ function LoginPage() {
             variant="subtitle2"
             sx={{
               fontWeight: "400",
-              color: "#525252",
+              color: theme.palette.mode === "dark" ? "#cbd5e1" : "#525252",
               textAlign: "center",
               marginLeft: "3rem",
               marginRight: "3rem",

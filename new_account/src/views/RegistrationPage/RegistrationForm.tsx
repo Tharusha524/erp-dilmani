@@ -29,6 +29,8 @@ import { getSecurityRoles } from "../../api/AccessSetup/AccessSetupApi";
 import { fetchDepartmentData } from "../../api/departmentApi";
 import { fetchFactoryData } from "../../api/factoryApi";
 import { fetchJobPositionData } from "../../api/jobPositionApi";
+import { getOrganization } from "../../api/OrganizationSettings/organizationSettingsApi";
+import { resolveLogoSrc } from "../../utils/logoUrl";
 
 interface UserFormData {
   firstName: string;
@@ -58,6 +60,18 @@ function RegistrationForm() {
     queryKey: ["securityRoles"],
     queryFn: getSecurityRoles,
   });
+
+  const { data: organizationData } = useQuery({
+    queryKey: ["organization"],
+    queryFn: getOrganization,
+  });
+
+  const logoSrc = organizationData && organizationData.logoUrl && organizationData.logoUrl.length > 0
+    ? resolveLogoSrc(organizationData.logoUrl[0])
+    : companyLogo;
+
+  const orgName = organizationData?.organizationName?.trim() || "Grow Ledger";
+
   const statusOptions = ["active", "inactive"];
 
   const [formData, setFormData] = useState<UserFormData>({
@@ -170,9 +184,17 @@ function RegistrationForm() {
         marginBottom: isMdUp ? "2.5rem" : "22vh",
       }}
     >
-      <Box>
-        <img src={companyLogo} alt="logo" height={"65px"} />
-
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <img
+          src={logoSrc}
+          alt="logo"
+          height={"65px"}
+          style={{ objectFit: 'contain' }}
+          onError={(e) => { e.currentTarget.src = companyLogo; }}
+        />
+        <Typography variant="h4" sx={{ fontWeight: 800, color: 'var(--pallet-blue)', letterSpacing: '-0.05em' }}>
+          {orgName}
+        </Typography>
       </Box>
       <Box>
         <Typography variant={"body2"}>

@@ -18,8 +18,17 @@ class UserProfileRepository extends BaseRepository implements UserProfileInterfa
     public function all(): Collection
     {
         return $this->model->select([
-            'id','first_name','last_name','department','epf',
-            'telephone','address','email','role','status','image'
+            'id',
+            'first_name',
+            'last_name',
+            'department',
+            'epf',
+            'telephone',
+            'address',
+            'email',
+            'role',
+            'status',
+            'image'
         ])->get();
     }
 

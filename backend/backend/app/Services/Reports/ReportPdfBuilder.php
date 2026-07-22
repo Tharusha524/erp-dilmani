@@ -503,21 +503,43 @@ class ReportPdfBuilder
     private function journalEntries(Request $request, string $title): array
     {
         $dates = $this->reportDates($request);
-        $data = $this->journal->search([
+        $headers = $this->journal->search([
             'reference' => $request->input('reference'),
             'fromDate' => $dates['fromDate'],
             'toDate' => $dates['toDate'],
             'type' => $request->input('type'),
         ]);
 
-        return $this->pack($title, [
-            'reference' => 'Reference',
-            'tran_date' => 'Date',
-            'trans_type' => 'Type',
-            'trans_no' => 'Trans #',
-            'amount' => 'Amount',
-            'memo' => 'Memo',
-        ], $this->normalizeRows($data), $request, $this->periodSubtitle($dates['fromDate'], $dates['toDate']));
+        $grouped = [];
+        foreach ($headers as $header) {
+            $details = $this->glTrans->findForTransaction([
+                'trans_type' => (int) $header->trans_type,
+                'trans_no' => (int) $header->trans_no,
+                'reference' => $header->reference,
+            ]);
+
+            $totalDebit = 0.0;
+            $totalCredit = 0.0;
+            foreach ($details as $d) {
+                $totalDebit += (float) ($d->debit ?? 0);
+                $totalCredit += (float) ($d->credit ?? 0);
+            }
+
+            $grouped[] = [
+                'header' => $header,
+                'details' => $details,
+                'total_debit' => $totalDebit,
+                'total_credit' => $totalCredit,
+            ];
+        }
+
+        return [
+            'view' => 'reports.journal_entries_grouped',
+            'title' => $title,
+            'subtitle' => $this->periodSubtitle($dates['fromDate'], $dates['toDate']),
+            'grouped' => $grouped,
+            'companyHeader' => CompanyReportHeader::forReports(),
+        ];
     }
 
     private function taxReport(Request $request, string $title): array
@@ -1672,13 +1694,13 @@ class ReportPdfBuilder
         $query = DB::table('stock_moves as m')
             ->leftJoin('stock_master as sm', 'm.stock_id', '=', 'sm.stock_id')
             ->select(
-                'm.tran_date as date', 
+                'm.tran_date as date',
                 'm.type',
                 'm.reference',
-                'm.stock_id', 
+                'm.stock_id',
                 'sm.description',
-                'm.loc_code', 
-                'm.qty', 
+                'm.loc_code',
+                'm.qty',
                 'sm.material_cost as price'
             )
             ->orderByDesc('m.tran_date');

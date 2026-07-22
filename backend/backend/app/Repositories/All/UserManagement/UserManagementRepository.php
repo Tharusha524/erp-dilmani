@@ -18,8 +18,17 @@ class UserManagementRepository extends BaseRepository implements UserManagementI
     public function all(): Collection
     {
         return $this->model->select([
-            'id','first_name','last_name','department','epf',
-            'telephone','address','email','role','image', 'status'
+            'id',
+            'first_name',
+            'last_name',
+            'department',
+            'epf',
+            'telephone',
+            'address',
+            'email',
+            'role',
+            'image',
+            'status'
         ])->get();
     }
 

@@ -14,7 +14,6 @@ import { useNavigate } from "react-router";
 import ModuleHubLayout, { type ModuleHubItem } from "../../../components/ModuleHubLayout";
 
 const ITEMS: ModuleHubItem[] = [
-  { text: "APPAREL ORDER SHEET", icon: <RequestQuoteIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/sales/transactions/apparel-order-sheet" },
   { text: "SALES QUOTATION ENTRY", icon: <RequestQuoteIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/sales/transactions/sales-quotation-entry" },
   { text: "SALES ORDER ENTRY", icon: <ShoppingCartIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/sales/transactions/sales-order-entry" },
   { text: "DIRECT DELIVERY", icon: <LocalShippingIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/sales/transactions/direct-delivery" },

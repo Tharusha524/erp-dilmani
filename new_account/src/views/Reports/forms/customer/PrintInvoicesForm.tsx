@@ -123,8 +123,12 @@ export default function PrintInvoicesForm() {
                         value={formData.from}
                         onChange={handleChange}
                     >
-                        <MenuItem value=""></MenuItem>
-                        <MenuItem value=""></MenuItem>
+                        <MenuItem value="">No filter</MenuItem>
+                        {customers.map((customer) => (
+                            <MenuItem key={customer.debtor_no} value={customer.debtor_no.toString()}>
+                                {customer.name}
+                            </MenuItem>
+                        ))}
                     </TextField>
 
                     <TextField
@@ -136,8 +140,12 @@ export default function PrintInvoicesForm() {
                         value={formData.to}
                         onChange={handleChange}
                     >
-                        <MenuItem value=""></MenuItem>
-                        <MenuItem value=""></MenuItem>
+                        <MenuItem value="">No filter</MenuItem>
+                        {customers.map((customer) => (
+                            <MenuItem key={customer.debtor_no} value={customer.debtor_no.toString()}>
+                                {customer.name}
+                            </MenuItem>
+                        ))}
                     </TextField>
 
                     {/* Currency Filter */}

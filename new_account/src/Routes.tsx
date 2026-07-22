@@ -235,7 +235,6 @@ import CustomerAllocations from "./views/Sales/Transactions/CustomerAllocations/
 import ItemTransactionsDetails from "./views/ItemsAndInventory/Maintenance/Items/Transactions/ItemLocationTransferDetails";
 import ItemAdjustmentDetails from "./views/ItemsAndInventory/Maintenance/Items/Transactions/ItemAdjustmentDetails";
 import Payments from "./views/BankindAndGeneralLedger/Transactions/Payments/Payments";
-import ApparelOrderSheet from "./views/Sales/Transactions/ApparelOrderSheet/ApparelOrderSheet";
 import SalesOrderEntry from "./views/Sales/Transactions/SalesOrderEntry/SalesOrderEntry";
 import DirectDelivery from "./views/Sales/Transactions/DirectDelivery/DirectDelivery";
 import DirectInvoice from "./views/Sales/Transactions/DirectInvoice/DirectInvoice";
@@ -1179,14 +1178,7 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/sales/transactions/apparel-order-sheet"
-          element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders']}>
-              {withLayout(MainLayout, ApparelOrderSheet)}
-            </ProtectedRoute>
-          }
-        />
+
         <Route
           path="/sales/transactions/sales-order-entry"
           element={

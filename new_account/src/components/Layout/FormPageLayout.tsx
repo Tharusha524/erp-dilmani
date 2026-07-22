@@ -10,7 +10,7 @@ export const FormPageLayout: React.FC<FormPageLayoutProps> = ({ children }) => {
     <Stack
       spacing={2}
       sx={(theme) => ({
-        backgroundColor: theme.palette.mode === 'dark' ? 'transparent' : "#ebfee6ff",
+        backgroundColor: theme.palette.mode === 'dark' ? 'transparent' : "#ffffffff",
         minHeight: "100%",
         p: 4,
         borderRadius: 5,

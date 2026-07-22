@@ -46,7 +46,7 @@ class UserManagementRequest extends FormRequest
         ];
 
         // For create (no $id), add 'required' to mandatory fields
-        if (! $id) {
+        if (!$id) {
             $rules['first_name'] = 'required|' . $rules['first_name'];
             $rules['last_name'] = 'required|' . $rules['last_name'];
             $rules['epf'] = 'required|' . $rules['epf'];

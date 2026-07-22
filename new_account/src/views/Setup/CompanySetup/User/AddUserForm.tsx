@@ -39,7 +39,7 @@ interface UserFormData {
   confirmPassword: string;
   role: string;
   status: string;
-   image: File | null;
+  image: File | null;
 }
 
 export default function AddUserForm() {
@@ -59,7 +59,7 @@ export default function AddUserForm() {
     confirmPassword: "",
     role: "",
     status: "",
-    image:null,
+    image: null,
   });
 
   const [errors, setErrors] = useState<Partial<UserFormData>>({});
@@ -123,65 +123,65 @@ export default function AddUserForm() {
 
 
   const handleSubmit = async () => {
-  if (validate()) {
-    try {
-      const payload = new FormData();
-
-      payload.append("first_name", formData.firstName);
-      payload.append("last_name", formData.lastName);
-      payload.append("department", formData.department);
-      payload.append("epf", formData.epf);
-      payload.append("telephone", formData.telephone);
-      payload.append("address", formData.address);
-      payload.append("email", formData.email);
-      payload.append("password", formData.password);
-      payload.append("role", formData.role);
-      payload.append("status", formData.status);
-
-      if (formData.image) {
-        payload.append("image", formData.image); // File object
-      }
-
-      // send as FormData
-      const user = await createUser(payload);
-      console.log("User created:", user);
-
-      // Update the cached `users` list so the table shows the new user immediately
+    if (validate()) {
       try {
-        const mapped = {
-          id: (user as any).id,
-          fullName: `${(user as any).first_name || ""} ${(user as any).last_name || ""}`.trim(),
-          department: (user as any).department || "",
-          email: (user as any).email || "",
-          role: (user as any).role || "",
-          status: (user as any).status || "",
-        };
+        const payload = new FormData();
 
-        queryClient.setQueryData(["users"], (old: any[] | undefined) => {
-          // Append the new user to the end. If cache is empty, return single item.
-          if (!old) return [mapped];
-          // Avoid creating duplicates if the backend returned a cached list
-          if (old.some((u) => u.id === mapped.id)) return old;
-          return [...old, mapped];
-        });
+        payload.append("first_name", formData.firstName);
+        payload.append("last_name", formData.lastName);
+        payload.append("department", formData.department);
+        payload.append("epf", formData.epf);
+        payload.append("telephone", formData.telephone);
+        payload.append("address", formData.address);
+        payload.append("email", formData.email);
+        payload.append("password", formData.password);
+        payload.append("role", formData.role);
+        payload.append("status", formData.status);
 
-        // Also invalidate to ensure server/other clients sync
-        queryClient.invalidateQueries({ queryKey: ["users"] });
-      } catch (cacheErr) {
-        // don't block on cache failures
-        console.warn("Failed to update users cache:", cacheErr);
+        if (formData.image) {
+          payload.append("image", formData.image); // File object
+        }
+
+        // send as FormData
+        const user = await createUser(payload);
+        console.log("User created:", user);
+
+        // Update the cached `users` list so the table shows the new user immediately
+        try {
+          const mapped = {
+            id: (user as any).id,
+            fullName: `${(user as any).first_name || ""} ${(user as any).last_name || ""}`.trim(),
+            department: (user as any).department || "",
+            email: (user as any).email || "",
+            role: (user as any).role || "",
+            status: (user as any).status || "",
+          };
+
+          queryClient.setQueryData(["users"], (old: any[] | undefined) => {
+            // Append the new user to the end. If cache is empty, return single item.
+            if (!old) return [mapped];
+            // Avoid creating duplicates if the backend returned a cached list
+            if (old.some((u) => u.id === mapped.id)) return old;
+            return [...old, mapped];
+          });
+
+          // Also invalidate to ensure server/other clients sync
+          queryClient.invalidateQueries({ queryKey: ["users"] });
+        } catch (cacheErr) {
+          // don't block on cache failures
+          console.warn("Failed to update users cache:", cacheErr);
+        }
+
+        setOpen(true);
+        setErrors({});
+      } catch (err: any) {
+        setErrorMessage(
+          err?.response?.data?.message || "Failed to add User. Please try again."
+        );
+        setErrorOpen(true);
       }
-
-      setOpen(true);
-      setErrors({});
-    } catch (err: any) {
-      setErrorMessage(
-        err?.response?.data?.message || "Failed to add User. Please try again."
-      );
-      setErrorOpen(true);
     }
-  }
-};
+  };
 
 
 
@@ -328,11 +328,11 @@ export default function AddUserForm() {
               onChange={handleSelectChange}
               label="Role"
             >
-                {(securityRoles || []).map((r: any) => (
-                  <MenuItem key={r.id} value={r.role}>
-                    {r.role}
-                  </MenuItem>
-                ))}
+              {(securityRoles || []).map((r: any) => (
+                <MenuItem key={r.id} value={r.role}>
+                  {r.role}
+                </MenuItem>
+              ))}
             </Select>
             <FormHelperText>{errors.role}</FormHelperText>
           </FormControl>

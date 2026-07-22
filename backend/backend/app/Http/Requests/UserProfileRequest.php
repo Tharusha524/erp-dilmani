@@ -25,16 +25,16 @@ class UserProfileRequest extends FormRequest
 
         return [
             'first_name' => 'required|string|max:255',
-            'last_name'  => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'department' => 'nullable|string|max:255',
-            'epf'        => 'required|string|max:50',
-            'telephone'  => 'nullable|string|max:15',
-            'address'    => 'nullable|string|max:255',
-            'email'      => 'required|email|max:255|unique:user_profiles,email,' . $id,
-            'password'   => $this->isMethod('post') ? 'required|string|min:6' : 'sometimes|string|min:6',
-            'role'       => 'required|exists:security_roles,role',
-            'status'     => 'required',
-            'image'      => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'epf' => 'required|string|max:50',
+            'telephone' => 'nullable|string|max:15',
+            'address' => 'nullable|string|max:255',
+            'email' => 'required|email|max:255|unique:user_profiles,email,' . $id,
+            'password' => $this->isMethod('post') ? 'required|string|min:6' : 'sometimes|string|min:6',
+            'role' => 'required|exists:security_roles,role',
+            'status' => 'required',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ];
     }
 }

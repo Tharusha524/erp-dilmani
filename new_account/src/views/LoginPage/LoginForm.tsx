@@ -22,11 +22,13 @@ import { getApiBaseUrl, getStoredApiBaseUrl } from "../../config/backendConfig";
 import ForgotPasswordDialog from "./ForgotPasswordDialog";
 import { useSnackbar } from "notistack";
 import { useNavigate, useLocation } from "react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../context/AuthContext";
 // import { login } from "../../api/userApi";
 import { login } from "../../api/UserManagement/userLogin";
 import { getFriendlyApiErrorMessage } from "../../utils/apiErrorMessage";
+import { getOrganization } from "../../api/OrganizationSettings/organizationSettingsApi";
+import { resolveLogoSrc } from "../../utils/logoUrl";
 
 function LoginForm() {
   const theme = useTheme();
@@ -36,6 +38,17 @@ function LoginForm() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { reloadPermissions } = useAuth();
+
+  const { data: organizationData } = useQuery({
+    queryKey: ["organization"],
+    queryFn: getOrganization,
+  });
+
+  const logoSrc = organizationData && organizationData.logoUrl && organizationData.logoUrl.length > 0
+    ? resolveLogoSrc(organizationData.logoUrl[0])
+    : companyLogo;
+
+  const orgName = organizationData?.organizationName?.trim() || "Grow Ledger";
 
   const [showPassword, setShowPassword] = useState(false);
   const [openForgotPasswordDialog, setOpenForgotPasswordDialog] =
@@ -105,9 +118,15 @@ function LoginForm() {
       spacing={2}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <img src={companyLogo} alt="logo" height={"65em"} />
+        <img
+          src={logoSrc}
+          alt="logo"
+          height={"65em"}
+          style={{ objectFit: 'contain' }}
+          onError={(e) => { e.currentTarget.src = companyLogo; }}
+        />
         <Typography variant="h4" sx={{ fontWeight: 800, color: 'var(--pallet-blue)', letterSpacing: '-0.05em' }}>
-          Grow Ledger
+          {orgName}
         </Typography>
       </Box>
       <Box>

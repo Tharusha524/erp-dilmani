@@ -8,8 +8,8 @@ export const getDesignTokens = (mode: PaletteMode) => {
       ...(mode === 'dark' && {
         // Dark mode: dark backgrounds
         background: {
-          default: "#121212",
-          paper: "#1e1e1e",
+          default: "#0f172a",
+          paper: "#1e293b",
         },
       }),
     },

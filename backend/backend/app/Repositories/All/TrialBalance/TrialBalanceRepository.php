@@ -19,7 +19,7 @@ class TrialBalanceRepository extends BaseRepository implements TrialBalanceInter
 
     public function search(array $filters): array
     {
-        if (! Schema::hasTable('gl_trans') || ! Schema::hasColumn('gl_trans', 'account')) {
+        if (!Schema::hasTable('gl_trans') || !Schema::hasColumn('gl_trans', 'account')) {
             return $this->emptyResult();
         }
 
@@ -174,7 +174,7 @@ class TrialBalanceRepository extends BaseRepository implements TrialBalanceInter
             $tb['balance_credit'] += $row->balanceCredit;
 
             $type = (int) $row->accountType;
-            if (! TrialAccountBalance::isBalanceSheetAccount($type)) {
+            if (!TrialAccountBalance::isBalanceSheetAccount($type)) {
                 continue;
             }
 

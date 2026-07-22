@@ -15,12 +15,12 @@ class UserProfile extends Authenticatable
 
     protected $fillable = [
         'first_name',
-        'last_name', 
-        'department', 
+        'last_name',
+        'department',
         'epf',
-        'telephone', 
-        'address', 
-        'email', 
+        'telephone',
+        'address',
+        'email',
         'password',
         'role',
         'status',

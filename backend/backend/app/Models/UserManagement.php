@@ -17,12 +17,12 @@ class UserManagement extends Authenticatable
 
     protected $fillable = [
         'first_name',
-        'last_name', 
-        'department', 
+        'last_name',
+        'department',
         'epf',
-        'telephone', 
-        'address', 
-        'email', 
+        'telephone',
+        'address',
+        'email',
         'password',
         'role',
         'image',
@@ -63,7 +63,7 @@ class UserManagement extends Authenticatable
     protected function imageUrl(): Attribute
     {
         return Attribute::make(
-            get: fn ($value, array $attributes) => !empty($attributes['image']) ? asset('storage/' . $attributes['image']) : null,
+            get: fn($value, array $attributes) => !empty($attributes['image']) ? asset('storage/' . $attributes['image']) : null,
         );
     }
 }

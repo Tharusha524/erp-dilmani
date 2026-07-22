@@ -73,9 +73,9 @@ const companySetupNested = [
 ];
 
 const specialMaintenanceNested = [
-  "Voiding transactions",	
+  "Voiding transactions",
   "Database backup/restore",
-  "Common view/print transactions interface",	
+  "Common view/print transactions interface",
   "Attaching documents",
   "Display preferences",
   "Password changes",
@@ -505,29 +505,29 @@ export default function AddUserAccessForm() {
         const selected = availableRoles.find((r) => String(r.id) === String(value));
         if (selected) {
           setIsNewMode(false);
-        // build permission names from sections and areas (reverse map)
-        const perms: string[] = [];
+          // build permission names from sections and areas (reverse map)
+          const perms: string[] = [];
 
-        const sectionsStr: string | null = selected.sections || selected.sections === "" ? selected.sections : null;
-        const areasStr: string | null = selected.areas || selected.areas === "" ? selected.areas : null;
+          const sectionsStr: string | null = selected.sections || selected.sections === "" ? selected.sections : null;
+          const areasStr: string | null = selected.areas || selected.areas === "" ? selected.areas : null;
 
-        const reverseMap: Record<number, string> = {};
-        Object.keys(PERMISSION_ID_MAP).forEach((k) => {
-          reverseMap[PERMISSION_ID_MAP[k]] = k;
-        });
-
-        if (sectionsStr) {
-          sectionsStr.split(";").forEach((s: string) => {
-            const id = Number(s);
-            if (reverseMap[id]) perms.push(reverseMap[id]);
+          const reverseMap: Record<number, string> = {};
+          Object.keys(PERMISSION_ID_MAP).forEach((k) => {
+            reverseMap[PERMISSION_ID_MAP[k]] = k;
           });
-        }
-        if (areasStr) {
-          areasStr.split(";").forEach((a: string) => {
-            const id = Number(a);
-            if (reverseMap[id]) perms.push(reverseMap[id]);
-          });
-        }
+
+          if (sectionsStr) {
+            sectionsStr.split(";").forEach((s: string) => {
+              const id = Number(s);
+              if (reverseMap[id]) perms.push(reverseMap[id]);
+            });
+          }
+          if (areasStr) {
+            areasStr.split(";").forEach((a: string) => {
+              const id = Number(a);
+              if (reverseMap[id]) perms.push(reverseMap[id]);
+            });
+          }
 
           setFormData((prev) => ({
             ...prev,
@@ -652,15 +652,15 @@ export default function AddUserAccessForm() {
           const res = await updateSecurityRole(id, payload);
           console.log("Updated role:", res);
           alert("Role updated successfully");
-              // reset form to new-role default
-              setFormData({
-                selectedRole: "__new",
-                roleName: "",
-                roleDescription: "",
-                status: "",
-                permissions: [],
-              });
-              setIsNewMode(true);
+          // reset form to new-role default
+          setFormData({
+            selectedRole: "__new",
+            roleName: "",
+            roleDescription: "",
+            status: "",
+            permissions: [],
+          });
+          setIsNewMode(true);
         } catch (err) {
           console.error("Update role error:", err);
           alert("Failed to update role. See console for details.");
@@ -802,7 +802,7 @@ export default function AddUserAccessForm() {
                     label={perm}
                   />
 
-                  
+
 
                   {perm === "Company Setup" &&
                     formData.permissions.includes("Company Setup") && (
