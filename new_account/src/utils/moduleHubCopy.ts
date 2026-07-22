@@ -330,6 +330,7 @@ export const HUB_CARD_DESCRIPTIONS: Record<string, string> = {
   "/setup/companysetup/company-setup": "Company name, currency, modules",
   "/setup/companysetup/user-account-setup": "User accounts and passwords",
   "/setup/companysetup/access-setup": "Role and permission access",
+  "/setup/companysetup/department-setup": "Create and manage departments",
   "/setup/companysetup/transaction-references": "Document numbering sequences",
   "/setup/companysetup/taxes": "Tax rates and types",
   "/setup/companysetup/tax-groups": "Group taxes for documents",

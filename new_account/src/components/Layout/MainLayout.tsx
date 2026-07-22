@@ -37,6 +37,8 @@ import { getActiveFiscalYear } from "../../api/FiscalYear/activeFiscalYearApi";
 import { getPageMetaFromPath } from "../../utils/pageMeta";
 import { SidebarItem, getSidebarItems } from "./SidebarItems";
 import { useCompanySetupSettings } from "../../hooks/useCompanySetupSettings";
+import { useAuth } from "../../context/AuthContext";
+import PERMISSION_ID_MAP from "../../permissions/map";
 import theme from "../../theme";
 import useIsMobile from "../../customHooks/useIsMobile";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -423,15 +425,21 @@ const DrawerContent = ({
 
   const { manufacturingEnabled, fixedAssetsEnabled, useCostCenters } =
     useCompanySetupSettings();
+  const { hasPermission } = useAuth();
 
   const sidebarItems = useMemo(
     () =>
-      getSidebarItems(user?.role, {
-        manufacturingEnabled,
-        fixedAssetsEnabled,
-        useCostCenters,
-      }),
-    [user?.role, manufacturingEnabled, fixedAssetsEnabled, useCostCenters]
+      getSidebarItems(
+        hasPermission(PERMISSION_ID_MAP["Company Setup"]),
+        {
+          manufacturingEnabled,
+          fixedAssetsEnabled,
+          useCostCenters,
+        },
+        hasPermission
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user?.role, manufacturingEnabled, fixedAssetsEnabled, useCostCenters, hasPermission]
   );
 
   React.useEffect(() => {

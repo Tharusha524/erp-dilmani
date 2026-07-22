@@ -18,12 +18,13 @@ import {
 } from "@mui/material";
 import theme from "../../../../theme";
 import { createUser } from "../../../../api/UserManagement/userManagement";
+import { fetchDepartmentData } from "../../../../api/departmentApi";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
-import { getSecurityRoles } from "../../../../api/AccessSetup/AccessSetupApi";
 import { useNavigate } from "react-router";
 import AddedConfirmationModal from "../../../../components/AddedConfirmationModal";
 import ErrorModal from "../../../../components/ErrorModal";
 import UserPasswordFields from "../../../../components/UserPasswordFields";
+import PermissionsChecklist from "../../../../components/PermissionsChecklist";
 import { validatePassword } from "../../../../utils/passwordPolicy";
 
 interface UserFormData {
@@ -37,7 +38,6 @@ interface UserFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  role: string;
   status: string;
   image: File | null;
 }
@@ -57,19 +57,19 @@ export default function AddUserForm() {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "",
     status: "",
     image: null,
   });
 
   const [errors, setErrors] = useState<Partial<UserFormData>>({});
+  const [permissionIds, setPermissionIds] = useState<number[]>([]);
   const navigate = useNavigate();
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
   const queryClient = useQueryClient();
-  const { data: securityRoles } = useQuery({
-    queryKey: ["securityRoles"],
-    queryFn: getSecurityRoles,
+  const { data: departments } = useQuery({
+    queryKey: ["departments"],
+    queryFn: fetchDepartmentData,
   });
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -87,6 +87,12 @@ export default function AddUserForm() {
     });
   };
 
+  const handlePermissionToggle = (id: number) => {
+    setPermissionIds((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
+  };
+
   const validate = () => {
     const newErrors: Partial<UserFormData> = {};
 
@@ -94,7 +100,7 @@ export default function AddUserForm() {
     if (!formData.firstName) newErrors.firstName = "First name is required";
     if (!formData.lastName) newErrors.lastName = "Last name is required";
     if (!formData.department) newErrors.department = "Department is required";
-    if (!formData.epf) newErrors.epf = "EPF is required";
+    if (!formData.epf) newErrors.epf = "Employee Number is required";
     if (!formData.telephone) newErrors.telephone = "Telephone is required";
     if (!formData.address) newErrors.address = "Address is required";
     if (!formData.email) {
@@ -113,7 +119,6 @@ export default function AddUserForm() {
     } else if (formData.confirmPassword !== formData.password) {
       newErrors.confirmPassword = "Passwords do not match";
     }
-    if (!formData.role) newErrors.role = "Role is required";
     if (!formData.status) newErrors.status = "Status is required";
 
     setErrors(newErrors);
@@ -135,8 +140,10 @@ export default function AddUserForm() {
         payload.append("address", formData.address);
         payload.append("email", formData.email);
         payload.append("password", formData.password);
-        payload.append("role", formData.role);
         payload.append("status", formData.status);
+
+        payload.append("sections", permissionIds.join(";"));
+        payload.append("areas", "");
 
         if (formData.image) {
           payload.append("image", formData.image); // File object
@@ -153,7 +160,6 @@ export default function AddUserForm() {
             fullName: `${(user as any).first_name || ""} ${(user as any).last_name || ""}`.trim(),
             department: (user as any).department || "",
             email: (user as any).email || "",
-            role: (user as any).role || "",
             status: (user as any).status || "",
           };
 
@@ -234,19 +240,27 @@ export default function AddUserForm() {
             helperText={errors.lastName}
           />
 
-          <TextField
-            label="Department"
-            name="department"
-            size="small"
-            fullWidth
-            value={formData.department}
-            onChange={handleInputChange}
-            error={!!errors.department}
-            helperText={errors.department}
-          />
+          <FormControl size="small" fullWidth error={!!errors.department}>
+            <InputLabel>Department</InputLabel>
+            <Select
+              name="department"
+              value={formData.department}
+              onChange={handleSelectChange}
+              label="Department"
+            >
+              {(departments || [])
+                .filter((d: any) => !d.inactive)
+                .map((d: any) => (
+                  <MenuItem key={d.id} value={d.department}>
+                    {d.department}
+                  </MenuItem>
+                ))}
+            </Select>
+            <FormHelperText>{errors.department}</FormHelperText>
+          </FormControl>
 
           <TextField
-            label="EPF"
+            label="Employee Number"
             name="epf"
             size="small"
             fullWidth
@@ -320,23 +334,6 @@ export default function AddUserForm() {
             InputLabelProps={{ shrink: true }}
           />
 
-          <FormControl size="small" fullWidth error={!!errors.role}>
-            <InputLabel>Role</InputLabel>
-            <Select
-              name="role"
-              value={formData.role}
-              onChange={handleSelectChange}
-              label="Role"
-            >
-              {(securityRoles || []).map((r: any) => (
-                <MenuItem key={r.id} value={r.role}>
-                  {r.role}
-                </MenuItem>
-              ))}
-            </Select>
-            <FormHelperText>{errors.role}</FormHelperText>
-          </FormControl>
-
           <FormControl size="small" fullWidth error={!!errors.status}>
             <InputLabel>Status</InputLabel>
             <Select
@@ -350,6 +347,12 @@ export default function AddUserForm() {
             </Select>
             <FormHelperText>{errors.status}</FormHelperText>
           </FormControl>
+
+          <PermissionsChecklist
+            selectedIds={permissionIds}
+            onToggle={handlePermissionToggle}
+            title="Individual Access (overrides Role permissions when set)"
+          />
         </Stack>
 
         <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3, flexDirection: isMobile ? "column" : "row", gap: isMobile ? 2 : 0, }}>

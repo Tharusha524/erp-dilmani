@@ -1,5 +1,6 @@
 import React from "react";
 import BusinessIcon from "@mui/icons-material/Business";
+import ApartmentIcon from "@mui/icons-material/Apartment";
 import PeopleIcon from "@mui/icons-material/People";
 import SecurityIcon from "@mui/icons-material/Security";
 import TagIcon from "@mui/icons-material/Tag";
@@ -18,6 +19,7 @@ const ITEMS: ModuleHubItem[] = [
   { text: "COMPANY SETUP", icon: <BusinessIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/companysetup/company-setup" },
   { text: "USER ACCOUNT SETUP", icon: <PeopleIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/companysetup/user-account-setup" },
   { text: "ACCESS SETUP", icon: <SecurityIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/companysetup/access-setup" },
+  { text: "DEPARTMENT SETUP", icon: <ApartmentIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/companysetup/department-setup" },
   { text: "TRANSACTION REFERENCES", icon: <TagIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/companysetup/transaction-references" },
   { text: "TAXES", icon: <PercentIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/companysetup/taxes" },
   { text: "TAX GROUPS", icon: <CategoryIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/companysetup/tax-groups" },

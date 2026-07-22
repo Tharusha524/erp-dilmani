@@ -10,6 +10,7 @@ import ChangeHistoryIcon from "@mui/icons-material/ChangeHistory";
 import FolderIcon from "@mui/icons-material/Folder";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import PERMISSION_ID_MAP from "../../permissions/map";
 
 export interface SidebarItem {
   title?: string;
@@ -19,6 +20,9 @@ export interface SidebarItem {
   href?: string;
   disabled?: boolean;
   accessKey?: string;
+  // Any one of these permission IDs grants visibility (OR-matched). Only
+  // enforced for accounts with strict_access — see AuthContext.hasPermission.
+  requiredPermission?: number[];
   nestedItems?: {
     title: string;
     href: string;
@@ -46,6 +50,11 @@ const baseSidebarItems: Array<SidebarItem> = [
     title: "Sales",
     href: "/sales",
     icon: <ShoppingCartOutlinedIcon fontSize="small" />,
+    requiredPermission: [
+      PERMISSION_ID_MAP["Sales Configuration"],
+      PERMISSION_ID_MAP["Sales Transactions"],
+      PERMISSION_ID_MAP["Sales Related Reports"],
+    ],
     nestedItems: [
       {
         title: "Transactions",
@@ -65,6 +74,11 @@ const baseSidebarItems: Array<SidebarItem> = [
     title: "Purchase",
     href: "/purchase",
     icon: <LocalMallOutlinedIcon fontSize="small" />,
+    requiredPermission: [
+      PERMISSION_ID_MAP["Purchase Configuration"],
+      PERMISSION_ID_MAP["Purchase Transactions"],
+      PERMISSION_ID_MAP["Purchase Analytics"],
+    ],
     nestedItems: [
       {
         title: "Transactions",
@@ -84,6 +98,11 @@ const baseSidebarItems: Array<SidebarItem> = [
     title: "Item and inventory",
     href: "/itemsandinventory",
     icon: <Inventory2OutlinedIcon fontSize="small" />,
+    requiredPermission: [
+      PERMISSION_ID_MAP["Inventory Configuration"],
+      PERMISSION_ID_MAP["Inventory Operations"],
+      PERMISSION_ID_MAP["Inventory Analytics"],
+    ],
     nestedItems: [
       {
         title: "Transactions",
@@ -107,6 +126,11 @@ const baseSidebarItems: Array<SidebarItem> = [
     title: "Manufacturing",
     href: "/manufacturing",
     icon: <PrecisionManufacturingOutlinedIcon fontSize="small" />,
+    requiredPermission: [
+      PERMISSION_ID_MAP["Manufacturing Configuration"],
+      PERMISSION_ID_MAP["Manufacturing Transactions"],
+      PERMISSION_ID_MAP["Manufacturing Analytics"],
+    ],
     nestedItems: [
       {
         title: "Transactions",
@@ -126,6 +150,11 @@ const baseSidebarItems: Array<SidebarItem> = [
     title: "Fixed Assets",
     href: "/fixedassets",
     icon: <EmergencyIcon fontSize="small" />,
+    requiredPermission: [
+      PERMISSION_ID_MAP["Fixed Assets Configuration"],
+      PERMISSION_ID_MAP["Fixed Assets Operations"],
+      PERMISSION_ID_MAP["Fixed Assets Analytics"],
+    ],
     nestedItems: [
       {
         title: "Transactions",
@@ -145,6 +174,10 @@ const baseSidebarItems: Array<SidebarItem> = [
     title: "CostCenter",
     href: "/costCenter",
     icon: <ChangeHistoryIcon fontSize="small" />,
+    requiredPermission: [
+      PERMISSION_ID_MAP["CostCenters Configuration"],
+      PERMISSION_ID_MAP["CostCenters"],
+    ],
     nestedItems: [
       {
         title: "Transactions",
@@ -164,6 +197,11 @@ const baseSidebarItems: Array<SidebarItem> = [
     title: "Banking And General ledger",
     href: "/bankingandgeneralledger",
     icon: <AccountBalanceWalletOutlinedIcon fontSize="small" />,
+    requiredPermission: [
+      PERMISSION_ID_MAP["Banking & GL Configuration"],
+      PERMISSION_ID_MAP["Banking & GL Transactions"],
+      PERMISSION_ID_MAP["Banking & GL Analytics"],
+    ],
     nestedItems: [
       {
         title: "Transactions",
@@ -187,10 +225,11 @@ export interface SidebarModuleFlags {
   useCostCenters?: boolean;
 }
 
-// Filter modules by Company Setup flags; optionally append Setup for admins.
+// Filter modules by Company Setup flags and permission; optionally append Setup.
 export const getSidebarItems = (
   canAccessSetup = false,
-  moduleFlags: SidebarModuleFlags = {}
+  moduleFlags: SidebarModuleFlags = {},
+  hasPermission: (id: number) => boolean = () => true
 ): Array<SidebarItem> => {
   const {
     manufacturingEnabled = true,
@@ -199,9 +238,12 @@ export const getSidebarItems = (
   } = moduleFlags;
 
   const items = baseSidebarItems.filter((item) => {
-    if (item.title === "Manufacturing") return manufacturingEnabled;
-    if (item.title === "Fixed Assets") return fixedAssetsEnabled;
-    if (item.title === "CostCenter") return useCostCenters;
+    if (item.title === "Manufacturing" && !manufacturingEnabled) return false;
+    if (item.title === "Fixed Assets" && !fixedAssetsEnabled) return false;
+    if (item.title === "CostCenter" && !useCostCenters) return false;
+    if (item.requiredPermission) {
+      return item.requiredPermission.some((id) => hasPermission(id));
+    }
     return true;
   });
 

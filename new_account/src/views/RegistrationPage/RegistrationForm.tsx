@@ -8,6 +8,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  SelectChangeEvent,
   Stack,
   TextField,
   Typography,
@@ -23,7 +24,6 @@ import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { createUser } from "../../api/UserManagement/userManagement";
-import { getSecurityRoles } from "../../api/AccessSetup/AccessSetupApi";
 
 // API Imports
 import { fetchDepartmentData } from "../../api/departmentApi";
@@ -42,8 +42,6 @@ interface UserFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  role: string;
-  status: string;
   jobPosition?: string;
   assignedFactory?: any[];
   employeeNumber?: string;
@@ -56,11 +54,6 @@ function RegistrationForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: securityRoles } = useQuery({
-    queryKey: ["securityRoles"],
-    queryFn: getSecurityRoles,
-  });
-
   const { data: organizationData } = useQuery({
     queryKey: ["organization"],
     queryFn: getOrganization,
@@ -72,8 +65,6 @@ function RegistrationForm() {
 
   const orgName = organizationData?.organizationName?.trim() || "Grow Ledger";
 
-  const statusOptions = ["active", "inactive"];
-
   const [formData, setFormData] = useState<UserFormData>({
     firstName: "",
     lastName: "",
@@ -84,8 +75,6 @@ function RegistrationForm() {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "",
-    status: "",
     jobPosition: "",
     assignedFactory: [],
     employeeNumber: "",
@@ -114,13 +103,17 @@ function RegistrationForm() {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleDepartmentChange = (e: SelectChangeEvent<string>) => {
+    setFormData({ ...formData, department: e.target.value });
+  };
+
   const validate = () => {
     const newErrors: Partial<UserFormData> = {};
 
     if (!formData.firstName) newErrors.firstName = "First name is required";
     if (!formData.lastName) newErrors.lastName = "Last name is required";
     if (!formData.department) newErrors.department = "Department is required";
-    if (!formData.epf) newErrors.epf = "EPF is required";
+    if (!formData.epf) newErrors.epf = "Employee Number is required";
     if (!formData.telephone) newErrors.telephone = "Telephone is required";
     if (!formData.address) newErrors.address = "Address is required";
     if (!formData.email) newErrors.email = "Email is required";
@@ -133,8 +126,6 @@ function RegistrationForm() {
       newErrors.confirmPassword = "Please confirm your password";
     else if (formData.password !== formData.confirmPassword)
       newErrors.confirmPassword = "Passwords do not match";
-    if (!formData.role) newErrors.role = "Role is required";
-    if (!formData.status) newErrors.status = "Status is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -165,8 +156,6 @@ function RegistrationForm() {
         address: formData.address,
         email: formData.email,
         password: formData.password,
-        role_id: formData.role,
-        status: formData.status,
         job_position: formData.jobPosition,
         assigned_factory: formData.assignedFactory,
         employee_number: formData.employeeNumber,
@@ -223,18 +212,25 @@ function RegistrationForm() {
           error={!!errors.lastName}
           helperText={errors.lastName}
         />
+        <FormControl size="small" fullWidth error={!!errors.department}>
+          <InputLabel>Department</InputLabel>
+          <Select
+            value={formData.department}
+            onChange={handleDepartmentChange}
+            label="Department"
+          >
+            {(departments || [])
+              .filter((d: any) => !d.inactive)
+              .map((d: any) => (
+                <MenuItem key={d.id} value={d.department}>
+                  {d.department}
+                </MenuItem>
+              ))}
+          </Select>
+          {errors.department && <FormHelperText>{errors.department}</FormHelperText>}
+        </FormControl>
         <TextField
-          label="Department"
-          name="department"
-          size="small"
-          fullWidth
-          value={formData.department}
-          onChange={handleInputChange}
-          error={!!errors.department}
-          helperText={errors.department}
-        />
-        <TextField
-          label="EPF"
+          label="Employee Number"
           name="epf"
           size="small"
           fullWidth
@@ -305,42 +301,6 @@ function RegistrationForm() {
           }
           label="Show Password"
         />
-
-        {/* Role & Status */}
-        <FormControl fullWidth size="small" error={!!errors.role}>
-          <InputLabel>Role</InputLabel>
-          <Select
-            name="role"
-            value={formData.role}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-            label="Role"
-          >
-            {(securityRoles || []).map((r: any) => (
-              <MenuItem key={r.id} value={String(r.id)}>
-                {r.role}
-              </MenuItem>
-            ))}
-          </Select>
-          {errors.role && <FormHelperText>{errors.role}</FormHelperText>}
-        </FormControl>
-
-        <FormControl fullWidth size="small" error={!!errors.status}>
-          <InputLabel>Status</InputLabel>
-          <Select
-            name="status"
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-            label="Status"
-          >
-            {statusOptions.map((status) => (
-              <MenuItem key={status} value={status}>
-                {status}
-              </MenuItem>
-            ))}
-          </Select>
-          {errors.status && <FormHelperText>{errors.status}</FormHelperText>}
-        </FormControl>
-
 
         {/* Buttons */}
         <Box

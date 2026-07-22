@@ -48,6 +48,7 @@ import CurrenciesTable from "./views/BankindAndGeneralLedger/Maintenance/Currenc
 import UserAccessForm from "./views/Setup/CompanySetup/UserAccess/AddUserAccessForm";
 import AddUserAccessForm from "./views/Setup/CompanySetup/UserAccess/AddUserAccessForm";
 import UpdateUserAccessForm from "./views/Setup/CompanySetup/UserAccess/UpdateUserAccessForm";
+import DepartmentSetupForm from "./views/Setup/CompanySetup/Department/DepartmentSetupForm";
 import UpdateUserForm from "./views/Setup/CompanySetup/User/UpdateUserForm";
 import AddTaxTypes from "./views/Setup/CompanySetup/TaxTypes/AddTaxTypes";
 import UpdateTaxTypes from "./views/Setup/CompanySetup/TaxTypes/UpdateTaxTypes";
@@ -689,7 +690,11 @@ const AppRoutes = () => {
         />
         <Route
           path="companysetup/company-setup"
-          element={withLayout(MainLayout, CompanySetupForm)}
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Company parameters']}>
+              {withLayout(MainLayout, CompanySetupForm)}
+            </ProtectedRoute>
+          }
         />
         <Route
           path="companysetup/update-company-setup/:id"
@@ -730,6 +735,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['Access levels edition']}>
               {withLayout(MainLayout, AddUserAccessForm)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="companysetup/department-setup"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Department setup page']}>
+              {withLayout(MainLayout, DepartmentSetupForm)}
             </ProtectedRoute>
           }
         />
@@ -848,7 +861,7 @@ const AppRoutes = () => {
         <Route
           path="companysetup/email-setup"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Company Setup']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Email setup page']}>
               {withLayout(MainLayout, EmailSetupForm)}
             </ProtectedRoute>
           }
@@ -856,7 +869,7 @@ const AppRoutes = () => {
         <Route
           path="companysetup/login-ip-restriction"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Company Setup']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Login IP restriction page']}>
               {withLayout(MainLayout, LoginIpSetupForm)}
             </ProtectedRoute>
           }
@@ -1108,15 +1121,27 @@ const AppRoutes = () => {
           />
           <Route
             path="maintenance/system-diagnostics"
-            element={withLayout(MainLayout, SystemDiagnostics)}
+            element={
+              <ProtectedRoute required={PERMISSION_ID_MAP['System diagnostics page']}>
+                {withLayout(MainLayout, SystemDiagnostics)}
+              </ProtectedRoute>
+            }
           />
           <Route
             path="maintenance/user-login-logs"
-            element={withLayout(MainLayout, UserLoginLogs)}
+            element={
+              <ProtectedRoute required={PERMISSION_ID_MAP['User login activity page']}>
+                {withLayout(MainLayout, UserLoginLogs)}
+              </ProtectedRoute>
+            }
           />
           <Route
             path="companysetup/user-login-activity"
-            element={withLayout(MainLayout, UserLoginLogs)}
+            element={
+              <ProtectedRoute required={PERMISSION_ID_MAP['User login activity page']}>
+                {withLayout(MainLayout, UserLoginLogs)}
+              </ProtectedRoute>
+            }
           />
         </Route>
         
@@ -1182,7 +1207,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/sales-order-entry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders edition']}>
               {withLayout(MainLayout, SalesOrderEntry)}
             </ProtectedRoute>
           }
@@ -1190,7 +1215,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/sales-order-entry/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders edition']}>
               {withLayout(MainLayout, SalesOrderEntrySuccess)}
             </ProtectedRoute>
           }
@@ -1198,7 +1223,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/sales-order-entry/view-sales-order"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders edition']}>
               {withLayout(MainLayout, ViewSalesOrderEntry)}
             </ProtectedRoute>
           }
@@ -1206,7 +1231,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/update-sales-order-entry/"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders edition']}>
               {withLayout(MainLayout, UpdateSalesOrderEntry)}
             </ProtectedRoute>
           }
@@ -1214,7 +1239,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/update-sales-order-entry/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders edition']}>
               {withLayout(MainLayout, UpdateSalesOrderEntrySuccess)}
             </ProtectedRoute>
           }
@@ -1222,7 +1247,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/quotation-sales-order-entry/"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders edition']}>
               {withLayout(MainLayout, SalesOrderEntryQuotation)}
             </ProtectedRoute>
           }
@@ -1230,7 +1255,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/customer-delivery"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders edition']}>
               {withLayout(MainLayout, CustomerDelivery)}
             </ProtectedRoute>
           }
@@ -1238,7 +1263,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/customer-delivery/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders edition']}>
               {withLayout(MainLayout, CustomerDeliverySuccess)}
             </ProtectedRoute>
           }
@@ -1246,7 +1271,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/customer-delivery/view"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales orders edition']}>
               {withLayout(MainLayout, ViewCustomerDelivery)}
             </ProtectedRoute>
           }
@@ -1254,7 +1279,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/direct-delivery"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery entry']}>
               {withLayout(MainLayout, DirectDelivery)}
             </ProtectedRoute>
           }
@@ -1262,7 +1287,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/direct-delivery/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery entry']}>
               {withLayout(MainLayout, DirectDeliverySuccess)}
             </ProtectedRoute>
           }
@@ -1270,7 +1295,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/direct-delivery/view-direct-delivery"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery entry']}>
               {withLayout(MainLayout, ViewDirectDelivery)}
             </ProtectedRoute>
           }
@@ -1278,7 +1303,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/direct-delivery/customer-invoice"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery entry']}>
               {withLayout(MainLayout, DeliveyNoteInvoice)}
             </ProtectedRoute>
           }
@@ -1286,7 +1311,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/direct-delivery/delivery-note-invoice"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery entry']}>
               {withLayout(MainLayout, DeliveyNoteInvoice)}
             </ProtectedRoute>
           }
@@ -1294,7 +1319,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/direct-delivery/customer-invoice/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery entry']}>
               {withLayout(MainLayout, CustomerInvoiceSuccess)}
             </ProtectedRoute>
           }
@@ -1302,7 +1327,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/direct-invoice"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales invoice entry']}>
               {withLayout(MainLayout, DirectInvoice)}
             </ProtectedRoute>
           }
@@ -1310,7 +1335,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/direct-invoice/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales invoice entry']}>
               {withLayout(MainLayout, DirectInvoiceSuccess)}
             </ProtectedRoute>
           }
@@ -1318,7 +1343,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/direct-invoice/view-direct-invoice"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales invoice entry']}>
               {withLayout(MainLayout, ViewDirectInvoice)}
             </ProtectedRoute>
           }
@@ -1326,7 +1351,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/gl-journal-entries"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales invoice entry']}>
               {withLayout(MainLayout, ViewSalesGLJournalEntries)}
             </ProtectedRoute>
           }
@@ -1334,7 +1359,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/credit-invoice/"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales invoice entry']}>
               {withLayout(MainLayout, CreditInvoice)}
             </ProtectedRoute>
           }
@@ -1342,7 +1367,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/credit-invoice/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales invoice entry']}>
               {withLayout(MainLayout, CreditInvoiceSuccess)}
             </ProtectedRoute>
           }
@@ -1350,7 +1375,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/credit-invoice/view-credit-invoice"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales delivery']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales invoice entry']}>
               {withLayout(MainLayout, ViewCreditInvoice)}
             </ProtectedRoute>
           }
@@ -1366,7 +1391,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/template-invoice"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales invoices edition']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales template invoice']}>
               {withLayout(MainLayout, TemplateInvoice)}
             </ProtectedRoute>
           }
@@ -1382,7 +1407,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/customer-payments"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices definitions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer payments entry']}>
               {withLayout(MainLayout, CustomerPayments)}
             </ProtectedRoute>
           }
@@ -1390,7 +1415,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/update-customer-payments"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices definitions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer payments entry']}>
               {withLayout(MainLayout, UpdateCustomerPayments)}
             </ProtectedRoute>
           }
@@ -1398,7 +1423,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/customer-payments/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices definitions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer payments entry']}>
               {withLayout(MainLayout, CustomerPaymentsSuccess)}
             </ProtectedRoute>
           }
@@ -1406,7 +1431,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/customer-payments/view-customer-payment"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices definitions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer payments entry']}>
               {withLayout(MainLayout, ViewCustomerPayments)}
             </ProtectedRoute>
           }
@@ -1414,7 +1439,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/customer-credit-notes"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices definitions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales credit notes against invoice']}>
               {withLayout(MainLayout, CustomerCreditNotes)}
             </ProtectedRoute>
           }
@@ -1422,7 +1447,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/customer-credit-notes/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices definitions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales credit notes against invoice']}>
               {withLayout(MainLayout, CustomerCreditNotesSuccess)}
             </ProtectedRoute>
           }
@@ -1430,7 +1455,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/update-customer-credit-notes/"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices definitions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales credit notes against invoice']}>
               {withLayout(MainLayout, UpdateCustomerCreditNotes)}
             </ProtectedRoute>
           }
@@ -1438,7 +1463,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/customer-credit-notes/view-customer-credit-note"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices definitions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales credit notes against invoice']}>
               {withLayout(MainLayout, ViewCustomerCreditNotes)}
             </ProtectedRoute>
           }
@@ -1446,7 +1471,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/customer-credit-notes/view-updated-customer-credit-note"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices definitions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales credit notes against invoice']}>
               {withLayout(MainLayout, ViewUpdatedCustomerCreditNotes)}
             </ProtectedRoute>
           }
@@ -1454,7 +1479,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/customer-credit-notes/success-updated"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices definitions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales credit notes against invoice']}>
               {withLayout(MainLayout, UpdatedCustomerCreditNotesSuccess)}
             </ProtectedRoute>
           }
@@ -1502,7 +1527,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/invoice-prepaid-orders"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales invoices edition']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Invoice prepaid orders']}>
               {withLayout(MainLayout, InvoicePrepaidOrders)}
             </ProtectedRoute>
           }
@@ -1510,7 +1535,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/invoice-prepaid-orders/final-invoice-entry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales invoices edition']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Invoice prepaid orders']}>
               {withLayout(MainLayout, FinalInvoiceEntry)}
             </ProtectedRoute>
           }
@@ -1518,7 +1543,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/invoice-prepaid-orders/final-invoice-entry/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales invoices edition']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Invoice prepaid orders']}>
               {withLayout(MainLayout, FinalInvoiceSuccess)}
             </ProtectedRoute>
           }
@@ -1526,7 +1551,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/transactions/invoice-prepaid-orders/view-final-invoice"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales invoices edition']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Invoice prepaid orders']}>
               {withLayout(MainLayout, ViewFinalInvoice)}
             </ProtectedRoute>
           }
@@ -1566,7 +1591,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/inquiriesandreports/sales-order-inquiry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales Related Reports']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Sales order inquiry']}>
               {withLayout(MainLayout, SalesOrderInquiry)}
             </ProtectedRoute>
           }
@@ -1574,7 +1599,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/inquiriesandreports/customer-allocation-inquiry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales Related Reports']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer allocation inquiry']}>
               {withLayout(MainLayout, CustomerAllocationInquiry)}
             </ProtectedRoute>
           }
@@ -1582,7 +1607,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/inquiriesandreports/customer-transaction-inquiry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales Related Reports']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer transaction inquiry']}>
               {withLayout(MainLayout, CustomerTransactionInquiry)}
             </ProtectedRoute>
           }
@@ -1590,7 +1615,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/inquiriesandreports/customer-transaction-inquiry/update-customer-invoice/:id"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales Related Reports']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer transaction inquiry']}>
               {withLayout(MainLayout, UpdateCustomerInvoice)}
             </ProtectedRoute>
           }
@@ -1598,7 +1623,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/inquiriesandreports/customer-transaction-inquiry/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales Related Reports']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer transaction inquiry']}>
               {withLayout(MainLayout, UpdateCustomerInvoiceSuccess)}
             </ProtectedRoute>
           }
@@ -1706,7 +1731,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/customer-branches"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales customer and branches changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer branches maintenance']}>
               {withLayout(MainLayout, CustomersBranches)}
             </ProtectedRoute>
           }
@@ -1714,7 +1739,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/customer-branches/general-settings"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales customer and branches changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer branches maintenance']}>
               {withLayout(MainLayout, CustomerBranchesTable)}
             </ProtectedRoute>
           }
@@ -1722,7 +1747,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/customer-branches/add-general-settings/:id"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales customer and branches changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer branches maintenance']}>
               {withLayout(MainLayout, AddCustomerBranchesGeneralSettingForm)}
             </ProtectedRoute>
           }
@@ -1730,7 +1755,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/customer-branches/update-general-settings/:branchCode"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales customer and branches changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer branches maintenance']}>
               {withLayout(MainLayout, UpdateCustomerBranchesGeneralSettingForm)}
             </ProtectedRoute>
           }
@@ -1738,7 +1763,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/customer-branches/edit/:branchCode"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales customer and branches changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer branches maintenance']}>
               {withLayout(MainLayout, CustomersBranches)}
             </ProtectedRoute>
           }
@@ -1746,7 +1771,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/customer-branches/branches-contacts"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales customer and branches changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer branches maintenance']}>
               {withLayout(MainLayout, ContactsTable)}
             </ProtectedRoute>
           }
@@ -1754,7 +1779,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/customer-branches/add-customer-branches-contacts/"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales customer and branches changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer branches maintenance']}>
               {withLayout(MainLayout, AddContactsForm)}
             </ProtectedRoute>
           }
@@ -1762,7 +1787,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/customer-branches/update-customer-branches-contacts/:id"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Sales customer and branches changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Customer branches maintenance']}>
               {withLayout(MainLayout, UpdateContactsForm)}
             </ProtectedRoute>
           }
@@ -1890,7 +1915,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/update-recurrent-invoice/:id"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Credit status definitions changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices maintenance']}>
               {withLayout(MainLayout, UpdateRecurrentInvoices)}
             </ProtectedRoute>
           }
@@ -1898,7 +1923,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/add-recurrent-invoice/"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Credit status definitions changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices maintenance']}>
               {withLayout(MainLayout, AddRecurrentInvoices)}
             </ProtectedRoute>
           }
@@ -1906,7 +1931,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/recurrent-invoices/"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Credit status definitions changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices maintenance']}>
               {withLayout(MainLayout, ViewRecurrentInvoices)}
             </ProtectedRoute>
           }
@@ -1914,7 +1939,7 @@ const AppRoutes = () => {
         <Route
           path="/sales/maintenance/create-recurrent-invoices/:id"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Credit status definitions changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Recurrent invoices maintenance']}>
               {withLayout(MainLayout, CreateInvoice)}
             </ProtectedRoute>
           }
@@ -1957,7 +1982,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/purchase-order-entry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase order entry']}>
               {withLayout(MainLayout, PurchaseOrderEntry)}
             </ProtectedRoute>
           }
@@ -1965,7 +1990,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/update-purchase-order-entry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase order entry']}>
               {withLayout(MainLayout, UpdatePurchaseOrderEntry)}
             </ProtectedRoute>
           }
@@ -1973,7 +1998,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/purchase-order-entry/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase order entry']}>
               {withLayout(MainLayout, PurchaseOrderEntrySuccess)}
             </ProtectedRoute>
           }
@@ -1981,7 +2006,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/purchase-order-entry/view-purchase-order"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase order entry']}>
               {withLayout(MainLayout, ViewPurchaseOrderEntry)}
             </ProtectedRoute>
           }
@@ -1989,7 +2014,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/receive-purchase-order-items"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase receive']}>
               {withLayout(MainLayout, ReceivePurchaseOrderItems)}
             </ProtectedRoute>
           }
@@ -1997,7 +2022,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/receive-purchase-order-items/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase receive']}>
               {withLayout(MainLayout, ReceivePurchaseOrderItemsSuccess)}
             </ProtectedRoute>
           }
@@ -2005,7 +2030,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/receive-purchase-order-items/view"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase receive']}>
               {withLayout(MainLayout, ViewReceivePurchaseOrderItems)}
             </ProtectedRoute>
           }
@@ -2013,7 +2038,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/outstanding-purchase-orders-maintenance"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Outstanding purchase orders maintenance']}>
               {withLayout(MainLayout, OutstandingPurchaseOrdersMaintenance)}
             </ProtectedRoute>
           }
@@ -2021,7 +2046,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/direct-grn"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct GRN entry']}>
               {withLayout(MainLayout, DirectGRN)}
             </ProtectedRoute>
           }
@@ -2029,7 +2054,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/direct-grn/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct GRN entry']}>
               {withLayout(MainLayout, DirectGRNSuccess)}
             </ProtectedRoute>
           }
@@ -2037,7 +2062,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/direct-grn/view-direct-grn"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct GRN entry']}>
               {withLayout(MainLayout, ViewDirectGRN)}
             </ProtectedRoute>
           }
@@ -2053,7 +2078,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/direct-supplier-invoice"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct supplier invoice entry']}>
               {withLayout(MainLayout, DirectSupplierInvoice)}
             </ProtectedRoute>
           }
@@ -2061,7 +2086,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/direct-supplier-invoice/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct supplier invoice entry']}>
               {withLayout(MainLayout, DirectSupplierInvoiceSuccess)}
             </ProtectedRoute>
           }
@@ -2069,7 +2094,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/direct-supplier-invoice/view-direct-supplier-invoice"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Direct supplier invoice entry']}>
               {withLayout(MainLayout, ViewDirectSupplierInvoice)}
             </ProtectedRoute>
           }
@@ -2077,7 +2102,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/payment-to-suppliers"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier payments']}>
               {withLayout(MainLayout, SupplierPaymentEntry)}
             </ProtectedRoute>
           }
@@ -2085,7 +2110,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/payment-to-suppliers/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier payments']}>
               {withLayout(MainLayout, SupplierPaymentEntrySuccess)}
             </ProtectedRoute>
           }
@@ -2093,7 +2118,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/payment-to-suppliers/view-supplier-payment"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier payments']}>
               {withLayout(MainLayout, ViewSupplierPaymentEntry)}
             </ProtectedRoute>
           }
@@ -2101,7 +2126,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/allocate-supplier-payments-credit-notes"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier payments allocations']}>
               {withLayout(MainLayout, SupplierAllocations)}
             </ProtectedRoute>
           }
@@ -2109,7 +2134,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/allocate-supplier-payments-credit-notes/view-supplier-allocations"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier payments allocations']}>
               {withLayout(MainLayout, ViewSupplierAllocations)}
             </ProtectedRoute>
           }
@@ -2117,7 +2142,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/supplier-invoice"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier invoices']}>
               {withLayout(MainLayout, SupplierInvoice)}
             </ProtectedRoute>
           }
@@ -2125,7 +2150,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/supplier-invoice/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier invoices']}>
               {withLayout(MainLayout, SupplierInvoiceSuccess)}
             </ProtectedRoute>
           }
@@ -2133,7 +2158,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/supplier-invoice/view-supplier-invoice"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier invoices']}>
               {withLayout(MainLayout, ViewSupplierInvoice)}
             </ProtectedRoute>
           }
@@ -2141,7 +2166,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/supplier-credit-notes"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier credit notes']}>
               {withLayout(MainLayout, SupplierCreditNote)}
             </ProtectedRoute>
           }
@@ -2149,7 +2174,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/supplier-credit-notes/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier credit notes']}>
               {withLayout(MainLayout, SupplierCreditNoteSuccess)}
             </ProtectedRoute>
           }
@@ -2157,7 +2182,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/transactions/supplier-credit-notes/view-supplier-credit-note"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier credit notes']}>
               {withLayout(MainLayout, ViewSupplierCreditNote)}
             </ProtectedRoute>
           }
@@ -2181,7 +2206,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/inquiriesandreports/supplier-transaction-inquiry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Analytics']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier analytical reports']}>
               {withLayout(MainLayout, SupplierTransactionInquiry)}
             </ProtectedRoute>
           }
@@ -2189,7 +2214,7 @@ const AppRoutes = () => {
         <Route
           path="/purchase/inquiriesandreports/supplier-allocation-inquiry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Purchase Analytics']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Supplier allocation inquiry']}>
               {withLayout(MainLayout, SupplierAllocationInquiry)}
             </ProtectedRoute>
           }
@@ -2302,7 +2327,7 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/transactions/inventory-adjustments"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory adjustments']}>
               {withLayout(MainLayout, AddInventoryAdjustments)}
             </ProtectedRoute>
           }
@@ -2310,7 +2335,7 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/transactions/inventory-adjustments/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory adjustments']}>
               {withLayout(MainLayout, AddInventoryAdjustmentsSuccess)}
             </ProtectedRoute>
           }
@@ -2318,7 +2343,7 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/transactions/inventory-adjustments/view"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory adjustments']}>
               {withLayout(MainLayout, ViewInventoryAdjustment)}
             </ProtectedRoute>
           }
@@ -2326,7 +2351,7 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/transactions/inventory-location-transfer"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory location transfers']}>
               {withLayout(MainLayout, AddInventoryLocationTransfers)}
             </ProtectedRoute>
           }
@@ -2334,7 +2359,7 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/transactions/inventory-location-transfer/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory location transfers']}>
               {withLayout(MainLayout, AddInventoryLocationTransfersSuccess)}
             </ProtectedRoute>
           }
@@ -2342,7 +2367,7 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/transactions/inventory-location-transfer/view"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory location transfers']}>
               {withLayout(MainLayout, ViewInventoryLocationTransfer)}
             </ProtectedRoute>
           }
@@ -2367,7 +2392,7 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/inquiriesandreports/inventory-item-status"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Analytics']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory item status inquiry']}>
               {withLayout(MainLayout, InventoryItemStatus)}
             </ProtectedRoute>
           }
@@ -2375,7 +2400,7 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/inquiriesandreports/inventory-item-movements"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Analytics']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Items analytical reports and inquiries']}>
               {withLayout(MainLayout, InventoryItemMovements)}
             </ProtectedRoute>
           }
@@ -2828,7 +2853,7 @@ const AppRoutes = () => {
         <Route
           path="/manufacturing/inquiriesandreports/inventory-item-where-used-inquiry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Manufacturing cost inquiry']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory item where used inquiry']}>
               {withLayout(MainLayout, InventoryItemWhereUsedInquiry)}
             </ProtectedRoute>
           }
@@ -2836,7 +2861,7 @@ const AppRoutes = () => {
         <Route
           path="/manufacturing/inquiriesandreports/work-order-inquiry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Manufacturing cost inquiry']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Work order analytical reports and inquiries']}>
               {withLayout(MainLayout, WorkOrderInquiry)}
             </ProtectedRoute>
           }
@@ -2938,7 +2963,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/transactions/fixed-assets-location-transfer"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset location transfers']}>
               {withLayout(MainLayout, FixedAssetsLocationTransfers)}
             </ProtectedRoute>
           }
@@ -2946,7 +2971,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/transactions/fixed-assets-location-transfer/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset location transfers']}>
               {withLayout(MainLayout, FixedAssetsLocationTransfersSuccess)}
             </ProtectedRoute>
           }
@@ -2954,7 +2979,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/transactions/fixed-assets-location-transfer/view"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset location transfers']}>
               {withLayout(MainLayout, ViewFixedAssetsLocationTransfers)}
             </ProtectedRoute>
           }
@@ -2962,7 +2987,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/transactions/fixed-assets-disposal"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset disposals']}>
               {withLayout(MainLayout, FixedAssetsDisposal)}
             </ProtectedRoute>
           }
@@ -2970,7 +2995,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/transactions/fixed-assets-disposal/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset disposals']}>
               {withLayout(MainLayout, FixedAssetsDisposalSuccess)}
             </ProtectedRoute>
           }
@@ -2978,7 +3003,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/transactions/fixed-assets-disposal/view-fixed-assets-disposal"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset disposals']}>
               {withLayout(MainLayout, ViewFixedAssetsDisposal)}
             </ProtectedRoute>
           }
@@ -2986,7 +3011,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/transactions/fixed-assets-sale"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed assets sale']}>
               {withLayout(MainLayout, FixedAssetsSale)}
             </ProtectedRoute>
           }
@@ -2994,7 +3019,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/transactions/fixed-assets-sale/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed assets sale']}>
               {withLayout(MainLayout, FixedAssetsSaleSuccess)}
             </ProtectedRoute>
           }
@@ -3002,7 +3027,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/transactions/fixed-assets-sale/view-fixed-assets-sale"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed assets sale']}>
               {withLayout(MainLayout, ViewFixedAssetsSale)}
             </ProtectedRoute>
           }
@@ -3010,7 +3035,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/transactions/process-depreciation"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Depreciation']}>
               {withLayout(MainLayout, ProcessDepreciation)}
             </ProtectedRoute>
           }
@@ -3018,7 +3043,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/transactions/process-depreciation/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Operations']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Depreciation']}>
               {withLayout(MainLayout, ProcessDepreciationSuccess)}
             </ProtectedRoute>
           }
@@ -3042,7 +3067,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/inquiriesandreports/fixed-assets-inquiry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Assets Analytics']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset analytical reports and inquiries']}>
               {withLayout(MainLayout, FixedAssetsInquiry)}
             </ProtectedRoute>
           }
@@ -3090,7 +3115,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/maintenance/fixed-asset-locations"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset items add/edit']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed assets locations maintenance']}>
               {withLayout(MainLayout, FixedAssetsLocationsTable)}
             </ProtectedRoute>
           }
@@ -3098,7 +3123,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/maintenance/add-fixed-asset-location"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset items add/edit']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed assets locations maintenance']}>
               {withLayout(MainLayout, AddFixedAssetsLocations)}
             </ProtectedRoute>
           }
@@ -3106,7 +3131,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/maintenance/update-fixed-asset-location/:id"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset items add/edit']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed assets locations maintenance']}>
               {withLayout(MainLayout, UpdateFixedAssetsLocations)}
             </ProtectedRoute>
           }
@@ -3114,7 +3139,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/maintenance/fixed-asset-categories"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset items add/edit']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset categories']}>
               {withLayout(MainLayout, FixedAssetsCategoriesTable)}
             </ProtectedRoute>
           }
@@ -3122,7 +3147,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/maintenance/add-fixed-asset-categories"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset items add/edit']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset categories']}>
               {withLayout(MainLayout, AddFixedAssetsCategories)}
             </ProtectedRoute>
           }
@@ -3130,7 +3155,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/maintenance/update-fixed-asset-categories/:category_id"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset items add/edit']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset categories']}>
               {withLayout(MainLayout, UpdateFixedAssetsCategories)}
             </ProtectedRoute>
           }
@@ -3138,7 +3163,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/maintenance/fixed-asset-classes"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset items add/edit']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset classes']}>
               {withLayout(MainLayout, FixedAssetClassesTable)}
             </ProtectedRoute>
           }
@@ -3146,7 +3171,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/maintenance/add-fixed-asset-classes"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset items add/edit']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset classes']}>
               {withLayout(MainLayout, AddFixedAssetClasses)}
             </ProtectedRoute>
           }
@@ -3154,7 +3179,7 @@ const AppRoutes = () => {
         <Route
           path="/fixedassets/maintenance/update-fixed-asset-classes/:fa_class_id"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset items add/edit']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Fixed Asset classes']}>
               {withLayout(MainLayout, UpdateFixedAssetClasses)}
             </ProtectedRoute>
           }
@@ -3269,7 +3294,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/payments"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Bank payments']}>
               {withLayout(MainLayout, Payments)}
             </ProtectedRoute>
           }
@@ -3277,7 +3302,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/payments/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Bank payments']}>
               {withLayout(MainLayout, PaymentsSuccess)}
             </ProtectedRoute>
           }
@@ -3285,7 +3310,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/bankingandgeneralledger-quotation-entry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Bank payments']}>
               {withLayout(MainLayout, Payments)}
             </ProtectedRoute>
           }
@@ -3293,7 +3318,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/bankingandgeneralledger-quotation-entry/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Bank payments']}>
               {withLayout(MainLayout, PaymentsSuccess)}
             </ProtectedRoute>
           }
@@ -3309,7 +3334,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/deposits"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Bank deposits']}>
               {withLayout(MainLayout, Deposits)}
             </ProtectedRoute>
           }
@@ -3317,7 +3342,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/deposits/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Bank deposits']}>
               {withLayout(MainLayout, DepositSuccess)}
             </ProtectedRoute>
           }
@@ -3325,7 +3350,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/bankingandgeneralledger-order-entry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Bank deposits']}>
               {withLayout(MainLayout, Deposits)}
             </ProtectedRoute>
           }
@@ -3333,7 +3358,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/bankingandgeneralledger-order-entry/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Bank deposits']}>
               {withLayout(MainLayout, DepositSuccess)}
             </ProtectedRoute>
           }
@@ -3341,7 +3366,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/revenue-cost-accruals"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Revenue / Cost Accruals']}>
               {withLayout(MainLayout, RevenueCostAccruals)}
             </ProtectedRoute>
           }
@@ -3349,7 +3374,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/bank-account-transfers"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Bank account transfers']}>
               {withLayout(MainLayout, BankAccountTransfers)}
             </ProtectedRoute>
           }
@@ -3357,7 +3382,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/bank-account-transfers/success"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Bank account transfers']}>
               {withLayout(MainLayout, BankAccountTransferSuccess)}
             </ProtectedRoute>
           }
@@ -3446,7 +3471,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/inquiriesandreports/gl-inquiry"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['GL analytical reports and inquiries']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['GL inquiry']}>
               {withLayout(MainLayout, GLInquiry)}
             </ProtectedRoute>
           }
@@ -3470,7 +3495,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/inquiriesandreports/trial-balance"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['GL analytical reports and inquiries']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Trial balance inquiry']}>
               {withLayout(MainLayout, TrialBalance)}
             </ProtectedRoute>
           }
@@ -3478,7 +3503,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/inquiriesandreports/balance-sheet-drilldown"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['GL analytical reports and inquiries']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Balance sheet drilldown']}>
               {withLayout(MainLayout, BalanceSheetDrilldown)}
             </ProtectedRoute>
           }
@@ -3486,7 +3511,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/inquiriesandreports/profit-and-loss-drilldown"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['GL analytical reports and inquiries']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Profit and loss drilldown']}>
               {withLayout(MainLayout, ProfitAndLossDrilldown)}
             </ProtectedRoute>
           }
@@ -3712,7 +3737,7 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/maintenance/revaluation-of-currency-accounts"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Exchange rate table changes']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Revaluation of currency accounts']}>
               {withLayout(MainLayout, RevaluateCurrenciesForm)}
             </ProtectedRoute>
           }

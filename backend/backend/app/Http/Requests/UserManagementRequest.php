@@ -41,6 +41,8 @@ class UserManagementRequest extends FormRequest
             'password' => ['string', PasswordRules::defaults()],
             'role' => 'string', // Assuming validation via foreign key elsewhere
             'status' => 'string',
+            'sections' => 'nullable|string',
+            'areas' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'remove_image' => 'sometimes|boolean',
         ];
@@ -52,8 +54,10 @@ class UserManagementRequest extends FormRequest
             $rules['epf'] = 'required|' . $rules['epf'];
             $rules['email'] = ['required', 'email', 'max:255', Rule::unique('user_managements', 'email')];
             $rules['password'] = ['required', PasswordRules::defaults()];
-            $rules['role'] = 'required|' . $rules['role'];
-            $rules['status'] = 'required|' . $rules['status'];
+            // Role & status are optional on create: self-service sign-up no longer
+            // collects them, so a pending default is applied in the controller.
+            $rules['role'] = 'nullable|' . $rules['role'];
+            $rules['status'] = 'nullable|' . $rules['status'];
         } else {
             // For update ($id exists), make fields 'sometimes' (validate only if provided)
             // This allows partial updates (e.g., only image)

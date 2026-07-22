@@ -98,7 +98,17 @@ class AuthRepository extends BaseRepository implements AuthInterface
         $sections = [];
         $areas = [];
 
-        if ($roleRow) {
+        // Per-user permissions take precedence over the role's permissions.
+        // If the user has no permissions of their own assigned, fall back to
+        // whatever their role grants (unchanged, pre-existing behaviour).
+        if (!empty($user->sections) || !empty($user->areas)) {
+            if (!empty($user->sections)) {
+                $sections = array_values(array_filter(explode(';', $user->sections)));
+            }
+            if (!empty($user->areas)) {
+                $areas = array_values(array_filter(explode(';', $user->areas)));
+            }
+        } elseif ($roleRow) {
             if (!empty($roleRow->sections)) {
                 $sections = array_values(array_filter(explode(';', $roleRow->sections)));
             }
@@ -119,6 +129,7 @@ class AuthRepository extends BaseRepository implements AuthInterface
                 'status' => $user->status,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
+                'strict_access' => (bool) ($user->strict_access ?? false),
             ],
             'token' => $token
         ];

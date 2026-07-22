@@ -25,6 +25,9 @@ class UserManagement extends Authenticatable
         'email',
         'password',
         'role',
+        'sections',
+        'areas',
+        'strict_access',
         'image',
         'status'
     ];
@@ -49,6 +52,7 @@ class UserManagement extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'strict_access' => 'boolean',
         ];
     }
 

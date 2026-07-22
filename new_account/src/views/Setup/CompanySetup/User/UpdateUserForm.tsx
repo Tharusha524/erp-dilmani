@@ -20,11 +20,10 @@ import theme from "../../../../theme";
 import { getUser, updateUser } from "../../../../api/UserManagement/userManagement";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { useQuery } from "@tanstack/react-query";
-import { getSecurityRoles } from "../../../../api/AccessSetup/AccessSetupApi";
 import UpdateConfirmationModal from "../../../../components/UpdateConfirmationModal";
 import ErrorModal from "../../../../components/ErrorModal";
 import UserPasswordFields from "../../../../components/UserPasswordFields";
+import PermissionsChecklist from "../../../../components/PermissionsChecklist";
 import { validatePassword } from "../../../../utils/passwordPolicy";
 
 interface UserFormData {
@@ -38,7 +37,6 @@ interface UserFormData {
   email: string;
   password: string;
   confirmPassword: string;
-  role: string;
   status: string;
 }
 
@@ -58,20 +56,16 @@ export default function UpdateUserForm() {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "",
     status: "",
   });
 
   const [errors, setErrors] = useState<Partial<UserFormData>>({});
+  const [permissionIds, setPermissionIds] = useState<number[]>([]);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
   const queryClient = useQueryClient();
-  const { data: securityRoles } = useQuery({
-    queryKey: ["securityRoles"],
-    queryFn: getSecurityRoles,
-  });
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -94,8 +88,6 @@ export default function UpdateUserForm() {
           email: user.email,
           password: "",
           confirmPassword: "",
-          // role: prefer role string, fallback to role_id
-          role: user.role ?? (user.role_id ? String(user.role_id) : ""),
           // status: prefer status string, fallback to inactive boolean
           status:
             user.status ??
@@ -105,9 +97,26 @@ export default function UpdateUserForm() {
                 : "active"
               : ""),
         });
+
+        const ids: number[] = [];
+        (user.sections ? String(user.sections).split(";") : []).forEach((s: string) => {
+          const n = Number(s);
+          if (!Number.isNaN(n)) ids.push(n);
+        });
+        (user.areas ? String(user.areas).split(";") : []).forEach((a: string) => {
+          const n = Number(a);
+          if (!Number.isNaN(n)) ids.push(n);
+        });
+        setPermissionIds(ids);
       });
     }
   }, [id]);
+
+  const handlePermissionToggle = (permId: number) => {
+    setPermissionIds((prev) =>
+      prev.includes(permId) ? prev.filter((p) => p !== permId) : [...prev, permId]
+    );
+  };
 
 
   const handleSelectChange = (e: SelectChangeEvent<string>) => {
@@ -125,7 +134,7 @@ export default function UpdateUserForm() {
     if (!formData.firstName) newErrors.firstName = "First name is required";
     if (!formData.lastName) newErrors.lastName = "Last name is required";
     if (!formData.department) newErrors.department = "Department is required";
-    if (!formData.epf) newErrors.epf = "EPF is required";
+    if (!formData.epf) newErrors.epf = "Employee Number is required";
     if (!formData.telephone) newErrors.telephone = "Telephone is required";
     if (!formData.address) newErrors.address = "Address is required";
     if (!formData.email) {
@@ -143,7 +152,6 @@ export default function UpdateUserForm() {
         newErrors.confirmPassword = "Passwords do not match";
       }
     }
-    if (!formData.role) newErrors.role = "Role is required";
     if (!formData.status) newErrors.status = "Status is required";
 
     setErrors(newErrors);
@@ -162,9 +170,11 @@ export default function UpdateUserForm() {
           telephone: formData.telephone,
           address: formData.address,
           email: formData.email,
-          role: formData.role,
           status: formData.status,
         };
+
+        payload.sections = permissionIds.join(";");
+        payload.areas = "";
 
         if (formData.password) {
           payload.password = formData.password;
@@ -252,7 +262,7 @@ export default function UpdateUserForm() {
           />
 
           <TextField
-            label="EPF"
+            label="Employee Number"
             name="epf"
             size="small"
             fullWidth
@@ -311,23 +321,6 @@ export default function UpdateUserForm() {
             optionalHint="Leave new password blank to keep the current one. Enter a new password only if you want to change it."
           />
 
-          <FormControl size="small" fullWidth error={!!errors.role}>
-            <InputLabel>Role</InputLabel>
-            <Select
-              name="role"
-              value={formData.role}
-              onChange={handleSelectChange}
-              label="Role"
-            >
-              {(securityRoles || []).map((r: any) => (
-                <MenuItem key={r.id} value={r.role}>
-                  {r.role}
-                </MenuItem>
-              ))}
-            </Select>
-            <FormHelperText>{errors.role}</FormHelperText>
-          </FormControl>
-
           <FormControl size="small" fullWidth error={!!errors.status}>
             <InputLabel>Status</InputLabel>
             <Select
@@ -341,6 +334,12 @@ export default function UpdateUserForm() {
             </Select>
             <FormHelperText>{errors.status}</FormHelperText>
           </FormControl>
+
+          <PermissionsChecklist
+            selectedIds={permissionIds}
+            onToggle={handlePermissionToggle}
+            title="Individual Access (overrides Role permissions when set)"
+          />
         </Stack>
 
         <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3, flexDirection: isMobile ? "column" : "row", gap: isMobile ? 2 : 0, }}>

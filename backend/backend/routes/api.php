@@ -27,6 +27,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DebtorsMasterController;
 use App\Http\Controllers\DebtorTransController;
 use App\Http\Controllers\DebtorTransDetailsController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\DepreciationPeriodController;
 use App\Http\Controllers\EntityAttachmentController;
 use App\Http\Controllers\CostCenterController;
@@ -133,7 +134,17 @@ Route::get('/user', function (Request $request) {
     $sections = [];
     $areas = [];
 
-    if ($roleRow) {
+    // Per-user permissions take precedence over the role's permissions.
+    // If the user has no permissions of their own assigned, fall back to
+    // whatever their role grants (mirrors AuthRepository::login()).
+    if (!empty($user->sections) || !empty($user->areas)) {
+        if (!empty($user->sections)) {
+            $sections = array_values(array_filter(explode(';', $user->sections)));
+        }
+        if (!empty($user->areas)) {
+            $areas = array_values(array_filter(explode(';', $user->areas)));
+        }
+    } elseif ($roleRow) {
         if (!empty($roleRow->sections)) {
             $sections = array_values(array_filter(explode(';', $roleRow->sections)));
         }
@@ -155,6 +166,7 @@ Route::get('/user', function (Request $request) {
         'status' => $user->status ?? null,
         'first_name' => $user->first_name ?? ($user->firstName ?? null),
         'last_name' => $user->last_name ?? ($user->lastName ?? null),
+        'strict_access' => (bool) ($user->strict_access ?? false),
     ]);
 })->middleware('auth:sanctum');
 
@@ -308,6 +320,8 @@ Route::apiResource('revaluate-currencies', RevaluateCurrencyController::class);
 Route::apiResource('crm-contacts', CrmContactsController::class);
 
 Route::apiResource('security-roles', SecurityRolesController::class);
+
+Route::apiResource('departments', DepartmentController::class)->except(['index']);
 
 Route::apiResource('item-categories', ItemCategoryController::class);
 Route::apiResource('item-types', ItemTypeController::class);
@@ -494,10 +508,9 @@ Route::post('/reports/customer-trial-balance', [\App\Http\Controllers\ReportCont
 Route::post('/reports/customer-detail-listing', [\App\Http\Controllers\ReportController::class, 'customerDetailListing']);
 Route::post('/reports/sales-summary', [\App\Http\Controllers\ReportController::class, 'salesSummary']);
 
-// Public routes for Registration dropdowns (Stubs)
-Route::get('departments', function () {
-    return response()->json([]);
-});
+// Public routes for Registration dropdowns
+// Real data source: departments table (managed via Department Setup, auth-protected below)
+Route::get('departments', [DepartmentController::class, 'index']);
 Route::get('factory', function () {
     return response()->json([]);
 });

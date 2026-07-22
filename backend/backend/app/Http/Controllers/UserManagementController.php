@@ -29,6 +29,18 @@ class UserManagementController extends Controller
         $data = $request->validated();
         // Remove manual bcrypt—model cast handles it
 
+        // Self-service sign-up doesn't collect role/status; default new accounts
+        // to inactive/unassigned until an admin approves them via User Setup.
+        $data['role'] = $data['role'] ?? '';
+        $data['status'] = $data['status'] ?? 'inactive';
+
+        // All newly created accounts have their page/menu access actually
+        // enforced by their Role/Individual Access permissions. Existing
+        // accounts (created before this) stay ungated — see the migration
+        // that added this column for details. Always server-set, never
+        // trusted from the request payload.
+        $data['strict_access'] = true;
+
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('profile_images', 'public');
             $data['image'] = $path;

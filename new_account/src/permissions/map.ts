@@ -166,6 +166,41 @@ export const PERMISSION_ID_MAP: Record<string, number> = {
   "Tax reports and inquiries": 3202,
   "Bank reports and inquiries": 3203,
   "GL reports and inquiries": 3204,
+
+  // Added so pages that used to share one parent/hub permission ID (checking
+  // one page's box also checked several unrelated pages) each get their own
+  // distinct permission instead.
+  "Direct sales delivery entry": 5001,
+  "Direct sales invoice entry": 5002,
+  "Invoice prepaid orders": 5003,
+  "Sales template invoice": 5004,
+  "Sales order inquiry": 5005,
+  "Customer transaction inquiry": 5006,
+  "Customer allocation inquiry": 5007,
+  "Customer and sales reports": 5008,
+  "Recurrent invoices maintenance": 5009,
+  "Customer branches maintenance": 5010,
+  "Outstanding purchase orders maintenance": 5011,
+  "Direct GRN entry": 5012,
+  "Direct supplier invoice entry": 5013,
+  "Supplier allocation inquiry": 5014,
+  "Inventory item status inquiry": 5015,
+  "Inventory reports": 5016,
+  "Inventory item where used inquiry": 5017,
+  "Manufacturing reports": 5018,
+  "Fixed assets sale": 5019,
+  "Fixed asset reports": 5020,
+  "Fixed assets locations maintenance": 5021,
+  "GL inquiry": 5022,
+  "Trial balance inquiry": 5023,
+  "Balance sheet drilldown": 5024,
+  "Profit and loss drilldown": 5025,
+  "Revaluation of currency accounts": 5026,
+  "Department setup page": 5027,
+  "Email setup page": 5028,
+  "Login IP restriction page": 5029,
+  "User login activity page": 5030,
+  "System diagnostics page": 5031,
 };
 
 export const PERMISSION_NAME_BY_ID: Record<number, string> = Object.fromEntries(

@@ -150,6 +150,8 @@ use App\Repositories\All\SalesType\SalesTypeInterface;
 use App\Repositories\All\SalesType\SalesTypeRepository;
 use App\Repositories\All\SecurityRoles\SecurityRolesInterface;
 use App\Repositories\All\SecurityRoles\SecurityRolesRepository;
+use App\Repositories\All\Department\DepartmentInterface;
+use App\Repositories\All\Department\DepartmentRepository;
 use App\Repositories\All\ShippingCompany\ShippingCompanyInterface;
 use App\Repositories\All\ShippingCompany\ShippingCompanyRepository;
 use App\Repositories\All\StockFaClass\StockFaClassInterface;
@@ -256,6 +258,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TaxGroupItemInterface::class, TaxGroupItemRepository::class);
         $this->app->bind(ItemTaxTypeExceptionInterface::class, ItemTaxTypeExceptionRepository::class);
         $this->app->bind(SecurityRolesInterface::class, SecurityRolesRepository::class);
+        $this->app->bind(DepartmentInterface::class, DepartmentRepository::class);
         $this->app->bind(ItemCategoryInterface::class, ItemCategoryRepository::class);
         $this->app->bind(ItemTypeInterface::class, ItemTypeRepository::class);
         $this->app->bind(StockFaClassInterface::class, StockFaClassRepository::class);

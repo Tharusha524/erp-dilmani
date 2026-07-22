@@ -110,6 +110,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const hasPermission = (idOrName: number | string) => {
+    // Accounts created before per-user/role access enforcement was added stay
+    // ungated (their pre-existing behaviour is preserved); only accounts
+    // created after that point have `strict_access` and are actually checked.
+    if (!(user as any)?.strict_access) return true;
+
     // if user has an admin role string, allow all
     const roleStr = (user as any)?.role;
     if (roleStr === "Admin" || (user as any)?.is_admin) return true;
