@@ -517,3 +517,9 @@ Route::get('factory', function () {
 Route::get('job-positions', function () {
     return response()->json([]);
 });
+
+// Work Order (apparel order sheet) — isolated feature, not related to the
+// Manufacturing module's existing work-orders/workorders tables.
+Route::get('wo-sheet-orders', [\App\Http\Controllers\WoSheetOrderController::class, 'index']);
+Route::get('wo-sheet-orders/{id}', [\App\Http\Controllers\WoSheetOrderController::class, 'show']);
+Route::post('wo-sheet-orders', [\App\Http\Controllers\WoSheetOrderController::class, 'store']);

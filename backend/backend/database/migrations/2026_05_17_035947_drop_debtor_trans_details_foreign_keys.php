@@ -16,7 +16,9 @@ return new class extends Migration
         // so we cannot have a FK constraint on it
         Schema::table('debtor_trans_details', function (Blueprint $table) {
             try {
-                $table->dropForeign('debtor_trans_details_debtor_trans_no_foreign');
+                if (config('database.default') !== 'sqlite') {
+                    $table->dropForeign('debtor_trans_details_debtor_trans_no_foreign');
+                }
             } catch (\Exception $e) {
                 // FK might not exist
             }
