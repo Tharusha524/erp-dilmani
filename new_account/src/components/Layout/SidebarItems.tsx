@@ -189,6 +189,10 @@ const baseSidebarItems: Array<SidebarItem> = [
         title: "Work Order Report",
         href: "/workorder/report",
       },
+      {
+        title: "Work Order Settings",
+        href: "/workorder/settings",
+      },
     ],
   },
   {

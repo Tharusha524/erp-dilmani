@@ -520,6 +520,22 @@ Route::get('job-positions', function () {
 
 // Work Order (apparel order sheet) — isolated feature, not related to the
 // Manufacturing module's existing work-orders/workorders tables.
-Route::get('wo-sheet-orders', [\App\Http\Controllers\WoSheetOrderController::class, 'index']);
-Route::get('wo-sheet-orders/{id}', [\App\Http\Controllers\WoSheetOrderController::class, 'show']);
-Route::post('wo-sheet-orders', [\App\Http\Controllers\WoSheetOrderController::class, 'store']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('wo-sheet-orders', [\App\Http\Controllers\WoSheetOrderController::class, 'index']);
+    Route::get('wo-sheet-orders/{id}', [\App\Http\Controllers\WoSheetOrderController::class, 'show']);
+    Route::post('wo-sheet-orders', [\App\Http\Controllers\WoSheetOrderController::class, 'store']);
+    Route::post('wo-sheet-orders/{id}/check-in', [\App\Http\Controllers\WoSheetOrderController::class, 'checkIn']);
+    Route::post('wo-sheet-orders/{id}/next-status', [\App\Http\Controllers\WoSheetOrderController::class, 'nextStatus']);
+    Route::post('wo-sheet-orders/{id}/close', [\App\Http\Controllers\WoSheetOrderController::class, 'close']);
+    Route::post('wo-sheet-orders/{id}/verify', [\App\Http\Controllers\WoSheetOrderController::class, 'verify']);
+    Route::post('wo-sheet-orders/{id}/reopen', [\App\Http\Controllers\WoSheetOrderController::class, 'reopen']);
+
+    Route::get('wo-sheet-statuses', [\App\Http\Controllers\WoSheetStatusController::class, 'index']);
+    Route::post('wo-sheet-statuses', [\App\Http\Controllers\WoSheetStatusController::class, 'store']);
+    Route::put('wo-sheet-statuses/{id}', [\App\Http\Controllers\WoSheetStatusController::class, 'update']);
+    Route::delete('wo-sheet-statuses/{id}', [\App\Http\Controllers\WoSheetStatusController::class, 'destroy']);
+
+    Route::get('wo-sheet-status-assignments', [\App\Http\Controllers\WoSheetStatusAssignmentController::class, 'index']);
+    Route::post('wo-sheet-status-assignments', [\App\Http\Controllers\WoSheetStatusAssignmentController::class, 'store']);
+    Route::delete('wo-sheet-status-assignments/{statusId}', [\App\Http\Controllers\WoSheetStatusAssignmentController::class, 'destroy']);
+});

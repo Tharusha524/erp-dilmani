@@ -34,6 +34,7 @@ import WorkOrderDashboard from "./views/WorkOrder/WorkOrderDashboard";
 import CreateWorkOrder from "./views/WorkOrder/CreateWorkOrder";
 import AddWorkOrder from "./views/WorkOrder/AddWorkOrder";
 import WorkOrderReport from "./views/WorkOrder/WorkOrderReport";
+import WorkOrderSettings from "./views/WorkOrder/WorkOrderSettings";
 import CompanySetup from "./views/Setup/CompanySetup/CompanySetup";
 import Miscellaneous from "./views/Setup/Miscellaneous/Miscellaneous";
 import FixedAssestsMaintenance from "./views/FixedAssets/Maintenance/FixedAssestsMaintenance";
@@ -551,6 +552,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['Work order report page']}>
               {withLayout(MainLayout, WorkOrderReport)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/settings"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Work order settings page']}>
+              {withLayout(MainLayout, WorkOrderSettings)}
             </ProtectedRoute>
           }
         />

@@ -21,26 +21,39 @@ class WoSheetOrderController extends Controller
         $orders = WoSheetOrder::query()
             ->leftJoin('wo_sheet_statuses', 'wo_sheet_statuses.id', '=', 'wo_sheet_orders.current_status_id')
             ->leftJoin('user_managements', 'user_managements.id', '=', 'wo_sheet_orders.created_user_id')
+            ->leftJoin('wo_sheet_status_assignments', 'wo_sheet_status_assignments.status_id', '=', 'wo_sheet_orders.current_status_id')
+            ->leftJoin('user_managements as assigned_user', 'assigned_user.id', '=', 'wo_sheet_status_assignments.user_id')
             ->orderByDesc('wo_sheet_orders.id')
             ->select([
                 'wo_sheet_orders.id',
                 'wo_sheet_orders.work_order_no',
                 'wo_sheet_orders.created_at',
+                'wo_sheet_orders.order_date',
+                'wo_sheet_orders.delivery_date',
+                'wo_sheet_orders.branch',
+                'wo_sheet_orders.customer',
                 'wo_sheet_orders.department',
                 'wo_sheet_orders.category',
                 'wo_sheet_orders.sub_category',
                 'wo_sheet_orders.description',
                 'wo_sheet_orders.process_type',
                 'wo_sheet_orders.order_quantity',
+                'wo_sheet_orders.total_price',
+                'wo_sheet_orders.advance',
+                'wo_sheet_orders.balance',
                 'wo_sheet_orders.reopen_datetime',
                 'wo_sheet_statuses.name as status_name',
+                'wo_sheet_statuses.sequence_order as status_sequence_order',
                 'user_managements.first_name as created_by_first_name',
                 'user_managements.last_name as created_by_last_name',
+                'assigned_user.first_name as assigned_to_first_name',
+                'assigned_user.last_name as assigned_to_last_name',
             ])
             ->get()
             ->map(function ($row) {
                 $row->created_by = trim(($row->created_by_first_name ?? '') . ' ' . ($row->created_by_last_name ?? ''));
-                unset($row->created_by_first_name, $row->created_by_last_name);
+                $row->assigned_to = trim(($row->assigned_to_first_name ?? '') . ' ' . ($row->assigned_to_last_name ?? ''));
+                unset($row->created_by_first_name, $row->created_by_last_name, $row->assigned_to_first_name, $row->assigned_to_last_name);
                 return $row;
             });
 
@@ -122,7 +135,7 @@ class WoSheetOrderController extends Controller
                 'description' => $data['description'] ?? null,
                 'category' => $data['category'],
                 'sub_category' => $data['sub_category'] ?? null,
-                'department' => $data['department'] ?? null,
+                'department' => $data['department'] ?? $request->user()?->department,
                 'related_department' => $data['related_department'] ?? null,
                 'factory_code' => $data['factory_code'] ?? null,
                 'machine_category' => $data['machine_category'] ?? null,
@@ -192,5 +205,157 @@ class WoSheetOrderController extends Controller
             $order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']),
             201
         );
+    }
+
+    public function checkIn(Request $request, int $id): JsonResponse
+    {
+        $order = WoSheetOrder::find($id);
+        if (! $order) {
+            return response()->json(['message' => 'Work order not found'], 404);
+        }
+
+        WoSheetEvent::create([
+            'wo_sheet_order_id' => $order->id,
+            'event_type' => 'check_in',
+            'description' => 'Checked in',
+            'status_id' => $order->current_status_id,
+            'user_id' => $request->user()?->id,
+            'event_datetime' => now(),
+        ]);
+
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']));
+    }
+
+    /**
+     * Advance the order by exactly one status step (e.g. Day 3 -> Day 4).
+     *
+     * Locked to whoever checked in on the current status: if a check_in
+     * event exists for this order's current status, only that same user
+     * may advance it. If nobody has checked in yet, anyone may advance it.
+     */
+    public function nextStatus(Request $request, int $id): JsonResponse
+    {
+        $order = WoSheetOrder::find($id);
+        if (! $order) {
+            return response()->json(['message' => 'Work order not found'], 404);
+        }
+
+        $lastCheckIn = WoSheetEvent::where('wo_sheet_order_id', $order->id)
+            ->where('event_type', 'check_in')
+            ->where('status_id', $order->current_status_id)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($lastCheckIn && $lastCheckIn->user_id !== $request->user()?->id) {
+            return response()->json([
+                'message' => 'Only the user who checked in on this status can advance it.',
+            ], 403);
+        }
+
+        $currentStatus = $order->currentStatus;
+        if (! $currentStatus) {
+            return response()->json(['message' => 'Work order has no current status set.'], 422);
+        }
+
+        $nextStatus = WoSheetStatus::where('category', $currentStatus->category)
+            ->where('process_type', $currentStatus->process_type)
+            ->where('sequence_order', $currentStatus->sequence_order + 1)
+            ->first();
+
+        if (! $nextStatus) {
+            return response()->json(['message' => 'Already at the final status.'], 422);
+        }
+
+        $order->current_status_id = $nextStatus->id;
+        $order->save();
+
+        WoSheetEvent::create([
+            'wo_sheet_order_id' => $order->id,
+            'event_type' => 'status_change',
+            'description' => 'Advanced to ' . $nextStatus->name,
+            'status_id' => $nextStatus->id,
+            'user_id' => $request->user()?->id,
+            'event_datetime' => now(),
+        ]);
+
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']));
+    }
+
+    /**
+     * Close the work order by advancing it to the last (final) status of
+     * its category + process type workflow.
+     */
+    public function close(Request $request, int $id): JsonResponse
+    {
+        $order = WoSheetOrder::find($id);
+        if (! $order) {
+            return response()->json(['message' => 'Work order not found'], 404);
+        }
+
+        $lastStatus = WoSheetStatus::where('category', $order->category)
+            ->where('process_type', $order->process_type)
+            ->orderByDesc('sequence_order')
+            ->first();
+
+        if ($lastStatus) {
+            $order->current_status_id = $lastStatus->id;
+            $order->save();
+        }
+
+        WoSheetEvent::create([
+            'wo_sheet_order_id' => $order->id,
+            'event_type' => 'close',
+            'description' => 'Work order closed',
+            'status_id' => $order->current_status_id,
+            'user_id' => $request->user()?->id,
+            'event_datetime' => now(),
+        ]);
+
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']));
+    }
+
+    public function verify(Request $request, int $id): JsonResponse
+    {
+        $order = WoSheetOrder::find($id);
+        if (! $order) {
+            return response()->json(['message' => 'Work order not found'], 404);
+        }
+
+        $order->final_verify_user_id = $request->user()?->id;
+        $order->final_verify_date = now();
+        $order->save();
+
+        WoSheetEvent::create([
+            'wo_sheet_order_id' => $order->id,
+            'event_type' => 'verify',
+            'description' => 'Final verified',
+            'status_id' => $order->current_status_id,
+            'user_id' => $request->user()?->id,
+            'event_datetime' => now(),
+        ]);
+
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']));
+    }
+
+    public function reopen(Request $request, int $id): JsonResponse
+    {
+        $order = WoSheetOrder::find($id);
+        if (! $order) {
+            return response()->json(['message' => 'Work order not found'], 404);
+        }
+
+        $order->reopen_datetime = now();
+        $order->save();
+
+        WoSheetEvent::create([
+            'wo_sheet_order_id' => $order->id,
+            'event_type' => 'reopen',
+            'description' => 'Work order reopened',
+            'status_id' => $order->current_status_id,
+            'user_id' => $request->user()?->id,
+            'event_datetime' => now(),
+        ]);
+
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']));
     }
 }

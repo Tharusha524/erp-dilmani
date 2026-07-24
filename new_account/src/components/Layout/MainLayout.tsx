@@ -385,7 +385,7 @@ export default function MainLayout({ children }: Props) {
           />
         </Drawer>
       )}
-      <Box component="main" sx={{ flexGrow: 1, }}>
+      <Box component="main" sx={{ flexGrow: 1, minWidth: 0, }}>
         <DrawerHeader />
         {children}
         <HelpFloatingButton />

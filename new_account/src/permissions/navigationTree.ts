@@ -293,6 +293,7 @@ export const NAVIGATION_PERMISSION_TREE: NavModule[] = [
           { label: "Work Order Dashboard", id: id("Work order dashboard page"), path: "/workorder/dashboard" },
           { label: "Create Work Order", id: id("Create work order page"), path: "/workorder/create" },
           { label: "Work Order Report", id: id("Work order report page"), path: "/workorder/report" },
+          { label: "Work Order Settings", id: id("Work order settings page"), path: "/workorder/settings" },
         ],
       },
     ],

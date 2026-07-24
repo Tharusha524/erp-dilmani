@@ -212,7 +212,7 @@ const AddWorkOrder = () => {
             <TextField
               fullWidth
               select
-              label="Garment Category"
+              label="Category"
               size="small"
               margin="normal"
               value={category}
@@ -227,13 +227,13 @@ const AddWorkOrder = () => {
             </TextField>
             <TextField
               fullWidth
-              label="Date"
+              label="Delivery Date"
               type="date"
               InputLabelProps={{ shrink: true }}
               size="small"
               margin="normal"
-              value={orderDate}
-              onChange={(e) => setOrderDate(e.target.value)}
+              value={deliveryDate}
+              onChange={(e) => setDeliveryDate(e.target.value)}
             />
             <TextField
               fullWidth
@@ -255,13 +255,13 @@ const AddWorkOrder = () => {
           <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              label="Delivery Date"
+              label="Start Date"
               type="date"
               InputLabelProps={{ shrink: true }}
               size="small"
               margin="normal"
-              value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
+              value={orderDate}
+              onChange={(e) => setOrderDate(e.target.value)}
             />
             <TextField
               fullWidth

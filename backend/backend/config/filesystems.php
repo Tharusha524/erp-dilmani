@@ -33,7 +33,7 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
@@ -41,8 +41,15 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            // Root-relative on purpose: this must resolve to a plain "/storage"
+            // route pattern (see FilesystemServiceProvider::serveFiles()), not
+            // an absolute APP_URL, since APP_URL here includes the deployment
+            // subfolder (…/dilmani_apparel/backend/public) which Laravel's own
+            // request/base-path stripping already accounts for — baking it into
+            // the route pattern too would make it never match.
+            'url' => '/storage',
             'visibility' => 'public',
+            'serve' => true,
             'throw' => false,
             'report' => false,
         ],
