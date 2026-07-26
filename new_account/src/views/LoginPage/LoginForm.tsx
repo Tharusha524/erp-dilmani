@@ -29,6 +29,8 @@ import { login } from "../../api/UserManagement/userLogin";
 import { getFriendlyApiErrorMessage } from "../../utils/apiErrorMessage";
 import { getOrganization } from "../../api/OrganizationSettings/organizationSettingsApi";
 import { resolveLogoSrc } from "../../utils/logoUrl";
+import { useAuthStore } from "../../store/authStore";
+import PERMISSION_ID_MAP from "../../permissions/map";
 
 function LoginForm() {
   const theme = useTheme();
@@ -89,9 +91,18 @@ function LoginForm() {
 
         enqueueSnackbar("Welcome Back!", { variant: "success" });
 
-        // Navigate to saved location or dashboard; use replace to avoid history stack growth
-        const from = (location.state as any)?.from?.pathname || "/dashboard";
-        navigate(from, { replace: true });
+        setTimeout(() => {
+          let from = (location.state as any)?.from?.pathname;
+          
+          if (!from || from === "/dashboard") {
+            const store = useAuthStore.getState();
+            const isAdmin = (store.user as any)?.is_admin || store.user?.role === "Admin";
+            const hasDash = isAdmin || store.permissionIds.includes(PERMISSION_ID_MAP["Dashboard page"]);
+            from = hasDash ? "/dashboard" : "/not-authorized";
+          }
+          
+          navigate(from, { replace: true });
+        }, 50);
       } catch (err) {
         console.error("Login post-processing failed", err);
       }

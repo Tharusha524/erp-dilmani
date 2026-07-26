@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Box,
   Button,
@@ -10,6 +10,9 @@ import {
   Divider,
   Grid,
   IconButton,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
   Stack,
   Table,
   TableBody,
@@ -29,10 +32,13 @@ import {
   getWorkOrder,
   nextStatusWorkOrder,
   reopenWorkOrder,
+  setWorkOrderStatus,
   verifyWorkOrder,
 } from "../../api/WorkOrder/workOrderApi";
+import { getWorkOrderStatuses, getWorkOrderStatusAssignments } from "../../api/WorkOrder/workOrderStatusApi";
 import { getApiBaseUrl } from "../../config/backendConfig";
 import { getFriendlyApiErrorMessage } from "../../utils/apiErrorMessage";
+import { useAuth } from "../../context/AuthContext";
 
 const CATEGORY_LABELS: Record<string, string> = {
   sublimation_tshirt: "Sublimation T-Shirt",
@@ -69,6 +75,38 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
     enabled: orderId !== null,
   });
 
+  const { data: allStatuses = [] } = useQuery({
+    queryKey: ["wo-sheet-statuses"],
+    queryFn: getWorkOrderStatuses,
+  });
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: ["wo-sheet-status-assignments"],
+    queryFn: getWorkOrderStatusAssignments,
+  });
+
+  const { user } = useAuth();
+  const isAdmin = (user as any)?.role?.toLowerCase() === "admin";
+
+  // Mirrors the backend rule in WoSheetOrderController::authorizeStatusAction:
+  // Admins always may act; a status with nobody assigned stays open to
+  // everyone; otherwise only the assigned user may act on it.
+  const currentAssignment = useMemo(
+    () => assignments.find((a) => a.status_id === order?.current_status?.id),
+    [assignments, order]
+  );
+  const canActOnCurrentStatus =
+    isAdmin || !currentAssignment || currentAssignment.user_id === Number((user as any)?.id);
+
+  const statusOptions = useMemo(() => {
+    if (!order) return [];
+    return allStatuses
+      .filter(
+        (s) => s.category === order.category && s.process_type === order.process_type && !s.inactive
+      )
+      .sort((a, b) => a.sequence_order - b.sequence_order);
+  }, [allStatuses, order]);
+
   const refreshOrder = () => {
     queryClient.invalidateQueries({ queryKey: ["wo-sheet-order", orderId] });
     queryClient.invalidateQueries({ queryKey: ["wo-sheet-orders"] });
@@ -91,6 +129,20 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
     },
     onError: (error) => enqueueSnackbar(getFriendlyApiErrorMessage(error), { variant: "error" }),
   });
+
+  const { mutate: setStatus, isPending: isSettingStatus } = useMutation({
+    mutationFn: (statusId: number) => setWorkOrderStatus(orderId as number, statusId),
+    onSuccess: () => {
+      refreshOrder();
+      enqueueSnackbar("Status updated", { variant: "success" });
+    },
+    onError: (error) => enqueueSnackbar(getFriendlyApiErrorMessage(error), { variant: "error" }),
+  });
+
+  const handleStatusSelect = (e: SelectChangeEvent<number>) => {
+    const statusId = Number(e.target.value);
+    if (statusId) setStatus(statusId);
+  };
 
   const { mutate: close, isPending: isClosing } = useMutation({
     mutationFn: () => closeWorkOrder(orderId as number),
@@ -287,16 +339,26 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
                 <Typography variant="body2" color="text.secondary">No events recorded yet.</Typography>
               ) : (
                 <Stack spacing={1}>
-                  {order.events.map((ev) => (
-                    <Box key={ev.id} sx={{ pb: 1, borderBottom: "1px solid var(--pallet-border-blue)" }}>
-                      <Typography variant="body2" fontWeight={600}>
-                        {ev.description || ev.event_type}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {ev.event_datetime ? new Date(ev.event_datetime).toLocaleString() : new Date(ev.created_at).toLocaleString()}
-                      </Typography>
-                    </Box>
-                  ))}
+                  {order.events.map((ev) => {
+                    const userName = ev.user
+                      ? `${ev.user.first_name || ""} ${ev.user.last_name || ""}`.trim()
+                      : "";
+                    return (
+                      <Box key={ev.id} sx={{ pb: 1, borderBottom: "1px solid var(--pallet-border-blue)" }}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {ev.description || ev.event_type}
+                          {userName && (
+                            <Typography component="span" variant="body2" color="text.secondary">
+                              {" "}— by {userName}
+                            </Typography>
+                          )}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {ev.event_datetime ? new Date(ev.event_datetime).toLocaleString() : new Date(ev.created_at).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
                 </Stack>
               )}
             </Grid>
@@ -316,12 +378,44 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
           }}
         >
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-            <Button variant="contained" color="info" disabled={isCheckingIn} onClick={() => checkIn()}>
+            {!canActOnCurrentStatus && (
+              <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
+                Assigned to: {currentAssignment?.user_name || "another user"}
+              </Typography>
+            )}
+            <Button
+              variant="contained"
+              color="info"
+              disabled={isCheckingIn || !canActOnCurrentStatus}
+              onClick={() => checkIn()}
+            >
               Check In
             </Button>
-            <Button variant="contained" color="primary" disabled={isAdvancing} onClick={() => nextStatus()}>
+            <Button
+              variant="contained"
+              color="primary"
+              disabled={isAdvancing || !canActOnCurrentStatus}
+              onClick={() => nextStatus()}
+            >
               Next Status
             </Button>
+            <Select
+              size="small"
+              displayEmpty
+              value={order.current_status?.id ?? ""}
+              onChange={handleStatusSelect}
+              disabled={isSettingStatus || statusOptions.length === 0 || !canActOnCurrentStatus}
+              sx={{ minWidth: 220 }}
+            >
+              <MenuItem value="" disabled>
+                {statusOptions.length === 0 ? "No statuses configured" : "Set status to..."}
+              </MenuItem>
+              {statusOptions.map((s) => (
+                <MenuItem key={s.id} value={s.id}>
+                  {s.sequence_order}. {s.name}
+                </MenuItem>
+              ))}
+            </Select>
             <Button variant="contained" color="success" disabled={isClosing} onClick={() => close()}>
               Close WO
             </Button>

@@ -1,0 +1,34 @@
+/* Print layout for the Work Order Report (daily/weekly/monthly/yearly sheet). */
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm 12mm;
+  }
+
+  body {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print,
+  .erp-help-fab,
+  .MuiFab-root,
+  .MuiDrawer-root,
+  .erp-navbar,
+  .erp-sidebar,
+  .MuiAppBar-root {
+    display: none !important;
+  }
+
+  .wo-report-print-area {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .wo-report-print-area .MuiPaper-root {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+}

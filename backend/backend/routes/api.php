@@ -526,6 +526,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('wo-sheet-orders', [\App\Http\Controllers\WoSheetOrderController::class, 'store']);
     Route::post('wo-sheet-orders/{id}/check-in', [\App\Http\Controllers\WoSheetOrderController::class, 'checkIn']);
     Route::post('wo-sheet-orders/{id}/next-status', [\App\Http\Controllers\WoSheetOrderController::class, 'nextStatus']);
+    Route::post('wo-sheet-orders/{id}/set-status', [\App\Http\Controllers\WoSheetOrderController::class, 'setStatus']);
     Route::post('wo-sheet-orders/{id}/close', [\App\Http\Controllers\WoSheetOrderController::class, 'close']);
     Route::post('wo-sheet-orders/{id}/verify', [\App\Http\Controllers\WoSheetOrderController::class, 'verify']);
     Route::post('wo-sheet-orders/{id}/reopen', [\App\Http\Controllers\WoSheetOrderController::class, 'reopen']);

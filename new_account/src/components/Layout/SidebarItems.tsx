@@ -46,6 +46,9 @@ const baseSidebarItems: Array<SidebarItem> = [
     title: "Dashboard",
     href: "/dashboard",
     icon: <DashboardIcon fontSize="small" />,
+    // Intentionally always visible in the sidebar (unlike other modules) —
+    // the page itself still enforces the permission via ProtectedRoute in
+    // Routes.tsx, showing "Permission Denied" if the user isn't granted it.
   },
   {
     title: "Sales",

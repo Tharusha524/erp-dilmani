@@ -15,6 +15,7 @@ const ITEMS: ModuleHubItem[] = [
   { text: "SYSTEM DIAGNOSTICS", icon: <HealthAndSafetyIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/maintenance/system-diagnostics" },
   { text: "BACKUP AND RESTORE", icon: <BackupIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/maintenance/backup-and-restore" },
   { text: "USER LOGIN ACTIVITY", icon: <LoginIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/maintenance/user-login-logs" },
+  { text: "BACKGROUND COLOR", icon: <LoginIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/maintenance/background-color" },
 ];
 
 export default function SetupMaintenance() {

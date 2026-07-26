@@ -84,7 +84,6 @@ export default function WorkOrderListTable() {
                     ...cellSx,
                     fontWeight: 700,
                     backgroundColor: "var(--pallet-lighter-blue)",
-                    color: (theme) => (theme.palette.mode === "dark" ? "#0f172a" : "inherit"),
                     whiteSpace: "nowrap",
                   }}
                 >

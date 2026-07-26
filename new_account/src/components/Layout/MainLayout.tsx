@@ -38,7 +38,8 @@ import { getPageMetaFromPath } from "../../utils/pageMeta";
 import { SidebarItem, getSidebarItems } from "./SidebarItems";
 import { useCompanySetupSettings } from "../../hooks/useCompanySetupSettings";
 import { useAuth } from "../../context/AuthContext";
-import { getModulePermissionIds } from "../../permissions/navigationTree";
+import { getModulePermissionIds, getPermissionIdForPath } from "../../permissions/navigationTree";
+import ReadOnlyGuard from "../ReadOnlyGuard";
 import theme from "../../theme";
 import useIsMobile from "../../customHooks/useIsMobile";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -176,6 +177,13 @@ export default function MainLayout({ children }: Props) {
   const { mode, toggleColorMode } = useThemeContext();
   const { pathname } = useLocation();
   const pageMeta = useMemo(() => getPageMetaFromPath(pathname), [pathname]);
+  const { hasEditPermission } = useAuth();
+  const currentPagePermissionId = useMemo(() => getPermissionIdForPath(pathname), [pathname]);
+  // Pages outside the permission checklist (currentPagePermissionId is
+  // undefined) stay fully editable — only View/Edit-tracked pages enforce
+  // read-only mode when the user has View but not Edit.
+  const isReadOnlyPage =
+    currentPagePermissionId !== undefined && !hasEditPermission(currentPagePermissionId);
 
   const { data: activeFiscalYear } = useQuery({
     queryKey: ["active-fiscal-year"],
@@ -387,7 +395,7 @@ export default function MainLayout({ children }: Props) {
       )}
       <Box component="main" sx={{ flexGrow: 1, minWidth: 0, }}>
         <DrawerHeader />
-        {children}
+        <ReadOnlyGuard readOnly={isReadOnlyPage}>{children}</ReadOnlyGuard>
         <HelpFloatingButton />
       </Box>
     </Box>
@@ -626,6 +634,7 @@ const DrawerContent = ({
           title="Log Out Confirmation"
           customDeleteButtonText="Log Out Now"
           customDeleteButtonIon={<LogoutIcon />}
+          readOnlyExempt
           content={
             <>
               Are you sure you want to log out of the application?

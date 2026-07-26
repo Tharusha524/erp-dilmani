@@ -29,6 +29,9 @@ interface Props {
   deleteButtonDisabled?: boolean;
   customDeleteButtonText?: string;
   customDeleteButtonIon?: ReactNode;
+  /** Set for app-chrome usages (e.g. the Sign Out confirmation) that must
+   * stay clickable even on a "View only" page — see ReadOnlyGuard. */
+  readOnlyExempt?: boolean;
 }
 
 const DeleteConfirmationModal = ({
@@ -42,6 +45,7 @@ const DeleteConfirmationModal = ({
   deleteButtonDisabled,
   customDeleteButtonText,
   customDeleteButtonIon,
+  readOnlyExempt,
 }: Props) => {
   const classes = useStyles();
   const [submitting, setSubmitting] = useState(false);
@@ -53,6 +57,7 @@ const DeleteConfirmationModal = ({
       open={open}
       onClose={handleClose}
       aria-labelledby={title + "-dialog"}
+      className={readOnlyExempt ? "readonly-guard-exempt" : undefined}
     >
       <DialogTitle id={title + "-dialog"}>
         {title}

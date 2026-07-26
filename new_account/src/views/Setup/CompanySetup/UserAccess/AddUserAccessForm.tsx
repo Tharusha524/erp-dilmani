@@ -15,6 +15,7 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
+import { enqueueSnackbar } from "notistack";
 import theme from "../../../../theme";
 import {
   getUsers,
@@ -100,10 +101,10 @@ export default function AddUserAccessForm() {
         areas: "",
       });
 
-      alert("User access updated successfully");
+      enqueueSnackbar("User access updated successfully", { variant: "success" });
     } catch (err) {
       console.error("Failed to update user access", err);
-      alert("Failed to update user access. See console for details.");
+      enqueueSnackbar("Failed to update user access", { variant: "error" });
     } finally {
       setSaving(false);
     }

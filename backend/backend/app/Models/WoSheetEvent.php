@@ -33,4 +33,9 @@ class WoSheetEvent extends Model
     {
         return $this->belongsTo(WoSheetStatus::class, 'status_id');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(UserManagement::class, 'user_id');
+    }
 }

@@ -139,6 +139,7 @@ export default function NotificationCenter() {
         onClose={() => setAnchor(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
+        className="readonly-guard-exempt"
         slotProps={{
           paper: {
             sx: { width: 380, maxWidth: "95vw", maxHeight: 520 },

@@ -2,12 +2,14 @@ import React, { createContext, useContext, useEffect, useRef } from "react";
 import { validateUser, User } from "../api/userApi";
 import { getSecurityRole } from "../api/AccessSetup/AccessSetupApi";
 import PERMISSION_ID_MAP from "../permissions/map";
+import { toEditId } from "../permissions/editPermission";
 import { useAuthStore } from "../store/authStore";
 
 type AuthContextType = {
   user: User | null;
   permissions: Set<number>;
   hasPermission: (idOrName: number | string) => boolean;
+  hasEditPermission: (idOrName: number | string) => boolean;
   reloadPermissions: () => Promise<void>;
   initializing: boolean;
 };
@@ -16,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   permissions: new Set<number>(),
   hasPermission: () => false,
+  hasEditPermission: () => false,
   reloadPermissions: async () => {},
   initializing: true,
 });
@@ -126,8 +129,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return false;
   };
 
+  // Same bypass rules as hasPermission (legacy/ungated accounts and Admins
+  // always get full edit access), but checks the paired "Edit" id.
+  const hasEditPermission = (idOrName: number | string) => {
+    if (!(user as any)?.strict_access) return true;
+
+    const roleStr = (user as any)?.role;
+    if (roleStr === "Admin" || (user as any)?.is_admin) return true;
+
+    const viewId = typeof idOrName === "number" ? idOrName : PERMISSION_ID_MAP[idOrName];
+    if (!viewId) return false;
+    return permissions.has(toEditId(viewId));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, permissions, hasPermission, reloadPermissions, initializing }}>
+    <AuthContext.Provider
+      value={{ user, permissions, hasPermission, hasEditPermission, reloadPermissions, initializing }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -43,6 +43,27 @@
   font-weight: var(--font-weight);
 }
 
+/* MUI Select renders a visually-hidden native <input> internally (for
+   autofill/form compatibility) whose value is the raw stored option value
+   (e.g. "ALL_LOCATIONS") rather than its display label. It's supposed to
+   stay invisible via inline opacity/position styles, but on some pages it
+   was rendering as a second, overlapping line of text on top of the
+   selected option's label. Reassert those hiding styles with !important so
+   nothing can cause it to become visible. */
+.MuiSelect-nativeInput,
+.MuiNativeSelect-nativeInput {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  border: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 /* Poppins Font */
 .poppins-thin {
   font-family: "Poppins", sans-serif;

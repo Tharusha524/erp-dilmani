@@ -49,6 +49,7 @@ class SysPrefsDefinitions
             ['name' => 'lossOnAssetDisposalAccount', 'category' => 'glsetup.fixedassets', 'type' => 'string', 'length' => 15, 'value' => '5660'],
             ['name' => 'depreciationPeriod', 'category' => 'glsetup.fixedassets', 'type' => 'string', 'length' => 20, 'value' => '1'],
             ['name' => 'workOrderRequiredByAfter', 'category' => 'glsetup.manuf', 'type' => 'number', 'length' => 11, 'value' => '1'],
+            ['name' => 'form_bg_color', 'category' => 'ui.theme', 'type' => 'string', 'length' => 20, 'value' => '#ebfee6ff'],
         ];
     }
 

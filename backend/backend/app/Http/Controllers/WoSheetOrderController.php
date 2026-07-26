@@ -7,12 +7,43 @@ use App\Models\WoSheetOrder;
 use App\Models\WoSheetOrderPriceItem;
 use App\Models\WoSheetOrderSize;
 use App\Models\WoSheetStatus;
+use App\Models\WoSheetStatusAssignment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class WoSheetOrderController extends Controller
 {
+    /**
+     * Only the user assigned as responsible for the order's current status
+     * (set in Work Order Settings) may act on it — Admins always may.
+     * Statuses with no assignment stay open to everyone (unchanged
+     * behaviour). Returns a 403 response to short-circuit with, or null to
+     * allow the action to proceed.
+     */
+    private function authorizeStatusAction(Request $request, WoSheetOrder $order): ?JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user && strcasecmp((string) $user->role, 'Admin') === 0) {
+            return null;
+        }
+
+        $assignment = WoSheetStatusAssignment::where('status_id', $order->current_status_id)->first();
+
+        if (! $assignment) {
+            return null;
+        }
+
+        if ($user && (int) $assignment->user_id === (int) $user->id) {
+            return null;
+        }
+
+        return response()->json([
+            'message' => 'Only the user assigned as responsible for this status can do that.',
+        ], 403);
+    }
+
     /**
      * List all work orders for the Work Order Dashboard / Create Work Order tables.
      */
@@ -62,7 +93,7 @@ class WoSheetOrderController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $order = WoSheetOrder::with(['sizes', 'priceItems', 'events', 'currentStatus'])->find($id);
+        $order = WoSheetOrder::with(['sizes', 'priceItems', 'events.user', 'currentStatus'])->find($id);
         if (! $order) {
             return response()->json(['message' => 'Work order not found'], 404);
         }
@@ -202,7 +233,7 @@ class WoSheetOrderController extends Controller
         });
 
         return response()->json(
-            $order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']),
+            $order->fresh(['sizes', 'priceItems', 'events.user', 'currentStatus']),
             201
         );
     }
@@ -214,6 +245,10 @@ class WoSheetOrderController extends Controller
             return response()->json(['message' => 'Work order not found'], 404);
         }
 
+        if ($deny = $this->authorizeStatusAction($request, $order)) {
+            return $deny;
+        }
+
         WoSheetEvent::create([
             'wo_sheet_order_id' => $order->id,
             'event_type' => 'check_in',
@@ -223,15 +258,14 @@ class WoSheetOrderController extends Controller
             'event_datetime' => now(),
         ]);
 
-        return response()->json($order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']));
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events.user', 'currentStatus']));
     }
 
     /**
      * Advance the order by exactly one status step (e.g. Day 3 -> Day 4).
      *
-     * Locked to whoever checked in on the current status: if a check_in
-     * event exists for this order's current status, only that same user
-     * may advance it. If nobody has checked in yet, anyone may advance it.
+     * Locked to whoever is assigned as responsible for the current status
+     * in Work Order Settings (see authorizeStatusAction).
      */
     public function nextStatus(Request $request, int $id): JsonResponse
     {
@@ -240,16 +274,8 @@ class WoSheetOrderController extends Controller
             return response()->json(['message' => 'Work order not found'], 404);
         }
 
-        $lastCheckIn = WoSheetEvent::where('wo_sheet_order_id', $order->id)
-            ->where('event_type', 'check_in')
-            ->where('status_id', $order->current_status_id)
-            ->orderByDesc('id')
-            ->first();
-
-        if ($lastCheckIn && $lastCheckIn->user_id !== $request->user()?->id) {
-            return response()->json([
-                'message' => 'Only the user who checked in on this status can advance it.',
-            ], 403);
+        if ($deny = $this->authorizeStatusAction($request, $order)) {
+            return $deny;
         }
 
         $currentStatus = $order->currentStatus;
@@ -278,7 +304,51 @@ class WoSheetOrderController extends Controller
             'event_datetime' => now(),
         ]);
 
-        return response()->json($order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']));
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events.user', 'currentStatus']));
+    }
+
+    /**
+     * Move the order directly to any status within its own category +
+     * process_type workflow (forward, backward, or skipped) — used for
+     * cases like rework after a damaged item, where progress isn't strictly
+     * sequential.
+     */
+    public function setStatus(Request $request, int $id): JsonResponse
+    {
+        $order = WoSheetOrder::find($id);
+        if (! $order) {
+            return response()->json(['message' => 'Work order not found'], 404);
+        }
+
+        if ($deny = $this->authorizeStatusAction($request, $order)) {
+            return $deny;
+        }
+
+        $data = $request->validate([
+            'status_id' => 'required|integer|exists:wo_sheet_statuses,id',
+        ]);
+
+        $status = WoSheetStatus::find($data['status_id']);
+
+        if ($status->category !== $order->category || $status->process_type !== $order->process_type) {
+            return response()->json([
+                'message' => 'That status does not belong to this work order\'s category/process type.',
+            ], 422);
+        }
+
+        $order->current_status_id = $status->id;
+        $order->save();
+
+        WoSheetEvent::create([
+            'wo_sheet_order_id' => $order->id,
+            'event_type' => 'status_change',
+            'description' => 'Status set to ' . $status->name,
+            'status_id' => $status->id,
+            'user_id' => $request->user()?->id,
+            'event_datetime' => now(),
+        ]);
+
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events.user', 'currentStatus']));
     }
 
     /**
@@ -311,7 +381,7 @@ class WoSheetOrderController extends Controller
             'event_datetime' => now(),
         ]);
 
-        return response()->json($order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']));
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events.user', 'currentStatus']));
     }
 
     public function verify(Request $request, int $id): JsonResponse
@@ -334,7 +404,7 @@ class WoSheetOrderController extends Controller
             'event_datetime' => now(),
         ]);
 
-        return response()->json($order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']));
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events.user', 'currentStatus']));
     }
 
     public function reopen(Request $request, int $id): JsonResponse
@@ -356,6 +426,6 @@ class WoSheetOrderController extends Controller
             'event_datetime' => now(),
         ]);
 
-        return response()->json($order->fresh(['sizes', 'priceItems', 'events', 'currentStatus']));
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events.user', 'currentStatus']));
     }
 }

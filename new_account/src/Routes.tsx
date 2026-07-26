@@ -193,6 +193,7 @@ import SoftwareUpdateTable from "./views/Setup/Maintenance/SoftwareUpgrade/Softw
 import InstallChartOfAccounts from "./views/Setup/Maintenance/InstallChartOfAccounts/InstallChartOfAccounts";
 import SystemDiagnostics from "./views/Setup/Maintenance/SystemDiagnostic/SystemDiagnostics";
 import UserLoginLogs from "./views/Setup/Maintenance/UserLoginLogs/UserLoginLogs";
+import BackgroundColorSettings from "./views/Setup/Maintenance/BackgroundColor/BackgroundColorSettings";
 import UpdateGeneralSettingsForm from "./views/Sales/Maintenance/AddManageCustomers/GeneralSettingsForm/UpdateGeneralSettingsForm";
 import TransactionReferencesTable from "./views/Setup/CompanySetup/TransactionReferences/TransactionReferencesTable";
 import AddTransactionReferencesForm from "./views/Setup/CompanySetup/TransactionReferences/AddTransactionReferencesForm";
@@ -520,7 +521,11 @@ const AppRoutes = () => {
       <Route element={<ProtectedRoute />}>
         <Route
           path="/dashboard"
-          element={withLayout(MainLayout, Dashboard)}
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Dashboard page']}>
+              {withLayout(MainLayout, Dashboard)}
+            </ProtectedRoute>
+          }
         />
 
         <Route
@@ -1179,6 +1184,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute required={PERMISSION_ID_MAP['User login activity page']}>
                 {withLayout(MainLayout, UserLoginLogs)}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="maintenance/background-color"
+            element={
+              <ProtectedRoute required={PERMISSION_ID_MAP['Background color settings page']}>
+                {withLayout(MainLayout, BackgroundColorSettings)}
               </ProtectedRoute>
             }
           />
@@ -3792,11 +3805,6 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/maintenance/closing-gl-transactions"
           element={withLayout(MainLayout, ClosingGlTransactions)}
-        />
-
-        <Route
-          path="/dashboard"
-          element={withLayout(MainLayout, Dashboard)}
         />
       </Route>
     </Routes>

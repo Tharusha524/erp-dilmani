@@ -45,6 +45,7 @@ export interface WorkOrderEventItem {
   description: string | null;
   status_id: number | null;
   user_id: number | null;
+  user: { id: number; first_name: string | null; last_name: string | null } | null;
   event_datetime: string | null;
   created_at: string;
 }
@@ -114,6 +115,11 @@ export const checkInWorkOrder = async (id: number): Promise<WorkOrderDetail> => 
 
 export const nextStatusWorkOrder = async (id: number): Promise<WorkOrderDetail> => {
   const response = await api.post(`${API_URL}/${id}/next-status`);
+  return response.data;
+};
+
+export const setWorkOrderStatus = async (id: number, statusId: number): Promise<WorkOrderDetail> => {
+  const response = await api.post(`${API_URL}/${id}/set-status`, { status_id: statusId });
   return response.data;
 };
 
