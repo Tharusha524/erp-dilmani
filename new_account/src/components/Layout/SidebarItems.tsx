@@ -186,7 +186,12 @@ const baseSidebarItems: Array<SidebarItem> = [
       },
       {
         title: "Create Work Order",
-        href: "/workorder/create",
+        href: "/workorder/create/factory",
+        nestedItems: [
+          { title: "Factory", href: "/workorder/create/factory" },
+          { title: "Printing", href: "/workorder/create/printing" },
+          { title: "Embroidery", href: "/workorder/create/embroidery" },
+        ],
       },
       {
         title: "Work Order Report",

@@ -108,6 +108,13 @@ export const createWorkOrder = async (formData: FormData) => {
   return response.data;
 };
 
+export const updateWorkOrder = async (id: number | string, formData: FormData) => {
+  const response = await api.post(`${API_URL}/${id}/update`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
 export const checkInWorkOrder = async (id: number): Promise<WorkOrderDetail> => {
   const response = await api.post(`${API_URL}/${id}/check-in`);
   return response.data;

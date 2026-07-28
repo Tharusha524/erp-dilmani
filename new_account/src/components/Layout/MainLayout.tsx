@@ -737,7 +737,7 @@ const NestedItem = React.memo(
         className={`erp-nav-item ${isMainItemActive ? "erp-nav-item--parent-active" : ""}`}
         disabled={item.disabled}
       >
-        <span className="erp-nav-item__icon-wrap">{item.icon}</span>
+        {item.icon && <span className="erp-nav-item__icon-wrap">{item.icon}</span>}
         <Typography className="erp-nav-item__title" variant="body2">
           {item.title}
         </Typography>

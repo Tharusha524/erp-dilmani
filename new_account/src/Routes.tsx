@@ -33,6 +33,8 @@ import Dashboard from "./views/Dashboard/Dashboard";
 import WorkOrderDashboard from "./views/WorkOrder/WorkOrderDashboard";
 import CreateWorkOrder from "./views/WorkOrder/CreateWorkOrder";
 import AddWorkOrder from "./views/WorkOrder/AddWorkOrder";
+import AddPrintingJobSheet from "./views/WorkOrder/AddPrintingJobSheet";
+import AddEmbroideryJobSheet from "./views/WorkOrder/AddEmbroideryJobSheet";
 import WorkOrderReport from "./views/WorkOrder/WorkOrderReport";
 import WorkOrderSettings from "./views/WorkOrder/WorkOrderSettings";
 import CompanySetup from "./views/Setup/CompanySetup/CompanySetup";
@@ -536,11 +538,44 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+        <Route path="/workorder/create" element={<Navigate to="/workorder/create/factory" replace />} />
         <Route
-          path="/workorder/create"
+          path="/workorder/create/factory"
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page']}>
               {withLayout(MainLayout, CreateWorkOrder)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/create/printing"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page']}>
+              {withLayout(MainLayout, CreateWorkOrder)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/create/embroidery"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page']}>
+              {withLayout(MainLayout, CreateWorkOrder)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/create/printing/add-work-order"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page']}>
+              {withLayout(MainLayout, AddPrintingJobSheet)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/create/embroidery/add-work-order"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page']}>
+              {withLayout(MainLayout, AddEmbroideryJobSheet)}
             </ProtectedRoute>
           }
         />

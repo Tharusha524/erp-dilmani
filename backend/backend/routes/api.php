@@ -524,6 +524,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('wo-sheet-orders', [\App\Http\Controllers\WoSheetOrderController::class, 'index']);
     Route::get('wo-sheet-orders/{id}', [\App\Http\Controllers\WoSheetOrderController::class, 'show']);
     Route::post('wo-sheet-orders', [\App\Http\Controllers\WoSheetOrderController::class, 'store']);
+    Route::post('wo-sheet-orders/{id}/update', [\App\Http\Controllers\WoSheetOrderController::class, 'update']);
     Route::post('wo-sheet-orders/{id}/check-in', [\App\Http\Controllers\WoSheetOrderController::class, 'checkIn']);
     Route::post('wo-sheet-orders/{id}/next-status', [\App\Http\Controllers\WoSheetOrderController::class, 'nextStatus']);
     Route::post('wo-sheet-orders/{id}/set-status', [\App\Http\Controllers\WoSheetOrderController::class, 'setStatus']);
@@ -539,4 +540,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('wo-sheet-status-assignments', [\App\Http\Controllers\WoSheetStatusAssignmentController::class, 'index']);
     Route::post('wo-sheet-status-assignments', [\App\Http\Controllers\WoSheetStatusAssignmentController::class, 'store']);
     Route::delete('wo-sheet-status-assignments/{statusId}', [\App\Http\Controllers\WoSheetStatusAssignmentController::class, 'destroy']);
+
+    Route::get('wo-sheet-branches', [\App\Http\Controllers\WoSheetBranchController::class, 'index']);
+    Route::post('wo-sheet-branches', [\App\Http\Controllers\WoSheetBranchController::class, 'store']);
+    Route::put('wo-sheet-branches/{id}', [\App\Http\Controllers\WoSheetBranchController::class, 'update']);
+    Route::delete('wo-sheet-branches/{id}', [\App\Http\Controllers\WoSheetBranchController::class, 'destroy']);
+
+    Route::get('wo-sheet-fabric-types', [\App\Http\Controllers\WoSheetFabricTypeController::class, 'index']);
+    Route::post('wo-sheet-fabric-types', [\App\Http\Controllers\WoSheetFabricTypeController::class, 'store']);
+    Route::put('wo-sheet-fabric-types/{id}', [\App\Http\Controllers\WoSheetFabricTypeController::class, 'update']);
+    Route::delete('wo-sheet-fabric-types/{id}', [\App\Http\Controllers\WoSheetFabricTypeController::class, 'destroy']);
 });

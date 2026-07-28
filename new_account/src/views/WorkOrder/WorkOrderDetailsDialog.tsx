@@ -39,6 +39,7 @@ import { getWorkOrderStatuses, getWorkOrderStatusAssignments } from "../../api/W
 import { getApiBaseUrl } from "../../config/backendConfig";
 import { getFriendlyApiErrorMessage } from "../../utils/apiErrorMessage";
 import { useAuth } from "../../context/AuthContext";
+import { formatWoDate, formatWoDateTime } from "../../utils/workOrderDateFormat";
 
 const CATEGORY_LABELS: Record<string, string> = {
   sublimation_tshirt: "Sublimation T-Shirt",
@@ -202,8 +203,8 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
                     Order Details
                   </Typography>
                   {detailRow("WO Number", order.work_order_no)}
-                  {detailRow("Order Date", order.order_date ? new Date(order.order_date).toLocaleDateString() : "-")}
-                  {detailRow("Delivery Date", order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : "-")}
+                  {detailRow("Order Date", formatWoDate(order.order_date))}
+                  {detailRow("Delivery Date", formatWoDate(order.delivery_date))}
                   {detailRow("Customer", order.customer)}
                   {detailRow("Contact No", order.contact_no)}
                   {detailRow("Branch", order.branch)}
@@ -354,7 +355,7 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
                           )}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {ev.event_datetime ? new Date(ev.event_datetime).toLocaleString() : new Date(ev.created_at).toLocaleString()}
+                          {ev.event_datetime ? formatWoDateTime(ev.event_datetime) : formatWoDateTime(ev.created_at)}
                         </Typography>
                       </Box>
                     );

@@ -1,20 +1,27 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Box,
   Chip,
+  IconButton,
   Link,
   Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import { useNavigate } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getWorkOrders, WorkOrderListItem } from "../../api/WorkOrder/workOrderApi";
 import WorkOrderDetailsDialog from "./WorkOrderDetailsDialog";
+import { formatWoDate, formatWoDateTime } from "../../utils/workOrderDateFormat";
 
 const CATEGORY_LABELS: Record<string, string> = {
   sublimation_tshirt: "Sublimation T-Shirt",
@@ -22,6 +29,14 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const COLUMN_COUNT = 15;
+
+/** Which order-sheet/job-sheet route to edit a given order in, based on
+ * which department it was created under. */
+const editPathFor = (wo: WorkOrderListItem): string => {
+  if (wo.department === "Printing") return `/workorder/create/printing/add-work-order?editId=${wo.id}`;
+  if (wo.department === "Embroidery") return `/workorder/create/embroidery/add-work-order?editId=${wo.id}`;
+  return `/workorder/create/add-work-order?department=Factory&editId=${wo.id}`;
+};
 
 const cellSx = {
   borderRight: "1px solid var(--pallet-border-blue)",
@@ -35,18 +50,73 @@ const daysInProgress = (wo: WorkOrderListItem): number => {
   return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 };
 
-export default function WorkOrderListTable() {
-  const { data: workOrders = [], isLoading } = useQuery({
+interface WorkOrderListTableProps {
+  /** When set, only shows orders for this work type ("Factory" also
+   * matches orders with no department set, for pre-existing orders). */
+  department?: "Factory" | "Printing" | "Embroidery";
+}
+
+export default function WorkOrderListTable({ department }: WorkOrderListTableProps = {}) {
+  const navigate = useNavigate();
+  const { data: allWorkOrders = [], isLoading } = useQuery({
     queryKey: ["wo-sheet-orders"],
     queryFn: getWorkOrders,
   });
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [searchWoNo, setSearchWoNo] = useState("");
+  const [searchCustomer, setSearchCustomer] = useState("");
+  const [searchDate, setSearchDate] = useState("");
+
+  const departmentOrders = department
+    ? allWorkOrders.filter((wo) =>
+        department === "Factory" ? !wo.department || wo.department === "Factory" : wo.department === department
+      )
+    : allWorkOrders;
+
+  const workOrders = useMemo(() => {
+    const woNoQuery = searchWoNo.trim().toLowerCase();
+    const customerQuery = searchCustomer.trim().toLowerCase();
+    return departmentOrders.filter((wo) => {
+      if (woNoQuery && !wo.work_order_no.toLowerCase().includes(woNoQuery)) return false;
+      if (customerQuery && !(wo.customer || "").toLowerCase().includes(customerQuery)) return false;
+      if (searchDate) {
+        const woDate = (wo.order_date || wo.created_at)?.slice(0, 10);
+        if (woDate !== searchDate) return false;
+      }
+      return true;
+    });
+  }, [departmentOrders, searchWoNo, searchCustomer, searchDate]);
 
   return (
     <Box mt={3} sx={{ maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
       <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-        List of all work orders
+        {department ? `List of ${department} work orders` : "List of all work orders"}
       </Typography>
+      <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+        <TextField
+          label="Work Order No"
+          size="small"
+          value={searchWoNo}
+          onChange={(e) => setSearchWoNo(e.target.value)}
+          sx={{ minWidth: 200 }}
+        />
+        <TextField
+          label="Customer"
+          size="small"
+          value={searchCustomer}
+          onChange={(e) => setSearchCustomer(e.target.value)}
+          sx={{ minWidth: 200 }}
+        />
+        <TextField
+          label="Date"
+          type="date"
+          size="small"
+          InputLabelProps={{ shrink: true }}
+          value={searchDate}
+          onChange={(e) => setSearchDate(e.target.value)}
+          sx={{ minWidth: 200 }}
+        />
+      </Stack>
       <TableContainer
         component={Paper}
         variant="outlined"
@@ -63,11 +133,10 @@ export default function WorkOrderListTable() {
             <TableRow>
               {[
                 "#",
-                "WO",
-                "Time",
+                "Work Order No",
+                "Created Date Time",
                 "Customer",
                 "Branch",
-                "Department",
                 "By",
                 "Assigned To",
                 "Category",
@@ -77,6 +146,7 @@ export default function WorkOrderListTable() {
                 "Balance",
                 "Status",
                 "ReOpen",
+                "Edit",
               ].map((label) => (
                 <TableCell
                   key={label}
@@ -124,21 +194,27 @@ export default function WorkOrderListTable() {
                       {wo.work_order_no}
                     </Link>
                   </TableCell>
-                  <TableCell sx={cellSx}>{new Date(wo.created_at).toLocaleString()}</TableCell>
+                  <TableCell sx={cellSx}>{formatWoDateTime(wo.created_at)}</TableCell>
                   <TableCell sx={cellSx}>{wo.customer || "-"}</TableCell>
                   <TableCell sx={cellSx}>{wo.branch || "-"}</TableCell>
-                  <TableCell sx={cellSx}>{wo.department || "-"}</TableCell>
                   <TableCell sx={cellSx}>{wo.created_by || "-"}</TableCell>
                   <TableCell sx={cellSx}>{wo.assigned_to || "-"}</TableCell>
                   <TableCell sx={cellSx}>{CATEGORY_LABELS[wo.category] || wo.category}</TableCell>
                   <TableCell sx={cellSx}>{wo.order_quantity ?? "-"}</TableCell>
-                  <TableCell sx={cellSx}>{wo.delivery_date ? new Date(wo.delivery_date).toLocaleDateString() : "-"}</TableCell>
+                  <TableCell sx={cellSx}>{formatWoDate(wo.delivery_date)}</TableCell>
                   <TableCell sx={cellSx}>{daysInProgress(wo)}</TableCell>
                   <TableCell sx={cellSx}>{wo.balance ?? "-"}</TableCell>
                   <TableCell sx={cellSx}>
                     <Chip label={wo.status_name || "-"} size="small" color="primary" variant="outlined" />
                   </TableCell>
-                  <TableCell sx={{ ...cellSx, borderRight: "none" }}>{wo.reopen_datetime ? "Yes" : "-"}</TableCell>
+                  <TableCell sx={cellSx}>{wo.reopen_datetime ? "Yes" : "-"}</TableCell>
+                  <TableCell sx={{ ...cellSx, borderRight: "none" }} align="center">
+                    <Tooltip title="Edit this work order">
+                      <IconButton size="small" onClick={() => navigate(editPathFor(wo))}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
                 </TableRow>
               ))
             )}

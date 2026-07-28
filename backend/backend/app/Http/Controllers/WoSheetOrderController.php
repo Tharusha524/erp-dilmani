@@ -151,10 +151,28 @@ class WoSheetOrderController extends Controller
             ->orderBy('sequence_order')
             ->first();
 
-        $sequence = (int) (WoSheetOrder::max('id') ?? 0) + 1;
-        $workOrderNo = 'WO-' . now()->format('Ymd') . '-' . str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+        // Each department (Factory/Printing/Embroidery) gets its own
+        // independent WO-{code}-{8 digit sequence} numbering series, e.g.
+        // WO-FA-0000 0001, WO-PR-0000 0001, WO-EM-0000 0001. Orders with no
+        // department (legacy) or an unrecognised value count as Factory.
+        $departmentCodes = ['Factory' => 'FA', 'Printing' => 'PR', 'Embroidery' => 'EM'];
+        $department = $data['department'] ?? $request->user()?->department;
+        $departmentCode = $departmentCodes[$department] ?? 'FA';
 
-        $order = DB::transaction(function () use ($request, $data, $processType, $firstStatus, $workOrderNo) {
+        $departmentCountQuery = WoSheetOrder::query();
+        if ($departmentCode === 'FA') {
+            $departmentCountQuery->where(function ($q) {
+                $q->whereNull('department')->orWhereNotIn('department', ['Printing', 'Embroidery']);
+            });
+        } else {
+            $departmentCountQuery->where('department', $department);
+        }
+        $sequence = $departmentCountQuery->count() + 1;
+        $paddedSequence = str_pad((string) $sequence, 8, '0', STR_PAD_LEFT);
+        $groupedSequence = substr($paddedSequence, 0, 4) . ' ' . substr($paddedSequence, 4);
+        $workOrderNo = "WO-{$departmentCode}-{$groupedSequence}";
+
+        $order = DB::transaction(function () use ($request, $data, $department, $processType, $firstStatus, $workOrderNo) {
             $order = WoSheetOrder::create([
                 'work_order_no' => $workOrderNo,
                 'branch' => $data['branch'] ?? null,
@@ -166,7 +184,7 @@ class WoSheetOrderController extends Controller
                 'description' => $data['description'] ?? null,
                 'category' => $data['category'],
                 'sub_category' => $data['sub_category'] ?? null,
-                'department' => $data['department'] ?? $request->user()?->department,
+                'department' => $department,
                 'related_department' => $data['related_department'] ?? null,
                 'factory_code' => $data['factory_code'] ?? null,
                 'machine_category' => $data['machine_category'] ?? null,
@@ -236,6 +254,134 @@ class WoSheetOrderController extends Controller
             $order->fresh(['sizes', 'priceItems', 'events.user', 'currentStatus']),
             201
         );
+    }
+
+    /**
+     * Update an existing work order's details (order sheet / job sheet
+     * fields), replacing its size grid and price line items. Does not touch
+     * the status workflow (current_status_id, process_type, work_order_no)
+     * — those only change via check-in/next-status/set-status/close.
+     */
+    public function update(Request $request, int $id): JsonResponse
+    {
+        $order = WoSheetOrder::find($id);
+        if (! $order) {
+            return response()->json(['message' => 'Work order not found'], 404);
+        }
+
+        if ($deny = $this->authorizeStatusAction($request, $order)) {
+            return $deny;
+        }
+
+        $data = $request->validate([
+            'branch' => 'nullable|string|max:100',
+            'order_date' => 'nullable|date',
+            'delivery_date' => 'nullable|date',
+            'customer' => 'nullable|string|max:150',
+            'contact_no' => 'nullable|string|max:30',
+            'kind_of_fabric' => 'nullable|string|max:100',
+            'description' => 'nullable|string',
+            'category' => 'required|string|max:100',
+            'sub_category' => 'nullable|string|max:100',
+            'department' => 'nullable|string|max:100',
+            'related_department' => 'nullable|string|max:100',
+            'factory_code' => 'nullable|string|max:30',
+            'machine_category' => 'nullable|string|max:100',
+            'machine_category_no' => 'nullable|string|max:60',
+            'value_add' => 'nullable|string|max:100',
+            'order_quantity' => 'nullable|integer|min:0',
+            'embroider_front' => 'nullable|string|max:100',
+            'embroider_back' => 'nullable|string|max:100',
+            'embroider_sleeves' => 'nullable|string|max:100',
+            'embroider_others' => 'nullable|string|max:100',
+            'remark' => 'nullable|string',
+            'total_price' => 'nullable|numeric',
+            'advance' => 'nullable|numeric',
+            'balance' => 'nullable|numeric',
+            'front_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'back_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'sizes' => 'nullable|array',
+            'sizes.*.category' => 'required_with:sizes|string|max:30',
+            'sizes.*.size_label' => 'required_with:sizes|string|max:10',
+            'sizes.*.quantity' => 'nullable|integer|min:0',
+            'price_items' => 'nullable|array',
+            'price_items.*.item_name' => 'required_with:price_items|string|max:60',
+            'price_items.*.price' => 'nullable|numeric',
+        ]);
+
+        DB::transaction(function () use ($request, $data, $order) {
+            $order->fill([
+                'branch' => $data['branch'] ?? null,
+                'order_date' => $data['order_date'] ?? null,
+                'delivery_date' => $data['delivery_date'] ?? null,
+                'customer' => $data['customer'] ?? null,
+                'contact_no' => $data['contact_no'] ?? null,
+                'kind_of_fabric' => $data['kind_of_fabric'] ?? null,
+                'description' => $data['description'] ?? null,
+                'category' => $data['category'],
+                'sub_category' => $data['sub_category'] ?? null,
+                'department' => $data['department'] ?? $order->department,
+                'related_department' => $data['related_department'] ?? null,
+                'factory_code' => $data['factory_code'] ?? null,
+                'machine_category' => $data['machine_category'] ?? null,
+                'machine_category_no' => $data['machine_category_no'] ?? null,
+                'value_add' => $data['value_add'] ?? null,
+                'order_quantity' => $data['order_quantity'] ?? null,
+                'embroider_front' => $data['embroider_front'] ?? null,
+                'embroider_back' => $data['embroider_back'] ?? null,
+                'embroider_sleeves' => $data['embroider_sleeves'] ?? null,
+                'embroider_others' => $data['embroider_others'] ?? null,
+                'remark' => $data['remark'] ?? null,
+                'total_price' => $data['total_price'] ?? null,
+                'advance' => $data['advance'] ?? null,
+                'balance' => $data['balance'] ?? null,
+            ]);
+
+            if ($request->hasFile('front_image')) {
+                $order->front_image_path = $request->file('front_image')->store('work_order_images', 'public');
+            }
+            if ($request->hasFile('back_image')) {
+                $order->back_image_path = $request->file('back_image')->store('work_order_images', 'public');
+            }
+
+            $order->save();
+
+            WoSheetOrderSize::where('wo_sheet_order_id', $order->id)->delete();
+            foreach ($data['sizes'] ?? [] as $size) {
+                if ((int) ($size['quantity'] ?? 0) <= 0) {
+                    continue;
+                }
+                WoSheetOrderSize::create([
+                    'wo_sheet_order_id' => $order->id,
+                    'category' => $size['category'],
+                    'size_label' => $size['size_label'],
+                    'quantity' => $size['quantity'],
+                ]);
+            }
+
+            WoSheetOrderPriceItem::where('wo_sheet_order_id', $order->id)->delete();
+            foreach ($data['price_items'] ?? [] as $item) {
+                if (! isset($item['price']) || $item['price'] === '') {
+                    continue;
+                }
+                WoSheetOrderPriceItem::create([
+                    'wo_sheet_order_id' => $order->id,
+                    'item_name' => $item['item_name'],
+                    'price' => $item['price'],
+                ]);
+            }
+
+            WoSheetEvent::create([
+                'wo_sheet_order_id' => $order->id,
+                'event_type' => 'update',
+                'description' => 'Work order details updated',
+                'status_id' => $order->current_status_id,
+                'user_id' => $request->user()?->id,
+                'event_datetime' => now(),
+            ]);
+        });
+
+        return response()->json($order->fresh(['sizes', 'priceItems', 'events.user', 'currentStatus']));
     }
 
     public function checkIn(Request $request, int $id): JsonResponse

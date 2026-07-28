@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Paper,
@@ -15,13 +15,16 @@ import {
   Divider,
   MenuItem,
   CircularProgress,
+  Checkbox,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { FormPageLayout } from "../../components/Layout/FormPageLayout";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { enqueueSnackbar } from "notistack";
-import { createWorkOrder } from "../../api/WorkOrder/workOrderApi";
+import { createWorkOrder, getWorkOrder, updateWorkOrder } from "../../api/WorkOrder/workOrderApi";
+import { getWoSheetBranches, getWoSheetFabricTypes } from "../../api/WorkOrder/workOrderLookupsApi";
+import { getApiBaseUrl } from "../../config/backendConfig";
 
 const CATEGORY_OPTIONS = [
   { value: "sublimation_tshirt", label: "Sublimation T-Shirt" },
@@ -37,8 +40,39 @@ const SIZE_GROUPS: { title: string; category: string; sizes: string[] }[] = [
 
 const PRICE_ITEM_NAMES = ["ELDERS", "PRESCHOOL", "BOYS", "SHORTS", "BOTTOM", "SKINEE", "JACKET"];
 
+const storageUrl = (path: string | null | undefined): string | null => {
+  if (!path) return null;
+  const apiBase = getApiBaseUrl().replace(/\/+$/, "");
+  const backendBase = apiBase.replace(/\/index\.php\/api$/i, "").replace(/\/api$/i, "");
+  return `${backendBase}/storage/${path.replace(/^\/+/, "")}`;
+};
+
+const parseEmbroiderSide = (value?: string | null) => ({
+  left: !!value?.includes("Left"),
+  right: !!value?.includes("Right"),
+});
+
 const AddWorkOrder = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("editId");
+  const isEditing = !!editId;
+  const department = searchParams.get("department") || "Factory";
+
+  const { data: existingOrder } = useQuery({
+    queryKey: ["wo-sheet-order", editId],
+    queryFn: () => getWorkOrder(editId as string),
+    enabled: isEditing,
+  });
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ["wo-sheet-branches"],
+    queryFn: getWoSheetBranches,
+  });
+  const { data: fabricTypes = [] } = useQuery({
+    queryKey: ["wo-sheet-fabric-types"],
+    queryFn: getWoSheetFabricTypes,
+  });
 
   const [frontImageFile, setFrontImageFile] = useState<File | null>(null);
   const [frontImagePreview, setFrontImagePreview] = useState<string | null>(null);
@@ -56,10 +90,51 @@ const AddWorkOrder = () => {
 
   const [sizeQty, setSizeQty] = useState<Record<string, string>>({});
   const [prices, setPrices] = useState<Record<string, string>>({});
-  const [embroider, setEmbroider] = useState({ front: "", back: "", sleeves: "", others: "" });
+  const [embroider, setEmbroider] = useState({
+    front: { left: false, right: false },
+    back: { left: false, right: false },
+    sleeves: { left: false, right: false },
+  });
+  const [embroiderOthers, setEmbroiderOthers] = useState("");
   const [totalPrice, setTotalPrice] = useState("");
   const [advance, setAdvance] = useState("");
   const [balance, setBalance] = useState("");
+
+  useEffect(() => {
+    if (!existingOrder) return;
+    setCategory(existingOrder.category || "");
+    setOrderDate(existingOrder.order_date?.slice(0, 10) || "");
+    setDeliveryDate(existingOrder.delivery_date?.slice(0, 10) || "");
+    setCustomer(existingOrder.customer || "");
+    setContactNo(existingOrder.contact_no || "");
+    setKindOfFabric(existingOrder.kind_of_fabric || "");
+    setBranch(existingOrder.branch || "");
+    setRemark(existingOrder.remark || "");
+    setEmbroider({
+      front: parseEmbroiderSide(existingOrder.embroider_front),
+      back: parseEmbroiderSide(existingOrder.embroider_back),
+      sleeves: parseEmbroiderSide(existingOrder.embroider_sleeves),
+    });
+    setEmbroiderOthers(existingOrder.embroider_others || "");
+    setTotalPrice(existingOrder.total_price != null ? String(existingOrder.total_price) : "");
+    setAdvance(existingOrder.advance != null ? String(existingOrder.advance) : "");
+    setBalance(existingOrder.balance != null ? String(existingOrder.balance) : "");
+    setFrontImagePreview(storageUrl(existingOrder.front_image_path));
+    setBackImagePreview(storageUrl(existingOrder.back_image_path));
+
+    const nextSizeQty: Record<string, string> = {};
+    existingOrder.sizes?.forEach((s) => {
+      nextSizeQty[`${s.category}-${s.size_label}`] = String(s.quantity);
+    });
+    setSizeQty(nextSizeQty);
+
+    const nextPrices: Record<string, string> = {};
+    existingOrder.price_items?.forEach((p) => {
+      nextPrices[p.item_name] = String(p.price);
+    });
+    setPrices(nextPrices);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingOrder]);
 
   const sizeKey = (category: string, size: string) => `${category}-${size}`;
 
@@ -84,13 +159,18 @@ const AddWorkOrder = () => {
   );
 
   const { mutate: submitWorkOrder, isPending } = useMutation({
-    mutationFn: (formData: FormData) => createWorkOrder(formData),
+    mutationFn: (formData: FormData) =>
+      isEditing ? updateWorkOrder(editId as string, formData) : createWorkOrder(formData),
     onSuccess: () => {
-      enqueueSnackbar("Work order created successfully!", { variant: "success" });
+      enqueueSnackbar(isEditing ? "Work order updated successfully!" : "Work order created successfully!", {
+        variant: "success",
+      });
       navigate("/workorder/dashboard");
     },
     onError: () => {
-      enqueueSnackbar("Failed to create work order", { variant: "error" });
+      enqueueSnackbar(isEditing ? "Failed to update work order" : "Failed to create work order", {
+        variant: "error",
+      });
     },
   });
 
@@ -102,6 +182,7 @@ const AddWorkOrder = () => {
 
     const formData = new FormData();
     formData.append("category", category);
+    formData.append("department", department);
     formData.append("branch", branch);
     formData.append("order_date", orderDate);
     formData.append("delivery_date", deliveryDate);
@@ -110,10 +191,12 @@ const AddWorkOrder = () => {
     formData.append("kind_of_fabric", kindOfFabric);
     formData.append("remark", remark);
     formData.append("order_quantity", String(totalOrderQuantity));
-    formData.append("embroider_front", embroider.front);
-    formData.append("embroider_back", embroider.back);
-    formData.append("embroider_sleeves", embroider.sleeves);
-    formData.append("embroider_others", embroider.others);
+    const embroiderLabel = (side: { left: boolean; right: boolean }) =>
+      [side.left && "Left", side.right && "Right"].filter(Boolean).join(", ");
+    formData.append("embroider_front", embroiderLabel(embroider.front));
+    formData.append("embroider_back", embroiderLabel(embroider.back));
+    formData.append("embroider_sleeves", embroiderLabel(embroider.sleeves));
+    formData.append("embroider_others", embroiderOthers);
     if (totalPrice) formData.append("total_price", totalPrice);
     if (advance) formData.append("advance", advance);
     if (balance) formData.append("balance", balance);
@@ -205,6 +288,9 @@ const AddWorkOrder = () => {
           <Typography variant="h4" align="center" gutterBottom fontWeight="bold">
             ORDER SHEET
           </Typography>
+          <Typography variant="subtitle2" align="center" color="text.secondary" gutterBottom>
+            {department} Work Order
+          </Typography>
 
           <Divider sx={{ my: 3 }} />
 
@@ -247,12 +333,19 @@ const AddWorkOrder = () => {
               />
               <TextField
                 fullWidth
+                select
                 label="Kind of Fabric"
                 size="small"
                 margin="normal"
                 value={kindOfFabric}
                 onChange={(e) => setKindOfFabric(e.target.value)}
-              />
+              >
+                {fabricTypes.map((opt) => (
+                  <MenuItem key={opt.id} value={opt.name}>
+                    {opt.name}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
@@ -275,12 +368,19 @@ const AddWorkOrder = () => {
               />
               <TextField
                 fullWidth
+                select
                 label="Branch"
                 size="small"
                 margin="normal"
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
-              />
+              >
+                {branches.map((opt) => (
+                  <MenuItem key={opt.id} value={opt.name}>
+                    {opt.name}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
           </Grid>
 
@@ -419,24 +519,54 @@ const AddWorkOrder = () => {
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: "bold" }} colSpan={2}>EMBROIDER DETAILS :</TableCell>
+                      <TableCell sx={{ fontWeight: "bold" }} colSpan={3}>EMBROIDER DETAILS :</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell />
+                      <TableCell align="center" sx={{ fontWeight: "bold" }}>Left</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: "bold" }}>Right</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {(["front", "back", "sleeves", "others"] as const).map((key) => (
+                    {(["front", "back", "sleeves"] as const).map((key) => (
                       <TableRow key={key}>
                         <TableCell>{key.toUpperCase()}</TableCell>
-                        <TableCell padding="none">
-                          <TextField
-                            size="small"
-                            fullWidth
-                            variant="outlined"
-                            value={embroider[key]}
-                            onChange={(e) => setEmbroider((prev) => ({ ...prev, [key]: e.target.value }))}
+                        <TableCell padding="none" align="center">
+                          <Checkbox
+                            checked={embroider[key].left}
+                            onChange={(e) =>
+                              setEmbroider((prev) => ({
+                                ...prev,
+                                [key]: { ...prev[key], left: e.target.checked },
+                              }))
+                            }
+                          />
+                        </TableCell>
+                        <TableCell padding="none" align="center">
+                          <Checkbox
+                            checked={embroider[key].right}
+                            onChange={(e) =>
+                              setEmbroider((prev) => ({
+                                ...prev,
+                                [key]: { ...prev[key], right: e.target.checked },
+                              }))
+                            }
                           />
                         </TableCell>
                       </TableRow>
                     ))}
+                    <TableRow>
+                      <TableCell>OTHERS</TableCell>
+                      <TableCell padding="none" colSpan={2}>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          variant="outlined"
+                          value={embroiderOthers}
+                          onChange={(e) => setEmbroiderOthers(e.target.value)}
+                        />
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -477,7 +607,7 @@ const AddWorkOrder = () => {
               disabled={isPending}
               endIcon={isPending ? <CircularProgress size={18} color="inherit" /> : undefined}
             >
-              Add Work Order
+              {isEditing ? "Update Work Order" : "Add Work Order"}
             </Button>
           </Box>
         </Paper>
