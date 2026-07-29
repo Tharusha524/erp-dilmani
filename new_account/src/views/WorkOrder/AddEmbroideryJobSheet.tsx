@@ -21,6 +21,7 @@ import { enqueueSnackbar } from "notistack";
 import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import { createWorkOrder, getWorkOrder, updateWorkOrder } from "../../api/WorkOrder/workOrderApi";
 import { getOrganization } from "../../api/OrganizationSettings/organizationSettingsApi";
+import { cleanWoNumberInput, formatWoAmount, formatWoNumberInputDisplay } from "../../utils/workOrderNumberFormat";
 
 const AREAS = ["Front", "Back", "Sleeves", "Others"] as const;
 const SIZE_COLUMNS = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
@@ -96,6 +97,7 @@ const AddEmbroideryJobSheet = () => {
   const sizeKey = (area: string, size: string) => `${area}-${size}`;
 
   const totalOrderQuantity = AREAS.reduce((sum, area) => sum + (parseInt(areaLines[area].qty || "0", 10) || 0), 0);
+  const grandTotalPrice = AREAS.reduce((sum, area) => sum + (parseFloat(areaLines[area].totalPrice || "0") || 0), 0);
 
   const { mutate: submitJobSheet, isPending } = useMutation({
     mutationFn: (formData: FormData) =>
@@ -121,12 +123,13 @@ const AddEmbroideryJobSheet = () => {
     }
 
     const formData = new FormData();
-    formData.append("category", "sublimation_tshirt");
+    formData.append("category", "embroidery_job");
     formData.append("department", "Embroidery");
     formData.append("order_date", date);
     formData.append("customer", customer);
     formData.append("description", jobName);
     formData.append("order_quantity", String(totalOrderQuantity));
+    formData.append("balance", String(grandTotalPrice));
 
     let priceIndex = 0;
     AREAS.forEach((area) => {
@@ -226,16 +229,26 @@ const AddEmbroideryJobSheet = () => {
                             <TextField
                               variant="outlined"
                               size="small"
-                              type="number"
+                              type="text"
+                              inputMode="decimal"
                               fullWidth
-                              value={areaLines[area][field]}
-                              onChange={(e) => updateAreaLine(area, field, e.target.value)}
-                              inputProps={{ min: 0, style: { textAlign: "center" } }}
+                              value={formatWoNumberInputDisplay(areaLines[area][field])}
+                              onChange={(e) => updateAreaLine(area, field, cleanWoNumberInput(e.target.value))}
+                              inputProps={{ style: { textAlign: "center" } }}
                             />
                           </TableCell>
                         ))}
                       </TableRow>
                     ))}
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: "bold" }}>Total</TableCell>
+                      <TableCell />
+                      <TableCell />
+                      <TableCell />
+                      <TableCell align="center" sx={{ fontWeight: "bold" }}>
+                        {formatWoAmount(grandTotalPrice)}
+                      </TableCell>
+                    </TableRow>
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -269,13 +282,17 @@ const AddEmbroideryJobSheet = () => {
                             <TextField
                               variant="outlined"
                               size="small"
-                              type="number"
+                              type="text"
+                              inputMode="numeric"
                               fullWidth
-                              value={sizeQty[sizeKey(area, size)] || ""}
+                              value={formatWoNumberInputDisplay(sizeQty[sizeKey(area, size)] || "")}
                               onChange={(e) =>
-                                setSizeQty((prev) => ({ ...prev, [sizeKey(area, size)]: e.target.value }))
+                                setSizeQty((prev) => ({
+                                  ...prev,
+                                  [sizeKey(area, size)]: cleanWoNumberInput(e.target.value),
+                                }))
                               }
-                              inputProps={{ min: 0, style: { textAlign: "center" } }}
+                              inputProps={{ style: { textAlign: "center" } }}
                             />
                           </TableCell>
                         </TableRow>

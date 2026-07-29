@@ -24,6 +24,7 @@ import { useNavigate, useSearchParams } from "react-router";
 import { enqueueSnackbar } from "notistack";
 import { createWorkOrder, getWorkOrder, updateWorkOrder } from "../../api/WorkOrder/workOrderApi";
 import { getWoSheetBranches, getWoSheetFabricTypes } from "../../api/WorkOrder/workOrderLookupsApi";
+import { cleanWoNumberInput, formatWoNumberInputDisplay, formatWoQuantity } from "../../utils/workOrderNumberFormat";
 import { getApiBaseUrl } from "../../config/backendConfig";
 
 const CATEGORY_OPTIONS = [
@@ -253,13 +254,17 @@ const AddWorkOrder = () => {
                   <TextField
                     variant="outlined"
                     size="small"
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     fullWidth
-                    value={sizeQty[sizeKey(category, size)] || ""}
+                    value={formatWoNumberInputDisplay(sizeQty[sizeKey(category, size)] || "")}
                     onChange={(e) =>
-                      setSizeQty((prev) => ({ ...prev, [sizeKey(category, size)]: e.target.value }))
+                      setSizeQty((prev) => ({
+                        ...prev,
+                        [sizeKey(category, size)]: cleanWoNumberInput(e.target.value),
+                      }))
                     }
-                    inputProps={{ min: 0, style: { textAlign: "center" } }}
+                    inputProps={{ style: { textAlign: "center" } }}
                   />
                 </TableCell>
               ))}
@@ -267,9 +272,9 @@ const AddWorkOrder = () => {
                 <TextField
                   variant="outlined"
                   size="small"
-                  type="number"
+                  type="text"
                   fullWidth
-                  value={groupTotal(category, sizes)}
+                  value={formatWoQuantity(groupTotal(category, sizes))}
                   InputProps={{ readOnly: true }}
                   inputProps={{ style: { textAlign: "center", fontWeight: "bold" } }}
                 />
@@ -500,11 +505,14 @@ const AddWorkOrder = () => {
                         <TableCell padding="none">
                           <TextField
                             size="small"
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
                             fullWidth
                             variant="outlined"
-                            value={prices[item] || ""}
-                            onChange={(e) => setPrices((prev) => ({ ...prev, [item]: e.target.value }))}
+                            value={formatWoNumberInputDisplay(prices[item] || "")}
+                            onChange={(e) =>
+                              setPrices((prev) => ({ ...prev, [item]: cleanWoNumberInput(e.target.value) }))
+                            }
                           />
                         </TableCell>
                       </TableRow>
@@ -577,19 +585,43 @@ const AddWorkOrder = () => {
                     <TableRow>
                       <TableCell sx={{ fontWeight: "bold" }}>TOTAL PRICE</TableCell>
                       <TableCell padding="none">
-                        <TextField size="small" type="number" fullWidth variant="outlined" value={totalPrice} onChange={(e) => setTotalPrice(e.target.value)} />
+                        <TextField
+                          size="small"
+                          type="text"
+                          inputMode="decimal"
+                          fullWidth
+                          variant="outlined"
+                          value={formatWoNumberInputDisplay(totalPrice)}
+                          onChange={(e) => setTotalPrice(cleanWoNumberInput(e.target.value))}
+                        />
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell sx={{ fontWeight: "bold" }}>ADVANCE</TableCell>
                       <TableCell padding="none">
-                        <TextField size="small" type="number" fullWidth variant="outlined" value={advance} onChange={(e) => setAdvance(e.target.value)} />
+                        <TextField
+                          size="small"
+                          type="text"
+                          inputMode="decimal"
+                          fullWidth
+                          variant="outlined"
+                          value={formatWoNumberInputDisplay(advance)}
+                          onChange={(e) => setAdvance(cleanWoNumberInput(e.target.value))}
+                        />
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell sx={{ fontWeight: "bold" }}>BALANCE</TableCell>
                       <TableCell padding="none">
-                        <TextField size="small" type="number" fullWidth variant="outlined" value={balance} onChange={(e) => setBalance(e.target.value)} />
+                        <TextField
+                          size="small"
+                          type="text"
+                          inputMode="decimal"
+                          fullWidth
+                          variant="outlined"
+                          value={formatWoNumberInputDisplay(balance)}
+                          onChange={(e) => setBalance(cleanWoNumberInput(e.target.value))}
+                        />
                       </TableCell>
                     </TableRow>
                   </TableBody>

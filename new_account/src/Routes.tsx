@@ -37,6 +37,11 @@ import AddPrintingJobSheet from "./views/WorkOrder/AddPrintingJobSheet";
 import AddEmbroideryJobSheet from "./views/WorkOrder/AddEmbroideryJobSheet";
 import WorkOrderReport from "./views/WorkOrder/WorkOrderReport";
 import WorkOrderSettings from "./views/WorkOrder/WorkOrderSettings";
+import WorkOrderStatusSettings from "./views/WorkOrder/WorkOrderStatusSettings";
+import WorkOrderButtonSettings from "./views/WorkOrder/WorkOrderButtonSettings";
+import WorkOrderBranchSettings from "./views/WorkOrder/WorkOrderBranchSettings";
+import WorkOrderFabricTypeSettings from "./views/WorkOrder/WorkOrderFabricTypeSettings";
+import WorkOrderDueDateColorSettings from "./views/WorkOrder/WorkOrderDueDateColorSettings";
 import CompanySetup from "./views/Setup/CompanySetup/CompanySetup";
 import Miscellaneous from "./views/Setup/Miscellaneous/Miscellaneous";
 import FixedAssestsMaintenance from "./views/FixedAssets/Maintenance/FixedAssestsMaintenance";
@@ -600,6 +605,46 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['Work order settings page']}>
               {withLayout(MainLayout, WorkOrderSettings)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/settings/status"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Work order settings page']}>
+              {withLayout(MainLayout, WorkOrderStatusSettings)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/settings/buttons"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Work order settings page']}>
+              {withLayout(MainLayout, WorkOrderButtonSettings)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/settings/branches"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Work order settings page']}>
+              {withLayout(MainLayout, WorkOrderBranchSettings)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/settings/fabric-types"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Work order settings page']}>
+              {withLayout(MainLayout, WorkOrderFabricTypeSettings)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/settings/due-date-colors"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Work order settings page']}>
+              {withLayout(MainLayout, WorkOrderDueDateColorSettings)}
             </ProtectedRoute>
           }
         />

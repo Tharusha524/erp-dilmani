@@ -23,25 +23,34 @@ import { enqueueSnackbar } from "notistack";
 import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import { createWorkOrder, getWorkOrder, updateWorkOrder } from "../../api/WorkOrder/workOrderApi";
 import { getOrganization } from "../../api/OrganizationSettings/organizationSettingsApi";
+import { cleanWoNumberInput, formatWoNumberInputDisplay, formatWoQuantity } from "../../utils/workOrderNumberFormat";
 
 const SIZE_COLUMNS = ["XXS", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
 const SIZE_ROWS = ["GENTS", "LADIES", "BOYS"] as const;
 
-/** Splits the combined remark text back into (remark, operator, dataEntry) —
- * inverse of how handleSubmit joins them into one field on save. */
+// On the paper form, the Boys row only uses XXS/XS/S as real quantity boxes —
+// M onward is repurposed there for Total/Price/Operator/Data Entry instead.
+const BOYS_SIZE_COLUMNS = ["XXS", "XS", "S"];
+const isSizeInputVisible = (row: string, size: string) => row !== "BOYS" || BOYS_SIZE_COLUMNS.includes(size);
+
+/** Splits the combined remark text back into (remark, operator, dataEntry,
+ * boysPrice) — inverse of how handleSubmit joins them into one field on save. */
 const parseRemarkFields = (remarkText?: string | null) => {
   const lines = (remarkText || "").split("\n");
   let operator = "";
   let dataEntry = "";
+  let boysPrice = "";
   const remainder: string[] = [];
   lines.forEach((line) => {
     const opMatch = line.match(/^Operator: (.*)$/);
     const deMatch = line.match(/^Data Entry: (.*)$/);
+    const bpMatch = line.match(/^Boys Price: (.*)$/);
     if (opMatch) operator = opMatch[1];
     else if (deMatch) dataEntry = deMatch[1];
+    else if (bpMatch) boysPrice = bpMatch[1];
     else if (line) remainder.push(line);
   });
-  return { remark: remainder.join("\n"), operator, dataEntry };
+  return { remark: remainder.join("\n"), operator, dataEntry, boysPrice };
 };
 
 const AddPrintingJobSheet = () => {
@@ -69,6 +78,7 @@ const AddPrintingJobSheet = () => {
   const [remark, setRemark] = useState("");
   const [operator, setOperator] = useState("");
   const [dataEntry, setDataEntry] = useState("");
+  const [boysPrice, setBoysPrice] = useState("");
   const [front, setFront] = useState(false);
   const [back, setBack] = useState(false);
   const [longSleeve, setLongSleeve] = useState(false);
@@ -86,12 +96,16 @@ const AddPrintingJobSheet = () => {
     setBack(sides.includes("Back"));
     setLongSleeve(sides.includes("Long Sleeve"));
     setShortSleeve(sides.includes("Short Sleeve"));
-    const { remark: parsedRemark, operator: parsedOperator, dataEntry: parsedDataEntry } = parseRemarkFields(
-      existingOrder.remark
-    );
+    const {
+      remark: parsedRemark,
+      operator: parsedOperator,
+      dataEntry: parsedDataEntry,
+      boysPrice: parsedBoysPrice,
+    } = parseRemarkFields(existingOrder.remark);
     setRemark(parsedRemark);
     setOperator(parsedOperator);
     setDataEntry(parsedDataEntry);
+    setBoysPrice(parsedBoysPrice);
 
     const nextSizeQty: Record<string, string> = {};
     existingOrder.sizes?.forEach((s) => {
@@ -134,19 +148,27 @@ const AddPrintingJobSheet = () => {
       .filter(Boolean)
       .join(", ");
 
-    const remarkLines = [remark, operator && `Operator: ${operator}`, dataEntry && `Data Entry: ${dataEntry}`]
+    const remarkLines = [
+      remark,
+      operator && `Operator: ${operator}`,
+      dataEntry && `Data Entry: ${dataEntry}`,
+      boysPrice && `Boys Price: ${boysPrice}`,
+    ]
       .filter(Boolean)
       .join("\n");
 
     const formData = new FormData();
-    formData.append("category", "sublimation_tshirt");
+    formData.append("category", "printing_job");
     formData.append("department", "Printing");
     formData.append("order_date", date);
     formData.append("customer", customer);
     formData.append("description", jobName);
     formData.append("sub_category", sides);
     formData.append("order_quantity", String(totalOrderQuantity));
-    if (price) formData.append("total_price", price);
+    if (price) {
+      formData.append("total_price", price);
+      formData.append("balance", price);
+    }
     if (remarkLines) formData.append("remark", remarkLines);
 
     let sizeIndex = 0;
@@ -239,11 +261,12 @@ const AddPrintingJobSheet = () => {
               <TextField
                 fullWidth
                 label="Price"
-                type="number"
+                type="text"
+                inputMode="decimal"
                 size="small"
                 margin="normal"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                value={formatWoNumberInputDisplay(price)}
+                onChange={(e) => setPrice(cleanWoNumberInput(e.target.value))}
               />
             </Grid>
           </Grid>
@@ -261,6 +284,7 @@ const AddPrintingJobSheet = () => {
                     </TableCell>
                   ))}
                   <TableCell align="center" sx={{ fontWeight: "bold" }}>Total</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: "bold" }}>Price</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -269,21 +293,41 @@ const AddPrintingJobSheet = () => {
                     <TableCell sx={{ fontWeight: "bold" }}>{row.charAt(0) + row.slice(1).toLowerCase()}</TableCell>
                     {SIZE_COLUMNS.map((size) => (
                       <TableCell key={size} align="center" padding="none">
-                        <TextField
-                          variant="outlined"
-                          size="small"
-                          type="number"
-                          fullWidth
-                          value={sizeQty[sizeKey(row, size)] || ""}
-                          onChange={(e) =>
-                            setSizeQty((prev) => ({ ...prev, [sizeKey(row, size)]: e.target.value }))
-                          }
-                          inputProps={{ min: 0, style: { textAlign: "center" } }}
-                        />
+                        {isSizeInputVisible(row, size) && (
+                          <TextField
+                            variant="outlined"
+                            size="small"
+                            type="text"
+                            inputMode="numeric"
+                            fullWidth
+                            value={formatWoNumberInputDisplay(sizeQty[sizeKey(row, size)] || "")}
+                            onChange={(e) =>
+                              setSizeQty((prev) => ({
+                                ...prev,
+                                [sizeKey(row, size)]: cleanWoNumberInput(e.target.value),
+                              }))
+                            }
+                            inputProps={{ style: { textAlign: "center" } }}
+                          />
+                        )}
                       </TableCell>
                     ))}
                     <TableCell align="center">
-                      <Typography fontWeight="bold">{rowTotal(row)}</Typography>
+                      <Typography fontWeight="bold">{formatWoQuantity(rowTotal(row))}</Typography>
+                    </TableCell>
+                    <TableCell align="center" padding="none">
+                      {row === "BOYS" && (
+                        <TextField
+                          variant="outlined"
+                          size="small"
+                          type="text"
+                          inputMode="decimal"
+                          fullWidth
+                          value={formatWoNumberInputDisplay(boysPrice)}
+                          onChange={(e) => setBoysPrice(cleanWoNumberInput(e.target.value))}
+                          inputProps={{ style: { textAlign: "center" } }}
+                        />
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

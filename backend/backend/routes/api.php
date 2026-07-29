@@ -530,6 +530,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('wo-sheet-orders/{id}/set-status', [\App\Http\Controllers\WoSheetOrderController::class, 'setStatus']);
     Route::post('wo-sheet-orders/{id}/close', [\App\Http\Controllers\WoSheetOrderController::class, 'close']);
     Route::post('wo-sheet-orders/{id}/verify', [\App\Http\Controllers\WoSheetOrderController::class, 'verify']);
+    Route::post('wo-sheet-orders/{id}/hand-over', [\App\Http\Controllers\WoSheetOrderController::class, 'handOver']);
     Route::post('wo-sheet-orders/{id}/reopen', [\App\Http\Controllers\WoSheetOrderController::class, 'reopen']);
 
     Route::get('wo-sheet-statuses', [\App\Http\Controllers\WoSheetStatusController::class, 'index']);
@@ -539,7 +540,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('wo-sheet-status-assignments', [\App\Http\Controllers\WoSheetStatusAssignmentController::class, 'index']);
     Route::post('wo-sheet-status-assignments', [\App\Http\Controllers\WoSheetStatusAssignmentController::class, 'store']);
-    Route::delete('wo-sheet-status-assignments/{statusId}', [\App\Http\Controllers\WoSheetStatusAssignmentController::class, 'destroy']);
+    Route::delete('wo-sheet-status-assignments/{statusId}/{userId}', [\App\Http\Controllers\WoSheetStatusAssignmentController::class, 'destroy']);
+
+    Route::get('wo-sheet-button-assignments', [\App\Http\Controllers\WoSheetButtonAssignmentController::class, 'index']);
+    Route::post('wo-sheet-button-assignments', [\App\Http\Controllers\WoSheetButtonAssignmentController::class, 'store']);
+    Route::delete('wo-sheet-button-assignments/{buttonKey}/{userId}', [\App\Http\Controllers\WoSheetButtonAssignmentController::class, 'destroy']);
 
     Route::get('wo-sheet-branches', [\App\Http\Controllers\WoSheetBranchController::class, 'index']);
     Route::post('wo-sheet-branches', [\App\Http\Controllers\WoSheetBranchController::class, 'store']);

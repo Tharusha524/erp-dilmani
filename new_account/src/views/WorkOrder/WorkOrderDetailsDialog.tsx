@@ -27,23 +27,27 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import {
-  checkInWorkOrder,
   closeWorkOrder,
   getWorkOrder,
+  handOverWorkOrder,
   nextStatusWorkOrder,
   reopenWorkOrder,
   setWorkOrderStatus,
   verifyWorkOrder,
 } from "../../api/WorkOrder/workOrderApi";
 import { getWorkOrderStatuses, getWorkOrderStatusAssignments } from "../../api/WorkOrder/workOrderStatusApi";
+import { getWorkOrderButtonAssignments, WorkOrderButtonKey } from "../../api/WorkOrder/workOrderButtonAssignmentsApi";
 import { getApiBaseUrl } from "../../config/backendConfig";
 import { getFriendlyApiErrorMessage } from "../../utils/apiErrorMessage";
 import { useAuth } from "../../context/AuthContext";
 import { formatWoDate, formatWoDateTime } from "../../utils/workOrderDateFormat";
+import { formatWoAmount, formatWoQuantity } from "../../utils/workOrderNumberFormat";
 
 const CATEGORY_LABELS: Record<string, string> = {
   sublimation_tshirt: "Sublimation T-Shirt",
   polo_tshirt: "Polo T-Shirt",
+  printing_job: "Printing Job",
+  embroidery_job: "Embroidery Job",
 };
 
 const storageUrl = (path: string | null): string | null => {
@@ -86,18 +90,39 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
     queryFn: getWorkOrderStatusAssignments,
   });
 
+  const { data: buttonAssignments = [] } = useQuery({
+    queryKey: ["wo-sheet-button-assignments"],
+    queryFn: getWorkOrderButtonAssignments,
+  });
+
   const { user } = useAuth();
   const isAdmin = (user as any)?.role?.toLowerCase() === "admin";
+  const currentUserId = Number((user as any)?.id);
 
   // Mirrors the backend rule in WoSheetOrderController::authorizeStatusAction:
   // Admins always may act; a status with nobody assigned stays open to
-  // everyone; otherwise only the assigned user may act on it.
-  const currentAssignment = useMemo(
-    () => assignments.find((a) => a.status_id === order?.current_status?.id),
+  // everyone; otherwise only an assigned user may act on it.
+  const currentStatusAssignees = useMemo(
+    () => assignments.filter((a) => a.status_id === order?.current_status?.id),
     [assignments, order]
   );
   const canActOnCurrentStatus =
-    isAdmin || !currentAssignment || currentAssignment.user_id === Number((user as any)?.id);
+    isAdmin ||
+    currentStatusAssignees.length === 0 ||
+    currentStatusAssignees.some((a) => a.user_id === currentUserId);
+
+  // Mirrors WoSheetOrderController::authorizeButtonAction: Admins always
+  // may act; a button with nobody assigned stays open to everyone;
+  // otherwise only an assigned user may click it.
+  const canUseButton = (buttonKey: WorkOrderButtonKey) => {
+    if (isAdmin) return true;
+    const assignees = buttonAssignments.filter((a) => a.button_key === buttonKey);
+    return assignees.length === 0 || assignees.some((a) => a.user_id === currentUserId);
+  };
+  const canFinish = canUseButton("finish");
+  const canVerify = canUseButton("verify");
+  const canHandOver = canUseButton("hand_over");
+  const canReopen = canUseButton("reopen");
 
   const statusOptions = useMemo(() => {
     if (!order) return [];
@@ -108,19 +133,17 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
       .sort((a, b) => a.sequence_order - b.sequence_order);
   }, [allStatuses, order]);
 
+  // The order is "finished" when its current status is the last step in the workflow.
+  const isFinished = useMemo(() => {
+    if (!order || !statusOptions.length) return false;
+    const lastStatus = statusOptions[statusOptions.length - 1];
+    return order.current_status?.id === lastStatus.id;
+  }, [order, statusOptions]);
+
   const refreshOrder = () => {
     queryClient.invalidateQueries({ queryKey: ["wo-sheet-order", orderId] });
     queryClient.invalidateQueries({ queryKey: ["wo-sheet-orders"] });
   };
-
-  const { mutate: checkIn, isPending: isCheckingIn } = useMutation({
-    mutationFn: () => checkInWorkOrder(orderId as number),
-    onSuccess: () => {
-      refreshOrder();
-      enqueueSnackbar("Checked in", { variant: "success" });
-    },
-    onError: () => enqueueSnackbar("Failed to check in", { variant: "error" }),
-  });
 
   const { mutate: nextStatus, isPending: isAdvancing } = useMutation({
     mutationFn: () => nextStatusWorkOrder(orderId as number),
@@ -158,9 +181,19 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
     mutationFn: () => verifyWorkOrder(orderId as number),
     onSuccess: () => {
       refreshOrder();
-      enqueueSnackbar("Work order verified", { variant: "success" });
+      enqueueSnackbar("Work order verified — Hand Over is now available", { variant: "success" });
     },
-    onError: () => enqueueSnackbar("Failed to verify work order", { variant: "error" }),
+    onError: (error) => enqueueSnackbar(getFriendlyApiErrorMessage(error), { variant: "error" }),
+  });
+
+  const { mutate: handOver, isPending: isHandingOver } = useMutation({
+    mutationFn: () => handOverWorkOrder(orderId as number),
+    onSuccess: () => {
+      refreshOrder();
+      enqueueSnackbar("Work order handed over", { variant: "success" });
+      onClose();
+    },
+    onError: (error) => enqueueSnackbar(getFriendlyApiErrorMessage(error), { variant: "error" }),
   });
 
   const { mutate: reopen, isPending: isReopening } = useMutation({
@@ -203,6 +236,8 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
                     Order Details
                   </Typography>
                   {detailRow("WO Number", order.work_order_no)}
+                  {detailRow("Created Date Time", formatWoDateTime(order.created_at))}
+                  {detailRow("Updated Date Time", formatWoDateTime(order.updated_at))}
                   {detailRow("Order Date", formatWoDate(order.order_date))}
                   {detailRow("Delivery Date", formatWoDate(order.delivery_date))}
                   {detailRow("Customer", order.customer)}
@@ -245,7 +280,7 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
                             <TableRow key={s.id}>
                               <TableCell>{s.category}</TableCell>
                               <TableCell>{s.size_label}</TableCell>
-                              <TableCell align="right">{s.quantity}</TableCell>
+                              <TableCell align="right">{formatWoQuantity(s.quantity)}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -307,16 +342,16 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
                       {order.price_items.map((p) => (
                         <TableRow key={p.id}>
                           <TableCell>{p.item_name}</TableCell>
-                          <TableCell align="right">{p.price}</TableCell>
+                          <TableCell align="right">{formatWoAmount(p.price)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </TableContainer>
               )}
-              {detailRow("Total Price", order.total_price)}
-              {detailRow("Advance", order.advance)}
-              {detailRow("Balance", order.balance)}
+              {detailRow("Total Price", formatWoAmount(order.total_price))}
+              {detailRow("Advance", formatWoAmount(order.advance))}
+              {detailRow("Balance", formatWoAmount(order.balance))}
             </Grid>
 
             {order.remark && (
@@ -339,28 +374,30 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
               {order.events.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">No events recorded yet.</Typography>
               ) : (
-                <Stack spacing={1}>
-                  {order.events.map((ev) => {
-                    const userName = ev.user
-                      ? `${ev.user.first_name || ""} ${ev.user.last_name || ""}`.trim()
-                      : "";
-                    return (
-                      <Box key={ev.id} sx={{ pb: 1, borderBottom: "1px solid var(--pallet-border-blue)" }}>
-                        <Typography variant="body2" fontWeight={600}>
-                          {ev.description || ev.event_type}
-                          {userName && (
-                            <Typography component="span" variant="body2" color="text.secondary">
-                              {" "}— by {userName}
-                            </Typography>
-                          )}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {ev.event_datetime ? formatWoDateTime(ev.event_datetime) : formatWoDateTime(ev.created_at)}
-                        </Typography>
-                      </Box>
-                    );
-                  })}
-                </Stack>
+                <Box sx={{ maxHeight: 260, overflowY: "auto", pr: 1 }}>
+                  <Stack spacing={1}>
+                    {order.events.map((ev) => {
+                      const userName = ev.user
+                        ? `${ev.user.first_name || ""} ${ev.user.last_name || ""}`.trim()
+                        : "";
+                      return (
+                        <Box key={ev.id} sx={{ pb: 1, borderBottom: "1px solid var(--pallet-border-blue)" }}>
+                          <Typography variant="body2" fontWeight={600}>
+                            {ev.description || ev.event_type}
+                            {userName && (
+                              <Typography component="span" variant="body2" color="text.secondary">
+                                {" "}— by {userName}
+                              </Typography>
+                            )}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {ev.event_datetime ? formatWoDateTime(ev.event_datetime) : formatWoDateTime(ev.created_at)}
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Stack>
+                </Box>
               )}
             </Grid>
           </Grid>
@@ -381,17 +418,9 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
             {!canActOnCurrentStatus && (
               <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>
-                Assigned to: {currentAssignment?.user_name || "another user"}
+                Assigned to: {currentStatusAssignees.map((a) => a.user_name).filter(Boolean).join(", ") || "another user"}
               </Typography>
             )}
-            <Button
-              variant="contained"
-              color="info"
-              disabled={isCheckingIn || !canActOnCurrentStatus}
-              onClick={() => checkIn()}
-            >
-              Check In
-            </Button>
             <Button
               variant="contained"
               color="primary"
@@ -417,14 +446,32 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
                 </MenuItem>
               ))}
             </Select>
-            <Button variant="contained" color="success" disabled={isClosing} onClick={() => close()}>
-              Close WO
+            <Button variant="contained" color="success" disabled={isClosing || !canFinish} onClick={() => close()}>
+              Finish
             </Button>
-            <Button variant="contained" color="secondary" disabled={isVerifying} onClick={() => verify()}>
+            <Button
+              variant="contained"
+              color="warning"
+              disabled={isReopening || !isFinished || !canReopen}
+              onClick={() => reopen()}
+            >
+              Re-Open
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              disabled={isVerifying || !canVerify || !!order.final_verify_user_id}
+              onClick={() => verify()}
+            >
               Verify
             </Button>
-            <Button variant="contained" color="warning" disabled={isReopening} onClick={() => reopen()}>
-              Re-Open
+            <Button
+              variant="contained"
+              color="success"
+              disabled={isHandingOver || !canHandOver || !order.final_verify_user_id || !!order.final_hand_over_user_id}
+              onClick={() => handOver()}
+            >
+              Hand Over
             </Button>
           </Stack>
 

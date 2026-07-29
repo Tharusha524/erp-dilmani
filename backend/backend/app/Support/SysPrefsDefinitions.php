@@ -50,6 +50,9 @@ class SysPrefsDefinitions
             ['name' => 'depreciationPeriod', 'category' => 'glsetup.fixedassets', 'type' => 'string', 'length' => 20, 'value' => '1'],
             ['name' => 'workOrderRequiredByAfter', 'category' => 'glsetup.manuf', 'type' => 'number', 'length' => 11, 'value' => '1'],
             ['name' => 'form_bg_color', 'category' => 'ui.theme', 'type' => 'string', 'length' => 20, 'value' => '#ebfee6ff'],
+            ['name' => 'wo_due_color_urgent', 'category' => 'ui.theme', 'type' => 'string', 'length' => 20, 'value' => '#ffcdd2'],
+            ['name' => 'wo_due_color_warning', 'category' => 'ui.theme', 'type' => 'string', 'length' => 20, 'value' => '#fff9c4'],
+            ['name' => 'wo_due_color_safe', 'category' => 'ui.theme', 'type' => 'string', 'length' => 20, 'value' => '#c8e6c9'],
         ];
     }
 

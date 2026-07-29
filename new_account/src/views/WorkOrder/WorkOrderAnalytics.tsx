@@ -23,9 +23,10 @@ import { getWorkOrders } from "../../api/WorkOrder/workOrderApi";
 const CATEGORY_LABELS: Record<string, string> = {
   sublimation_tshirt: "Sublimation T-Shirt",
   polo_tshirt: "Polo T-Shirt",
+  printing_job: "Printing Job",
+  embroidery_job: "Embroidery Job",
 };
 
-const LAST_STATUS_DAY = 10;
 const TREND_DAYS = 14;
 
 export default function WorkOrderAnalytics() {
@@ -36,11 +37,13 @@ export default function WorkOrderAnalytics() {
 
   const stats = useMemo(() => {
     const total = workOrders.length;
-    const completed = workOrders.filter((wo) => wo.status_sequence_order === LAST_STATUS_DAY).length;
+    // An order only counts as "Completed" once someone has clicked Hand
+    // Over — Verify just unlocks Hand Over, Finish alone isn't enough.
+    const completed = workOrders.filter((wo) => wo.is_handed_over).length;
     const reopened = workOrders.filter((wo) => !!wo.reopen_datetime).length;
     const today = new Date().toISOString().slice(0, 10);
     const overdue = workOrders.filter(
-      (wo) => wo.delivery_date && wo.delivery_date.slice(0, 10) < today && wo.status_sequence_order !== LAST_STATUS_DAY
+      (wo) => wo.delivery_date && wo.delivery_date.slice(0, 10) < today && !wo.is_handed_over
     ).length;
     const inProgress = total - completed;
 
@@ -77,7 +80,7 @@ export default function WorkOrderAnalytics() {
       const key = wo.created_at?.slice(0, 10);
       if (key && byKey[key]) {
         byKey[key].placed += 1;
-        if (wo.status_sequence_order === LAST_STATUS_DAY) {
+        if (wo.is_handed_over) {
           byKey[key].completed += 1;
         }
       }

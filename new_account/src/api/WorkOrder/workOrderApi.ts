@@ -6,6 +6,7 @@ export interface WorkOrderListItem {
   id: number;
   work_order_no: string;
   created_at: string;
+  updated_at: string;
   order_date: string | null;
   delivery_date: string | null;
   branch: string | null;
@@ -22,6 +23,9 @@ export interface WorkOrderListItem {
   reopen_datetime: string | null;
   status_name: string | null;
   status_sequence_order: number | null;
+  is_finished: boolean;
+  is_verified: boolean;
+  is_handed_over: boolean;
   created_by: string;
   assigned_to: string;
 }
@@ -84,7 +88,10 @@ export interface WorkOrderDetail {
   order_quantity: number | null;
   process_type: string;
   reopen_datetime: string | null;
+  final_verify_user_id: number | null;
+  final_hand_over_user_id: number | null;
   created_at: string;
+  updated_at: string;
   sizes: WorkOrderSizeItem[];
   price_items: WorkOrderPriceLineItem[];
   events: WorkOrderEventItem[];
@@ -137,6 +144,11 @@ export const closeWorkOrder = async (id: number): Promise<WorkOrderDetail> => {
 
 export const verifyWorkOrder = async (id: number): Promise<WorkOrderDetail> => {
   const response = await api.post(`${API_URL}/${id}/verify`);
+  return response.data;
+};
+
+export const handOverWorkOrder = async (id: number): Promise<WorkOrderDetail> => {
+  const response = await api.post(`${API_URL}/${id}/hand-over`);
   return response.data;
 };
 

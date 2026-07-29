@@ -49,7 +49,7 @@ export const assignWorkOrderStatusUser = async (statusId: number, userId: number
   return response.data;
 };
 
-export const unassignWorkOrderStatusUser = async (statusId: number) => {
-  const response = await api.delete(`${ASSIGNMENT_URL}/${statusId}`);
+export const unassignWorkOrderStatusUser = async (statusId: number, userId: number) => {
+  const response = await api.delete(`${ASSIGNMENT_URL}/${statusId}/${userId}`);
   return response.data;
 };

@@ -48,15 +48,24 @@ class WoSheetOrder extends Model
         'quality_test_time',
         'final_verify_user_id',
         'final_verify_date',
+        'final_hand_over_user_id',
+        'final_hand_over_date',
         'reopen_datetime',
     ];
 
     protected $casts = [
-        'order_date' => 'date',
-        'delivery_date' => 'date',
+        // Explicit Y-m-d format so these plain-date columns serialize as a
+        // bare date (e.g. "2026-07-26"), not a UTC-converted timestamp —
+        // otherwise a positive server timezone offset (Asia/Colombo,
+        // UTC+5:30) shifts midnight local time back into the previous UTC
+        // day, which then reads back one day early everywhere (edit forms,
+        // list table, etc.) and makes an untouched date look "changed".
+        'order_date' => 'date:Y-m-d',
+        'delivery_date' => 'date:Y-m-d',
         'server_datetime' => 'datetime',
         'quality_test_time' => 'datetime',
         'final_verify_date' => 'datetime',
+        'final_hand_over_date' => 'datetime',
         'reopen_datetime' => 'datetime',
         'total_price' => 'decimal:2',
         'advance' => 'decimal:2',

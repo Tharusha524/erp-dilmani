@@ -28,12 +28,10 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { Link, useLocation, useNavigate } from "react-router";
-import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import NotificationCenter from "../NotificationCenter";
 import { APP_ROUTER_BASENAME } from "../../config/appConfig";
-import { getActiveFiscalYear } from "../../api/FiscalYear/activeFiscalYearApi";
 import { getPageMetaFromPath } from "../../utils/pageMeta";
 import { SidebarItem, getSidebarItems } from "./SidebarItems";
 import { useCompanySetupSettings } from "../../hooks/useCompanySetupSettings";
@@ -185,11 +183,6 @@ export default function MainLayout({ children }: Props) {
   const isReadOnlyPage =
     currentPagePermissionId !== undefined && !hasEditPermission(currentPagePermissionId);
 
-  const { data: activeFiscalYear } = useQuery({
-    queryKey: ["active-fiscal-year"],
-    queryFn: getActiveFiscalYear,
-    staleTime: 5 * 60 * 1000,
-  });
 
   const toggleDrawerOpen = () => {
     toggleSidebar();
@@ -260,12 +253,6 @@ export default function MainLayout({ children }: Props) {
 
             {!isMobile && (
               <Box className="erp-navbar__center">
-                {activeFiscalYear?.label && (
-                  <Box className="erp-navbar__pill">
-                    <CalendarMonthOutlinedIcon sx={{ fontSize: 14 }} />
-                    {activeFiscalYear.label}
-                  </Box>
-                )}
                 <Box className="erp-navbar__pill">
                   <span className="erp-navbar__pill-dot" />
                   System Online
@@ -623,7 +610,7 @@ const DrawerContent = ({
 
         {!collapsed ? (
           <Typography className="erp-sidebar__copyright">
-            © {new Date().getFullYear()} {brandTitle}
+            Developed by DIO SOLUTIONS
           </Typography>
         ) : null}
       </Box>

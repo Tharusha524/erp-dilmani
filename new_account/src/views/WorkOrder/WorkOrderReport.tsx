@@ -8,6 +8,7 @@ import {
   Grid,
   IconButton,
   Paper,
+  MenuItem,
   Stack,
   Tab,
   Tabs,
@@ -47,6 +48,7 @@ import { enqueueSnackbar } from "notistack";
 import StatCard from "../../components/StatCard";
 import CompanyDocumentHeader from "../../components/CompanyDocumentHeader";
 import { getWorkOrders, WorkOrderListItem } from "../../api/WorkOrder/workOrderApi";
+import { formatWoAmount, formatWoQuantity } from "../../utils/workOrderNumberFormat";
 import { downloadElementAsPdf, sanitizePdfFilename } from "../../utils/downloadTransactionPrintPdf";
 import "../../styles/workOrderReportPrint.css";
 import { FormPageLayout } from "../../components/Layout/FormPageLayout";
@@ -54,13 +56,12 @@ import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 const CATEGORY_LABELS: Record<string, string> = {
   sublimation_tshirt: "Sublimation T-Shirt",
   polo_tshirt: "Polo T-Shirt",
+  printing_job: "Printing Job",
+  embroidery_job: "Embroidery Job",
 };
 
-// Matches the final step's sequence_order used across the Work Order module
-// (see WorkOrderAnalytics.tsx) to decide whether an order counts as completed.
-const LAST_STATUS_DAY = 10;
-
 type Period = "daily" | "weekly" | "monthly" | "yearly";
+type OrderState = "all" | "closed" | "verified" | "handed_over";
 
 const periodRange = (period: Period, anchor: Date): { start: Date; end: Date } => {
   switch (period) {
@@ -107,7 +108,10 @@ export default function WorkOrderReport() {
   const [period, setPeriod] = useState<Period>("daily");
   const [anchor, setAnchor] = useState<Date>(new Date());
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [orderStateFilter, setOrderStateFilter] = useState<OrderState>("all");
   const printAreaRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const { data: workOrders = [], isLoading } = useQuery({
     queryKey: ["wo-sheet-orders"],
@@ -125,13 +129,32 @@ export default function WorkOrderReport() {
     });
   }, [workOrders, start, end]);
 
+  const statusOptions = useMemo(() => {
+    const names = new Set<string>();
+    workOrders.forEach((wo) => {
+      if (wo.status_name) names.add(wo.status_name);
+    });
+    return Array.from(names).sort();
+  }, [workOrders]);
+
+  const filteredOrders = useMemo(() => {
+    return ordersInPeriod.filter((wo) => {
+      if (statusFilter && wo.status_name !== statusFilter) return false;
+      if (orderStateFilter === "closed" && !wo.is_finished) return false;
+      if (orderStateFilter === "verified" && !wo.is_verified) return false;
+      if (orderStateFilter === "handed_over" && !wo.is_handed_over) return false;
+      return true;
+    });
+  }, [ordersInPeriod, statusFilter, orderStateFilter]);
+
   const stats = useMemo(() => {
-    const totalOrders = ordersInPeriod.length;
-    const totalQuantity = ordersInPeriod.reduce((sum, wo) => sum + (wo.order_quantity || 0), 0);
-    const totalRevenue = ordersInPeriod.reduce((sum, wo) => sum + (Number(wo.total_price) || 0), 0);
-    const completed = ordersInPeriod.filter((wo) => wo.status_sequence_order === LAST_STATUS_DAY).length;
+    const totalOrders = filteredOrders.length;
+    const totalQuantity = filteredOrders.reduce((sum, wo) => sum + (wo.order_quantity || 0), 0);
+    const totalRevenue = filteredOrders.reduce((sum, wo) => sum + (Number(wo.total_price) || 0), 0);
+    // An order only counts as "Completed" once someone has clicked Hand Over.
+    const completed = filteredOrders.filter((wo) => wo.is_handed_over).length;
     return { totalOrders, totalQuantity, totalRevenue, completed };
-  }, [ordersInPeriod]);
+  }, [filteredOrders]);
 
   const handlePrint = () => {
     window.print();
@@ -144,10 +167,13 @@ export default function WorkOrderReport() {
       const filename = sanitizePdfFilename(
         `Work_Order_Report_${period}_${toDateOnly(start)}_to_${toDateOnly(end)}`
       );
+      // Company header is hidden on screen — show it just for the capture.
+      if (headerRef.current) headerRef.current.style.display = "block";
       await downloadElementAsPdf(printAreaRef.current, filename);
     } catch {
       enqueueSnackbar("Failed to generate PDF", { variant: "error" });
     } finally {
+      if (headerRef.current) headerRef.current.style.display = "";
       setIsDownloadingPdf(false);
     }
   };
@@ -231,8 +257,46 @@ export default function WorkOrderReport() {
           </Stack>
         </Paper>
 
+        <Paper
+          variant="outlined"
+          className="no-print"
+          sx={{ p: 1.5, mb: 2, display: "flex", flexWrap: "wrap", gap: 1.5 }}
+        >
+          <TextField
+            select
+            size="small"
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            sx={{ minWidth: 220 }}
+          >
+            <MenuItem value="">All Statuses</MenuItem>
+            {statusOptions.map((name) => (
+              <MenuItem key={name} value={name}>
+                {name}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            select
+            size="small"
+            label="Order State"
+            value={orderStateFilter}
+            onChange={(e) => setOrderStateFilter(e.target.value as OrderState)}
+            sx={{ minWidth: 200 }}
+          >
+            <MenuItem value="all">All Orders</MenuItem>
+            <MenuItem value="closed">Closed (Finished)</MenuItem>
+            <MenuItem value="verified">Verified</MenuItem>
+            <MenuItem value="handed_over">Handed Over (Completed)</MenuItem>
+          </TextField>
+        </Paper>
+
         <Box ref={printAreaRef} className="wo-report-print-area">
-        <CompanyDocumentHeader compact />
+        <Box ref={headerRef} sx={{ display: "none", "@media print": { display: "block" } }}>
+          <CompanyDocumentHeader compact />
+        </Box>
         <Typography variant="subtitle1" fontWeight={700} sx={{ my: 1.5 }}>
           Work Order Report — {periodLabel(period, start, end)}
         </Typography>
@@ -242,7 +306,7 @@ export default function WorkOrderReport() {
             <StatCard title="Total Orders" value={stats.totalOrders} change={0} icon={<AssignmentIcon />} iconColor="#1976d2" />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <StatCard title="Total Quantity" value={stats.totalQuantity} change={0} icon={<Inventory2Icon />} iconColor="#f59e0b" />
+            <StatCard title="Total Quantity" value={formatWoQuantity(stats.totalQuantity)} change={0} icon={<Inventory2Icon />} iconColor="#f59e0b" />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
@@ -282,20 +346,20 @@ export default function WorkOrderReport() {
                     <TableRow>
                       <TableCell colSpan={8} align="center">Loading...</TableCell>
                     </TableRow>
-                  ) : ordersInPeriod.length === 0 ? (
+                  ) : filteredOrders.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} align="center">No work orders in this period.</TableCell>
+                      <TableCell colSpan={8} align="center">No work orders match this filter.</TableCell>
                     </TableRow>
                   ) : (
-                    ordersInPeriod.map((wo: WorkOrderListItem) => (
+                    filteredOrders.map((wo: WorkOrderListItem) => (
                       <TableRow key={wo.id} hover>
                         <TableCell sx={{ fontWeight: 600 }}>{wo.work_order_no}</TableCell>
                         <TableCell>{wo.order_date ? format(new Date(wo.order_date), "d MMM yyyy") : "-"}</TableCell>
                         <TableCell>{wo.customer || "-"}</TableCell>
                         <TableCell>{wo.branch || "-"}</TableCell>
                         <TableCell>{CATEGORY_LABELS[wo.category] || wo.category}</TableCell>
-                        <TableCell align="right">{wo.order_quantity ?? "-"}</TableCell>
-                        <TableCell align="right">{wo.total_price ?? "-"}</TableCell>
+                        <TableCell align="right">{formatWoQuantity(wo.order_quantity)}</TableCell>
+                        <TableCell align="right">{formatWoAmount(wo.total_price)}</TableCell>
                         <TableCell>
                           <Chip label={wo.status_name || "-"} size="small" color="primary" variant="outlined" />
                         </TableCell>
