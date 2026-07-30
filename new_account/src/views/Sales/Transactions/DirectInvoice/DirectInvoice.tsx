@@ -3,6 +3,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import {
     Box,
     Button,
+    Checkbox,
+    FormControlLabel,
     Stack,
     Table,
     TableBody,
@@ -28,6 +30,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSalesOrders, getSalesOrderByOrderNo } from "../../../../api/SalesOrders/SalesOrdersApi";
 import { getSalesOrderDetailsByOrderNo } from "../../../../api/SalesOrders/SalesOrderDetailsApi";
 import { directSalesInvoice } from "../../../../api/SalesInvoice/SalesInvoiceApi";
+import { createWorkOrder } from "../../../../api/WorkOrder/workOrderApi";
+import ReferenceBarcode from "../../../../components/ReferenceBarcode";
 import { getDebtorTrans } from "../../../../api/DebtorTrans/DebtorTransApi";
 import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
@@ -141,6 +145,8 @@ export default function DirectInvoice() {
     const [address, setAddress] = useState("");
     const [contactPhoneNumber, setContactPhoneNumber] = useState("");
     const [customerReference, setCustomerReference] = useState("");
+    // Mutually exclusive: must pick one before the invoice can be placed.
+    const [workOrderChoice, setWorkOrderChoice] = useState<"create" | "none" | "">("");
     const [shippingCompany, setShippingCompany] = useState("");
 
     // Normalize select values when API returned relation objects (e.g. sales_type: { id: 1 })
@@ -543,33 +549,30 @@ export default function DirectInvoice() {
         }
     };
 
-    // ===== Auto-generate reference based on fiscal year =====
+    // ===== Auto-generate reference: SI/{customer's invoice #}/{month}/{year} =====
     useEffect(() => {
-        // Determine year: prefer fiscal year start if available, otherwise use current calendar year
-        const year = selectedFiscalYear
-            ? new Date(selectedFiscalYear.fiscal_year_from).getFullYear()
-            : new Date().getFullYear();
+        if (!customer) return;
 
-        // Filter for trans_type=10 (invoice) references from debtor_trans
-        const existingRefs = debtorTrans
-            .filter((d: any) => Number(d.trans_type) === 10 && d.reference)
-            .map((d: any) => d.reference);
+        const invDate = invoiceDate ? new Date(`${invoiceDate}T00:00:00`) : new Date();
+        const month = String(invDate.getMonth() + 1).padStart(2, "0");
+        const yearShort = String(invDate.getFullYear()).slice(-2);
 
-        const yearReferences = existingRefs.filter((ref: string) =>
-            ref.endsWith(`/${year}`)
-        );
+        // Count this specific customer's own invoices so far (trans_type=10 = invoice)
+        const customerRefs = debtorTrans
+            .filter((d: any) => Number(d.trans_type) === 10 && d.reference && String(d.debtor_no) === String(customer))
+            .map((d: any) => d.reference as string);
 
-        const nums = yearReferences
+        const nums = customerRefs
             .map((ref: string) => {
-                const match = ref.match(/^(\d{3})\/\d{4}$/);
+                const match = ref.match(/^SI\/(\d{3})\/\d{2}\/\d{2}$/);
                 return match ? parseInt(match[1], 10) : 0;
             })
             .filter((num: number) => !isNaN(num) && num > 0);
 
         const nextNumber = nums.length > 0 ? Math.max(...nums) + 1 : 1;
         const formattedNumber = nextNumber.toString().padStart(3, '0');
-        setReference(`${formattedNumber}/${year}`);
-    }, [selectedFiscalYear, debtorTrans]);
+        setReference(`SI/${formattedNumber}/${month}/${yearShort}`);
+    }, [customer, invoiceDate, debtorTrans]);
 
     // Auto-select first customer on load (match DirectDelivery behaviour)
     useEffect(() => {
@@ -795,6 +798,7 @@ export default function DirectInvoice() {
         if (!branch) { alert("Select branch first"); return; }
         if (!deliverFrom) { alert("Select deliver-from location"); return; }
         if (!priceList) { alert("Please select a price list."); return; }
+        if (!workOrderChoice) { alert("Please select either 'Create Work Order' or 'No Work Order'."); return; }
         const orderTypeId = Number(relationId(priceList, "id"));
         if (!orderTypeId || !priceLists.some((pl: any) => Number(pl.id) === orderTypeId)) {
             alert("Please select a valid price list.");
@@ -868,6 +872,23 @@ export default function DirectInvoice() {
 
             if (result.gl_warning) {
                 console.warn("Invoice GL warning:", result.gl_warning);
+            }
+
+            const invoiceReferenceForLink = result.reference ?? reference;
+            if (workOrderChoice === "create") {
+                try {
+                    const woFormData = new FormData();
+                    woFormData.append("category", "sublimation_tshirt");
+                    woFormData.append("department", "Factory");
+                    woFormData.append("customer", customerName || "");
+                    woFormData.append("order_date", invoiceDate);
+                    woFormData.append("delivery_date", validUntil || invoiceDate);
+                    woFormData.append("invoice_reference", invoiceReferenceForLink || "");
+                    await createWorkOrder(woFormData);
+                } catch (woErr) {
+                    console.error("Automatic work order creation failed", woErr);
+                    alert("Invoice saved, but automatic Factory work order creation failed. Please create it manually.");
+                }
             }
 
             setOpen(true);
@@ -1049,6 +1070,27 @@ export default function DirectInvoice() {
                                 value={reference}
                                 InputProps={{ readOnly: true }}
                             />
+                            {reference && <ReferenceBarcode value={reference} />}
+                            <Stack direction="row" spacing={1}>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={workOrderChoice === "create"}
+                                            onChange={(e) => setWorkOrderChoice(e.target.checked ? "create" : "")}
+                                        />
+                                    }
+                                    label="Create Work Order"
+                                />
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={workOrderChoice === "none"}
+                                            onChange={(e) => setWorkOrderChoice(e.target.checked ? "none" : "")}
+                                        />
+                                    }
+                                    label="No Work Order"
+                                />
+                            </Stack>
                         </Stack>
                     </Grid>
 

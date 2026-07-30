@@ -17,6 +17,7 @@ import {
   FormControlLabel,
   CircularProgress,
 } from "@mui/material";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router";
 import { enqueueSnackbar } from "notistack";
@@ -24,6 +25,14 @@ import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import { createWorkOrder, getWorkOrder, updateWorkOrder } from "../../api/WorkOrder/workOrderApi";
 import { getOrganization } from "../../api/OrganizationSettings/organizationSettingsApi";
 import { cleanWoNumberInput, formatWoNumberInputDisplay, formatWoQuantity } from "../../utils/workOrderNumberFormat";
+import { getApiBaseUrl } from "../../config/backendConfig";
+
+const storageUrl = (path: string | null | undefined): string | null => {
+  if (!path) return null;
+  const apiBase = getApiBaseUrl().replace(/\/+$/, "");
+  const backendBase = apiBase.replace(/\/index\.php\/api$/i, "").replace(/\/api$/i, "");
+  return `${backendBase}/storage/${path.replace(/^\/+/, "")}`;
+};
 
 const SIZE_COLUMNS = ["XXS", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
 const SIZE_ROWS = ["GENTS", "LADIES", "BOYS"] as const;
@@ -84,6 +93,16 @@ const AddPrintingJobSheet = () => {
   const [longSleeve, setLongSleeve] = useState(false);
   const [shortSleeve, setShortSleeve] = useState(false);
   const [sizeQty, setSizeQty] = useState<Record<string, string>>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
 
   useEffect(() => {
     if (!existingOrder) return;
@@ -91,6 +110,7 @@ const AddPrintingJobSheet = () => {
     setCustomer(existingOrder.customer || "");
     setJobName(existingOrder.description || "");
     setPrice(existingOrder.total_price != null ? String(existingOrder.total_price) : "");
+    setImagePreview(storageUrl(existingOrder.front_image_path));
     const sides = existingOrder.sub_category || "";
     setFront(sides.includes("Front"));
     setBack(sides.includes("Back"));
@@ -170,6 +190,7 @@ const AddPrintingJobSheet = () => {
       formData.append("balance", price);
     }
     if (remarkLines) formData.append("remark", remarkLines);
+    if (imageFile) formData.append("front_image", imageFile);
 
     let sizeIndex = 0;
     SIZE_ROWS.forEach((row) => {
@@ -371,6 +392,36 @@ const AddPrintingJobSheet = () => {
               />
             </Grid>
           </Grid>
+
+          <Divider sx={{ my: 4 }} />
+
+          <Typography variant="subtitle2" fontWeight="bold" gutterBottom>IMAGE</Typography>
+          <Paper
+            variant="outlined"
+            sx={{
+              height: 220,
+              maxWidth: 400,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              overflow: "hidden",
+              position: "relative",
+              "&:hover": { backgroundColor: "action.hover" },
+            }}
+            component="label"
+          >
+            <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
+            {imagePreview ? (
+              <img src={imagePreview} alt="Job Sheet" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            ) : (
+              <>
+                <CloudUploadIcon color="action" sx={{ fontSize: 60, mb: 1 }} />
+                <Typography color="textSecondary">Upload Image</Typography>
+              </>
+            )}
+          </Paper>
 
           <Box mt={4} display="flex" justifyContent="flex-end">
             <Button

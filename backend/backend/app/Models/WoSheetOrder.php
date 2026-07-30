@@ -13,6 +13,7 @@ class WoSheetOrder extends Model
 
     protected $fillable = [
         'work_order_no',
+        'invoice_reference',
         'branch',
         'order_date',
         'delivery_date',

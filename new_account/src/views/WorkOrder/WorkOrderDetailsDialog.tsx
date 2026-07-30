@@ -236,6 +236,7 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
                     Order Details
                   </Typography>
                   {detailRow("WO Number", order.work_order_no)}
+                  {order.invoice_reference && detailRow("Invoice Reference", order.invoice_reference)}
                   {detailRow("Created Date Time", formatWoDateTime(order.created_at))}
                   {detailRow("Updated Date Time", formatWoDateTime(order.updated_at))}
                   {detailRow("Order Date", formatWoDate(order.order_date))}

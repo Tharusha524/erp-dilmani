@@ -111,7 +111,7 @@ class ReportPdfBuilder
             'bank-statement-w-reconcile' => $this->bankStatement($request, $title, true),
             'fixed-assets-valuation' => $this->fixedAssetsValuation($request, $title),
             'inventory-valuation' => $this->inventoryValuation($request, $title),
-            'print-invoices' => $this->debtorTransReport($request, $title, [10], 'Sales Invoices'),
+            'print-invoices' => $this->printInvoicesDetailed($request, $title),
             'print-credit-notes' => $this->debtorTransReport($request, $title, [11], 'Credit Notes'),
             'print-deliveries' => $this->debtorTransReport($request, $title, [13], 'Deliveries'),
             'print-receipts' => $this->debtorTransReport($request, $title, [12], 'Customer Receipts'),
@@ -1350,6 +1350,124 @@ class ReportPdfBuilder
             'unit_cost' => 'Unit Cost',
             'value' => 'Value',
         ], $query->get(), $request, $asAt !== '' ? 'As at: ' . $asAt : null);
+    }
+
+    /**
+     * Bespoke, invoice-shaped PDF (Charge To / Delivered To, item lines,
+     * sub-total/total, payment terms) — one invoice per page. This is
+     * intentionally separate from debtorTransReport() (used by the other
+     * print-* reports) so those stay on the generic tabular layout.
+     */
+    private function printInvoicesDetailed(Request $request, string $title): array
+    {
+        $query = DB::table('debtor_trans as t')
+            ->join('debtors_master as d', 't.debtor_no', '=', 'd.debtor_no')
+            ->leftJoin('cust_branch as b', 't.branch_code', '=', 'b.branch_code')
+            ->leftJoin('payment_terms as pt', 't.payment_terms', '=', 'pt.terms_indicator')
+            ->where('t.trans_type', 10)
+            ->select(
+                't.trans_no',
+                't.reference',
+                't.tran_date',
+                't.due_date',
+                't.ov_amount',
+                't.ov_gst',
+                't.ov_freight',
+                't.ov_discount',
+                'd.debtor_no',
+                'd.name as customer_name',
+                'd.address as customer_address',
+                'd.gst as customer_vat',
+                'd.debtor_ref',
+                'd.curr_code',
+                'b.br_name',
+                'b.br_address',
+                'b.sales_person',
+                'pt.description as payment_terms_desc'
+            )
+            ->orderByDesc('t.tran_date');
+
+        if ($request->filled('startDate')) {
+            $query->where('t.tran_date', '>=', $request->input('startDate'));
+        }
+        if ($request->filled('endDate')) {
+            $query->where('t.tran_date', '<=', $request->input('endDate'));
+        }
+
+        $customerFilter = $request->input('customer');
+        if ($customerFilter && !in_array(strtolower((string) $customerFilter), ['nofilter', 'no', ''], true)) {
+            $query->where('t.debtor_no', $customerFilter);
+        }
+
+        $headers = $query->limit(200)->get();
+        $transNos = $headers->pluck('trans_no')->all();
+
+        $details = DB::table('debtor_trans_details as dd')
+            ->leftJoin('stock_master as s', 'dd.stock_id', '=', 's.stock_id')
+            ->leftJoin('item_units as u', 's.units', '=', 'u.id')
+            ->where('dd.debtor_trans_type', 10)
+            ->whereIn('dd.debtor_trans_no', $transNos ?: [0])
+            ->select(
+                'dd.debtor_trans_no',
+                'dd.stock_id',
+                'dd.description',
+                'dd.unit_price',
+                'dd.quantity',
+                'dd.discount_percent',
+                'u.abbr as unit_abbr'
+            )
+            ->get()
+            ->groupBy('debtor_trans_no');
+
+        $bankAccount = DB::table('bank_accounts')->where('default_curr_act', 1)->first()
+            ?? DB::table('bank_accounts')->where('inactive', 0)->orderBy('id')->first();
+
+        $invoices = $headers->map(function ($h) use ($details) {
+            $lines = ($details->get($h->trans_no) ?? collect())->map(function ($d) {
+                $qty = (float) $d->quantity;
+                $price = (float) $d->unit_price;
+                $discount = (float) $d->discount_percent;
+
+                return [
+                    'item_code' => $d->stock_id,
+                    'description' => $d->description,
+                    'quantity' => $qty,
+                    'unit' => $d->unit_abbr ?? '',
+                    'price' => $price,
+                    'discount' => $discount,
+                    'total' => $qty * $price * (1 - $discount / 100),
+                ];
+            })->values()->all();
+
+            return [
+                'invoice_no' => $h->reference,
+                'date' => $h->tran_date,
+                'due_date' => $h->due_date,
+                'currency' => $h->curr_code,
+                'customer_name' => $h->customer_name,
+                'customer_address' => $h->customer_address,
+                'delivered_name' => $h->br_name ?: $h->customer_name,
+                'delivered_address' => $h->br_address ?: $h->customer_address,
+                'customer_reference' => $h->debtor_ref,
+                'sales_person' => $h->sales_person,
+                'vat_no' => $h->customer_vat,
+                'payment_terms' => $h->payment_terms_desc,
+                'lines' => $lines,
+                'subtotal' => array_sum(array_column($lines, 'total')),
+                'freight' => (float) $h->ov_freight,
+                'tax' => (float) $h->ov_gst,
+                'discount' => (float) $h->ov_discount,
+                'total' => (float) $h->ov_amount,
+            ];
+        })->values()->all();
+
+        return [
+            'view' => 'reports.print_invoices',
+            'title' => $title,
+            'invoices' => $invoices,
+            'bankAccount' => $bankAccount ? (array) $bankAccount : null,
+            'companyHeader' => CompanyReportHeader::forReports(),
+        ];
     }
 
     private function debtorTransReport(Request $request, string $title, array $types, string $label): array

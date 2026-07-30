@@ -15,6 +15,7 @@ import {
   Divider,
   CircularProgress,
 } from "@mui/material";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router";
 import { enqueueSnackbar } from "notistack";
@@ -22,6 +23,14 @@ import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import { createWorkOrder, getWorkOrder, updateWorkOrder } from "../../api/WorkOrder/workOrderApi";
 import { getOrganization } from "../../api/OrganizationSettings/organizationSettingsApi";
 import { cleanWoNumberInput, formatWoAmount, formatWoNumberInputDisplay } from "../../utils/workOrderNumberFormat";
+import { getApiBaseUrl } from "../../config/backendConfig";
+
+const storageUrl = (path: string | null | undefined): string | null => {
+  if (!path) return null;
+  const apiBase = getApiBaseUrl().replace(/\/+$/, "");
+  const backendBase = apiBase.replace(/\/index\.php\/api$/i, "").replace(/\/api$/i, "");
+  return `${backendBase}/storage/${path.replace(/^\/+/, "")}`;
+};
 
 const AREAS = ["Front", "Back", "Sleeves", "Others"] as const;
 const SIZE_COLUMNS = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
@@ -69,12 +78,23 @@ const AddEmbroideryJobSheet = () => {
   const [jobName, setJobName] = useState("");
   const [areaLines, setAreaLines] = useState<Record<string, AreaLine>>(emptyAreaLines());
   const [sizeQty, setSizeQty] = useState<Record<string, string>>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
 
   useEffect(() => {
     if (!existingOrder) return;
     setDate(existingOrder.order_date?.slice(0, 10) || "");
     setCustomer(existingOrder.customer || "");
     setJobName(existingOrder.description || "");
+    setImagePreview(storageUrl(existingOrder.front_image_path));
 
     const nextAreaLines = emptyAreaLines();
     existingOrder.price_items?.forEach((p) => {
@@ -130,6 +150,7 @@ const AddEmbroideryJobSheet = () => {
     formData.append("description", jobName);
     formData.append("order_quantity", String(totalOrderQuantity));
     formData.append("balance", String(grandTotalPrice));
+    if (imageFile) formData.append("front_image", imageFile);
 
     let priceIndex = 0;
     AREAS.forEach((area) => {
@@ -303,6 +324,36 @@ const AddEmbroideryJobSheet = () => {
               </Grid>
             ))}
           </Grid>
+
+          <Divider sx={{ my: 4 }} />
+
+          <Typography variant="subtitle2" fontWeight="bold" gutterBottom>IMAGE</Typography>
+          <Paper
+            variant="outlined"
+            sx={{
+              height: 220,
+              maxWidth: 400,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              overflow: "hidden",
+              position: "relative",
+              "&:hover": { backgroundColor: "action.hover" },
+            }}
+            component="label"
+          >
+            <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
+            {imagePreview ? (
+              <img src={imagePreview} alt="Job Sheet" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            ) : (
+              <>
+                <CloudUploadIcon color="action" sx={{ fontSize: 60, mb: 1 }} />
+                <Typography color="textSecondary">Upload Image</Typography>
+              </>
+            )}
+          </Paper>
 
           <Box mt={4} display="flex" justifyContent="flex-end">
             <Button

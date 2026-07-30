@@ -65,6 +65,7 @@ export interface WorkOrderStatusInfo {
 export interface WorkOrderDetail {
   id: number;
   work_order_no: string;
+  invoice_reference: string | null;
   branch: string | null;
   order_date: string | null;
   delivery_date: string | null;

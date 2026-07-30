@@ -84,6 +84,7 @@ const AddWorkOrder = () => {
   const [orderDate, setOrderDate] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [customer, setCustomer] = useState("");
+  const [invoiceReference, setInvoiceReference] = useState("");
   const [contactNo, setContactNo] = useState("");
   const [kindOfFabric, setKindOfFabric] = useState("");
   const [branch, setBranch] = useState("");
@@ -107,6 +108,7 @@ const AddWorkOrder = () => {
     setOrderDate(existingOrder.order_date?.slice(0, 10) || "");
     setDeliveryDate(existingOrder.delivery_date?.slice(0, 10) || "");
     setCustomer(existingOrder.customer || "");
+    setInvoiceReference(existingOrder.invoice_reference || "");
     setContactNo(existingOrder.contact_no || "");
     setKindOfFabric(existingOrder.kind_of_fabric || "");
     setBranch(existingOrder.branch || "");
@@ -189,6 +191,7 @@ const AddWorkOrder = () => {
     formData.append("delivery_date", deliveryDate);
     formData.append("customer", customer);
     formData.append("contact_no", contactNo);
+    if (invoiceReference) formData.append("invoice_reference", invoiceReference);
     formData.append("kind_of_fabric", kindOfFabric);
     formData.append("remark", remark);
     formData.append("order_quantity", String(totalOrderQuantity));
@@ -370,6 +373,15 @@ const AddWorkOrder = () => {
                 margin="normal"
                 value={contactNo}
                 onChange={(e) => setContactNo(e.target.value)}
+              />
+              <TextField
+                fullWidth
+                label="Reference Number"
+                size="small"
+                margin="normal"
+                helperText="Auto-filled when created from a Sales Invoice; can be entered manually too."
+                value={invoiceReference}
+                onChange={(e) => setInvoiceReference(e.target.value)}
               />
               <TextField
                 fullWidth
