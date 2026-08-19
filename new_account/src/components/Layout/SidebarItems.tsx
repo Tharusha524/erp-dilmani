@@ -12,6 +12,7 @@ import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import { getModulePermissionIds } from "../../permissions/navigationTree";
+import { PermissionKeys } from "../../views/Administration/SectionList";
 
 export interface SidebarItem {
   title?: string;
@@ -222,6 +223,11 @@ const baseSidebarItems: Array<SidebarItem> = [
         href: "/bankingandgeneralledger/maintenance",
       },
     ],
+  },
+  {
+    title: "Stock",
+    href: "/stock",
+    icon: <FolderIcon fontSize="small" />,
   },
 ];
 

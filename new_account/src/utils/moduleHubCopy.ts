@@ -219,6 +219,7 @@ export const HUB_CARD_DESCRIPTIONS: Record<string, string> = {
   "/sales/transactions/sales-order-entry": "Customer order — reserves sales workflow",
   "/sales/transactions/direct-delivery": "Deliver goods without prior order",
   "/sales/transactions/direct-invoice": "Invoice customer directly",
+  "/sales/transactions/internal-service-invoice": "Invoice for internal services rendered",
   "/sales/transactions/delivery-against-sales-orders": "Dispatch items from sales order",
   "/sales/transactions/invoice-against-sales-delivery": "Bill customer for delivered goods",
   "/sales/transactions/invoice-prepaid-orders": "Final invoice for prepaid/cash orders",

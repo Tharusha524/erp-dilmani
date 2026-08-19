@@ -57,6 +57,7 @@ export const NAVIGATION_PERMISSION_TREE: NavModule[] = [
           { label: "Sales Order Entry", id: id("Sales orders edition"), path: "/sales/transactions/sales-order-entry" },
           { label: "Direct Delivery", id: id("Direct sales delivery entry"), path: "/sales/transactions/direct-delivery" },
           { label: "Direct Invoice", id: id("Direct sales invoice entry"), path: "/sales/transactions/direct-invoice" },
+          { label: "Internal Service Invoice", id: id("Internal service invoice entry"), path: "/sales/transactions/internal-service-invoice" },
           { label: "Delivery Against Sales Orders", id: id("Sales deliveries edition"), path: "/sales/transactions/delivery-against-sales-orders" },
           { label: "Invoice Against Sales Delivery", id: id("Sales invoices edition"), path: "/sales/transactions/invoice-against-sales-delivery" },
           { label: "Invoice Prepaid Orders", id: id("Invoice prepaid orders"), path: "/sales/transactions/invoice-prepaid-orders" },

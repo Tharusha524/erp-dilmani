@@ -253,6 +253,8 @@ import Payments from "./views/BankindAndGeneralLedger/Transactions/Payments/Paym
 import SalesOrderEntry from "./views/Sales/Transactions/SalesOrderEntry/SalesOrderEntry";
 import DirectDelivery from "./views/Sales/Transactions/DirectDelivery/DirectDelivery";
 import DirectInvoice from "./views/Sales/Transactions/DirectInvoice/DirectInvoice";
+import InternalServiceInvoice from "./views/Sales/Transactions/InternalServiceInvoice/InternalServiceInvoice";
+import InternalServiceInvoiceSuccess from "./views/Sales/Transactions/InternalServiceInvoice/InternalServiceInvoiceSuccess";
 import CustomerPayments from "./views/Sales/Transactions/CustomerPayments/CustomerPayments";
 import CustomerCreditNotes from "./views/Sales/Transactions/CustomerCreditNotes/CustomerCreditNotes";
 import SalesQuotationInquiry from "./views/Sales/InquiriesAndReports/SalesQuotationInquiry/SalesQuotationInquiry";
@@ -396,6 +398,8 @@ import UpdateCustomerCreditNotes from "./views/Sales/Transactions/CustomerCredit
 import UpdateCompanySetupForm from "./views/Setup/CompanySetup/CompanySetup/UpdateCompanySetupForm";
 import ReleaseWorkOrder from "./views/Manufacturing/Transactions/OutstandingWorkOrders/ReleaseWorkOrder";
 import IssueWorkOrder from "./views/Manufacturing/Transactions/OutstandingWorkOrders/IssueWorkOrder";
+import Stock from "./views/Stock/Stock";
+import ManageStock from "./views/Stock/ManageStock";
 import CostWorkOrder from "./views/Manufacturing/Transactions/OutstandingWorkOrders/CostWorkOrder";
 import ProduceWorkOrder from "./views/Manufacturing/Transactions/OutstandingWorkOrders/ProduceWorkOrder";
 import CreditInvoiceSuccess from "./views/Sales/Transactions/CustomerCreditNotes/CreditInvoiceSuccess";
@@ -532,6 +536,13 @@ const AppRoutes = () => {
             <ProtectedRoute required={PERMISSION_ID_MAP['Dashboard page']}>
               {withLayout(MainLayout, Dashboard)}
             </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/stock"
+          element={
+            withLayout(MainLayout, Stock)
           }
         />
 
@@ -1485,6 +1496,22 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales invoice entry']}>
               {withLayout(MainLayout, ViewDirectInvoice)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales/transactions/internal-service-invoice"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Internal service invoice entry']}>
+              {withLayout(MainLayout, InternalServiceInvoice)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales/transactions/internal-service-invoice/success"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Internal service invoice entry']}>
+              {withLayout(MainLayout, InternalServiceInvoiceSuccess)}
             </ProtectedRoute>
           }
         />
@@ -3885,6 +3912,14 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/maintenance/closing-gl-transactions"
           element={withLayout(MainLayout, ClosingGlTransactions)}
+        />
+        <Route
+          path="/stock"
+          element={withLayout(MainLayout, Stock)}
+        />
+        <Route
+          path="/stock/manage"
+          element={withLayout(MainLayout, ManageStock)}
         />
       </Route>
     </Routes>

@@ -18,6 +18,7 @@ const ITEMS: ModuleHubItem[] = [
   { text: "SALES ORDER ENTRY", icon: <ShoppingCartIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/sales/transactions/sales-order-entry" },
   { text: "DIRECT DELIVERY", icon: <LocalShippingIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/sales/transactions/direct-delivery" },
   { text: "DIRECT INVOICE", icon: <ReceiptIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/sales/transactions/direct-invoice" },
+  { text: "INTERNAL SERVICE INVOICE", icon: <ReceiptIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/sales/transactions/internal-service-invoice" },
   { text: "DELIVERY AGAINST SALES ORDERS", icon: <AssignmentTurnedInIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/sales/transactions/delivery-against-sales-orders" },
   { text: "INVOICE AGAINST SALES DELIVERY", icon: <PaymentIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/sales/transactions/invoice-against-sales-delivery" },
   { text: "INVOICE PREPAID ORDERS", icon: <NoteAddIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/sales/transactions/invoice-prepaid-orders" },

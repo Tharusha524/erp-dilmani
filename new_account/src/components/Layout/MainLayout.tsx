@@ -526,7 +526,7 @@ const DrawerContent = ({
         ) : null}
 
         {filteredSidebarItems.map((item, index) => {
-          if (item?.accessKey && !userPermissionObject[`${item?.accessKey}`])
+          if (item?.accessKey && !userPermissionObject?.[`${item?.accessKey}`])
             return null;
 
           if (item?.headline) {
@@ -750,7 +750,7 @@ const NestedItem = React.memo(
           <Collapse in={open} unmountOnExit>
             <List className="erp-nav-nested-list">
               {item.nestedItems?.map((nestedItem, index) => {
-                if (nestedItem?.accessKey && !userPermissionObject[`${nestedItem?.accessKey}`])
+                if (nestedItem?.accessKey && !userPermissionObject?.[`${nestedItem?.accessKey}`])
                   return null;
 
                 if (nestedItem.nestedItems) {

@@ -114,6 +114,7 @@ use App\Http\Controllers\WOManufactureController;
 use App\Http\Controllers\WORequirementsController;
 use App\Http\Controllers\WorkOrdersController;
 use App\Http\Controllers\QuotationController;
+use App\Http\Controllers\StandaloneStockController;
 use App\Models\Backup;
 use App\Models\ItemCode;
 use App\Models\UserProfile;
@@ -174,6 +175,12 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:lo
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/standalone-stocks', [StandaloneStockController::class, 'index']);
+    Route::post('/standalone-stocks', [StandaloneStockController::class, 'store']);
+    Route::put('/standalone-stocks/{id}', [StandaloneStockController::class, 'update']);
+    Route::delete('/standalone-stocks/{id}', [StandaloneStockController::class, 'destroy']);
+    Route::post('/standalone-stocks/in', [StandaloneStockController::class, 'stockIn']);
+    Route::post('/standalone-stocks/out', [StandaloneStockController::class, 'stockOut']);
     Route::get('ai-agent/status', [\App\Http\Controllers\AiAgentController::class, 'status']);
     Route::post('ai-agent/chat', [\App\Http\Controllers\AiAgentController::class, 'chat']);
     Route::post('ai-agent/transcribe', [\App\Http\Controllers\AiAgentController::class, 'transcribe']);

@@ -586,6 +586,21 @@ export const PermissionSectionsMap: PermissionSection[] = [
       },
     ],
   },
+  {
+    mainSection: "Standalone Stock",
+    subSections: [
+      {
+        name: "Stock Management",
+        key: "STANDALONE_STOCK",
+        permissionsExists: {
+          VIEW: true,
+          CREATE: true,
+          EDIT: true,
+          DELETE: true,
+        },
+      },
+    ],
+  },
 ];
 
 export interface PermissionSection {
@@ -811,9 +826,9 @@ export enum PermissionKeys {
 // Create the Zod schema using the enum values
 export const PermissionKeysObjectSchema = z.object(
   Object.values(PermissionKeys).reduce((acc, key) => {
-    acc[key] = z.boolean();
+    acc[key] = z.boolean().default(false);
     return acc;
-  }, {} as Record<PermissionKeys, z.ZodBoolean>)
+  }, {} as Record<PermissionKeys, z.ZodDefault<z.ZodBoolean>>)
 );
 
 // Infer the TypeScript type from the Zod schema

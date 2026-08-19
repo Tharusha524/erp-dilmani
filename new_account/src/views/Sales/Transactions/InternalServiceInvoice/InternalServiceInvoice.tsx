@@ -110,7 +110,7 @@ function bankAccountLabel(acc: any): string {
     return gl ? `${name} (${gl})` : String(name);
 }
 
-export default function DirectInvoice() {
+export default function InternalServiceInvoice() {
     const navigate = useNavigate();
     const location = useLocation();
     const queryClient = useQueryClient();
@@ -139,6 +139,9 @@ export default function DirectInvoice() {
     const [dateError, setDateError] = useState("");
     const [shippingCharge, setShippingCharge] = useState(0);
     const [priceColumnLabel, setPriceColumnLabel] = useState("Price After Tax");
+    const [companyName, setCompanyName] = useState("DIO Solutions (Pvt) Ltd");
+    const [companyAddress, setCompanyAddress] = useState("Colombo, Sri Lanka");
+    const [companyTelephone, setCompanyTelephone] = useState("011-XXXXXXX");
 
     // Additional fields for Quotation Delivery Details
     const [validUntil, setValidUntil] = useState("");
@@ -795,21 +798,21 @@ export default function DirectInvoice() {
     const customerAddr = selectedCustomer?.address || selectedCustomer?.delivery_address || address || null;
 
     const handlePlaceQuotation = async () => {
-        if (!customer) { enqueueSnackbar("Select customer first", { variant: "warning" }); return; }
-        if (!branch) { enqueueSnackbar("Select branch first", { variant: "warning" }); return; }
-        if (!deliverFrom) { enqueueSnackbar("Select deliver-from location", { variant: "warning" }); return; }
-        if (!priceList) { enqueueSnackbar("Please select a price list.", { variant: "warning" }); return; }
-        if (!workOrderChoice) {
-            enqueueSnackbar("Please select either 'Create Work Order' or 'No Work Order'.", { variant: "warning" });
-            return;
+        if (!customer) { enqueueSnackbar("Select 'To Branch / Department' first", { variant: "warning" }); return; }
+        if (!branch) {
+            const customerBranches = branches.filter((b: any) => String(b.debtor_no) === String(customer));
+            if (customerBranches.length > 0) setBranch(customerBranches[0].branch_code);
+            else { enqueueSnackbar("Selected department has no valid branch", { variant: "warning" }); return; }
         }
-        const orderTypeId = Number(relationId(priceList, "id"));
-        if (!orderTypeId || !priceLists.some((pl: any) => Number(pl.id) === orderTypeId)) {
-            enqueueSnackbar("Please select a valid price list.", { variant: "warning" });
-            return;
-        }
-        const isCashSale = isCashSalePaymentTerm(paymentTerms, payment);
-        if (isCashSale && !cashAccount) { enqueueSnackbar("Select cash account", { variant: "warning" }); return; }
+        if (!deliverFrom) { enqueueSnackbar("Select 'From Branch / Warehouse'", { variant: "warning" }); return; }
+
+        // Provide defaults for hidden fields
+        const finalPriceList = priceList || (priceLists.length > 0 ? priceLists[0].id : 1);
+        const orderTypeId = Number(relationId(finalPriceList, "id"));
+        const finalPayment = payment || (paymentTerms.length > 0 ? paymentTerms[0].terms_indicator : 4);
+        const finalWorkOrderChoice = workOrderChoice || "none";
+
+        const isCashSale = isCashSalePaymentTerm(paymentTerms, finalPayment);
         // FrontAccounting direct invoice: no stock issue on invoice-only entry.
         const lineRows = rows.filter((r) => r.itemCode && r.quantity > 0);
         if (lineRows.length === 0) {
@@ -836,20 +839,20 @@ export default function DirectInvoice() {
         try {
             const defaultShipperId = shippingCompanies.length > 0 ? shippingCompanies[0].shipper_id : 1;
             const shipViaId = Number(relationId(shippingCompany, "shipper_id", "id")) || Number(defaultShipperId) || 1;
-            const paymentTermsId = payment
-                ? Number(relationId(payment, "terms_indicator", "id")) || null
+            const paymentTermsId = finalPayment
+                ? Number(relationId(finalPayment, "terms_indicator", "id")) || null
                 : null;
             const stockLoc =
                 relationId(deliverFrom, "loc_code", "code").slice(0, 5)
                 || String(deliverFrom || "").slice(0, 5);
-            const lineRows = rows.filter((r) => r.itemCode && r.quantity > 0);
             const unitPriceFor = (row: any) =>
                 priceColumnLabel === "Price after Tax" ? row.priceAfterTax : row.priceBeforeTax;
-            const isCashSale = isCashSalePaymentTerm(paymentTerms, payment);
+
+            const finalBranchCode = branch || (branches.filter((b: any) => String(b.debtor_no) === String(customer))[0]?.branch_code) || 1;
 
             const result = await directSalesInvoice({
                 debtor_no: Number(customer),
-                branch_code: Number(branch),
+                branch_code: Number(finalBranchCode),
                 tran_date: invoiceDate,
                 due_date: validUntil || invoiceDate,
                 order_type: orderTypeId,
@@ -879,7 +882,7 @@ export default function DirectInvoice() {
             }
 
             const invoiceReferenceForLink = result.reference ?? reference;
-            if (workOrderChoice === "create") {
+            if (finalWorkOrderChoice === "create") {
                 try {
                     const woFormData = new FormData();
                     woFormData.append("category", "sublimation_tshirt");
@@ -904,7 +907,7 @@ export default function DirectInvoice() {
             await queryClient.invalidateQueries({ queryKey: ["bankTrans"] });
             await queryClient.invalidateQueries({ queryKey: ["customerCreditSummary", customer] });
             invalidateFinancialReports(queryClient);
-            navigate("/sales/transactions/direct-invoice/success", {
+            navigate("/sales/transactions/internal-service-invoice/success", {
                 state: {
                     orderNo: result.order_no,
                     reference: result.reference ?? reference,
@@ -938,7 +941,7 @@ export default function DirectInvoice() {
 
     const breadcrumbItems = [
         { title: "Transactions", href: "/sales/transactions/" },
-        { title: "Direct Sales Invoice" },
+        { title: "Internal Service Invoice" },
     ];
 
     // Only calculate subtotal for completed rows (all rows except the last one which is being edited)
@@ -1026,7 +1029,7 @@ export default function DirectInvoice() {
                 }}
             >
                 <Box>
-                    <PageTitle title="Direct Sales Invoice" />
+                    <PageTitle title="Internal Service Invoice" />
                     <Breadcrumb breadcrumbs={breadcrumbItems} />
                 </Box>
 
@@ -1035,157 +1038,136 @@ export default function DirectInvoice() {
                 </Button>
             </Box>
             {/* Form fields */}
-            <Paper sx={{ p: 2, borderRadius: 2 }}>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} sm={3}>
-                        <Stack spacing={2}>
-                            <TextField
-                                select
-                                fullWidth
-                                label="Customer"
-                                value={String(customer || "")}
-                                onChange={(e) => setCustomer(e.target.value)}
-                                size="small"
-                            >
-                                {customers.map((c: any) => (
-                                    <MenuItem key={c.debtor_no} value={String(c.debtor_no)}>
-                                        {c.name}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                            <TextField
-                                select
-                                fullWidth
-                                label="Branch"
-                                value={String(branch || "")}
-                                onChange={(e) => setBranch(e.target.value)}
-                                size="small"
-                            >
-                                {branches
-                                    .filter((b: any) => String(b.debtor_no) === String(customer))
-                                    .map((b: any) => (
-                                        <MenuItem key={b.branch_code} value={String(b.branch_code)}>
-                                            {b.br_name}
-                                        </MenuItem>
-                                    ))}
-                            </TextField>
-                            <CustomerCurrencyField customer={selectedCustomer} />
-                            <TextField
-                                label="Reference"
-                                fullWidth
-                                size="small"
-                                value={reference}
-                                InputProps={{ readOnly: true }}
-                            />
-                            {reference && <ReferenceBarcode value={reference} />}
-                            <Stack direction="row" spacing={1}>
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={workOrderChoice === "create"}
-                                            onChange={(e) => setWorkOrderChoice(e.target.checked ? "create" : "")}
-                                        />
-                                    }
-                                    label="Create Work Order"
-                                />
-                                <FormControlLabel
-                                    control={
-                                        <Checkbox
-                                            checked={workOrderChoice === "none"}
-                                            onChange={(e) => setWorkOrderChoice(e.target.checked ? "none" : "")}
-                                        />
-                                    }
-                                    label="No Work Order"
-                                />
-                            </Stack>
-                        </Stack>
+            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, textAlign: 'left', p: 2, pb: 0 }}>
+                INTERNAL SALES INVOICE
+            </Typography>
+
+            <Paper sx={{ p: 2, borderRadius: 2, mb: 3 }}>
+                <Grid container spacing={3}>
+                    <Grid item xs={12} sm={4}>
+                        <TextField
+                            label="Company Name"
+                            fullWidth
+                            size="small"
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <TextField
+                            label="Address"
+                            fullWidth
+                            size="small"
+                            value={companyAddress}
+                            onChange={(e) => setCompanyAddress(e.target.value)}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <TextField
+                            label="Telephone"
+                            fullWidth
+                            size="small"
+                            value={companyTelephone}
+                            onChange={(e) => setCompanyTelephone(e.target.value)}
+                        />
+                    </Grid>
+                </Grid>
+            </Paper>
+
+            <Paper sx={{ p: 2, borderRadius: 2, mb: 3 }}>
+                <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            label="Invoice No"
+                            fullWidth
+                            size="small"
+                            value={reference || nextInvoiceReference || ""}
+                            InputProps={{ readOnly: true }}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            label="Invoice Date"
+                            type="date"
+                            fullWidth
+                            size="small"
+                            value={invoiceDate}
+                            onChange={(e) => handleDateChange(e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                            inputProps={{
+                                min: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_from).toISOString().split('T')[0] : undefined,
+                                max: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_to).toISOString().split('T')[0] : undefined,
+                            }}
+                            error={!!dateError}
+                            helperText={dateError}
+                        />
                     </Grid>
 
-                    <Grid item xs={12} sm={3}>
-                        <Stack spacing={2}>
-                            <CustomerCreditSummaryFields
-                                summary={creditSummary}
-                                documentTotal={documentTotal}
-                                isLoading={creditLoading}
-                                currencyCode={customerCurrency}
-                            />
-                            <TextField label="Customer Discount (%)" fullWidth size="small" value={discount} InputProps={{ readOnly: true }} />
-                        </Stack>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="From Branch / Warehouse"
+                            value={String(deliverFrom || "")}
+                            onChange={(e) => setDeliverFrom(e.target.value)}
+                            size="small"
+                        >
+                            {locations.map((loc: any) => (
+                                <MenuItem key={loc.loc_code} value={String(loc.loc_code)}>
+                                    {loc.location_name}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="To Branch / Department"
+                            value={String(customer || "")}
+                            onChange={(e) => {
+                                setCustomer(e.target.value);
+                                const customerBranches = branches.filter((b: any) => String(b.debtor_no) === String(e.target.value));
+                                if (customerBranches.length > 0) {
+                                    setBranch(customerBranches[0].branch_code);
+                                }
+                            }}
+                            size="small"
+                        >
+                            {customers.map((c: any) => (
+                                <MenuItem key={c.debtor_no} value={String(c.debtor_no)}>
+                                    {c.name}
+                                </MenuItem>
+                            ))}
+                        </TextField>
                     </Grid>
 
-                    <Grid item xs={12} sm={3}>
-                        <Stack spacing={2}>
-                            <TextField
-                                select
-                                fullWidth
-                                label="Payment Type"
-                                value={String(payment || "")}
-                                onChange={(e) => setPayment(e.target.value)}
-                                size="small"
-                                // Ensure the selected value shows the human-friendly `description`
-                                SelectProps={{
-                                    renderValue: (selected) => {
-                                        const sel = visiblePaymentTerms.find((pt: any) => String(pt.terms_indicator) === String(selected));
-                                        return sel ? sel.description : (selected as string);
-                                    },
-                                }}
-                            >
-                                {visiblePaymentTerms.map((p: any) => (
-                                    <MenuItem key={p.terms_indicator} value={String(p.terms_indicator)}>
-                                        {p.description}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                            <TextField
-                                select
-                                fullWidth
-                                label="Price List"
-                                value={String(priceList || "")}
-                                onChange={(e) => setPriceList(e.target.value)}
-                                size="small"
-                            >
-                                {priceLists.map((pl: any) => (
-                                    <MenuItem key={pl.id} value={String(pl.id)}>
-                                        {pl.typeName}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        </Stack>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Cost Center"
+                            value={costCenter}
+                            onChange={(e) => setCostCenter(e.target.value)}
+                            size="small"
+                        >
+                            <MenuItem value="">None</MenuItem>
+                            {costCenters.map((cc: any) => (
+                                <MenuItem key={cc.id} value={cc.id}>
+                                    {cc.name}
+                                </MenuItem>
+                            ))}
+                        </TextField>
                     </Grid>
-
-                    <Grid item xs={12} sm={3}>
-                        <Stack spacing={2}>
-                            <TextField
-                                label="Invoice Date"
-                                type="date"
-                                fullWidth
-                                size="small"
-                                value={invoiceDate}
-                                onChange={(e) => handleDateChange(e.target.value)}
-                                InputLabelProps={{ shrink: true }}
-                                inputProps={{
-                                    min: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_from).toISOString().split('T')[0] : undefined,
-                                    max: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_to).toISOString().split('T')[0] : undefined,
-                                }}
-                                error={!!dateError}
-                                helperText={dateError}
-                            />
-                            <TextField
-                                select
-                                fullWidth
-                                label="Cost Center"
-                                value={costCenter}
-                                onChange={(e) => setCostCenter(e.target.value)}
-                                size="small"
-                            >
-                                <MenuItem value="">None</MenuItem>
-                                {costCenters.map((cc: any) => (
-                                    <MenuItem key={cc.id} value={cc.id}>
-                                        {cc.name}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
-                        </Stack>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            label="Reference"
+                            fullWidth
+                            size="small"
+                            value={comments}
+                            onChange={(e) => setComments(e.target.value)}
+                            placeholder="e.g., Internal stock issue for production"
+                        />
                     </Grid>
                 </Grid>
             </Paper>
@@ -1195,22 +1177,19 @@ export default function DirectInvoice() {
                 <Table>
                     <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
                         <TableRow>
-                            <TableCell>No</TableCell>
                             <TableCell>Item Code</TableCell>
                             <TableCell>Description</TableCell>
-                            <TableCell>Quantity</TableCell>
+                            <TableCell>Qty</TableCell>
                             <TableCell>Unit</TableCell>
-                            <TableCell>{priceColumnLabel}</TableCell>
-                            <TableCell>Discount (%)</TableCell>
-                            <TableCell>Total</TableCell>
+                            <TableCell>Unit Price</TableCell>
+                            <TableCell>Amount (LKR)</TableCell>
                             <TableCell>Action</TableCell>
                         </TableRow>
                     </TableHead>
 
                     <TableBody>
                         {rows.map((row, i) => (
-                            <TableRow key={row.id}>
-                                <TableCell>{i + 1}</TableCell>
+                            <TableRow key={row.id} data-row-id={row.id}>
                                 <TableCell>
                                     <ItemSearchSelect
                                         displayField="code"
@@ -1251,13 +1230,6 @@ export default function DirectInvoice() {
                                         size="small"
                                         value={row.quantity}
                                         onChange={(e) => {
-                                            // const newValue = Number(e.target.value);
-                                            // // Prevent entering quantity greater than available stock
-                                            // if (newValue > row.availableQuantity && row.availableQuantity > 0) {
-                                            //     // Don't update if it exceeds available quantity
-                                            //     return;
-                                            // }
-                                            // handleChange(row.id, "quantity", newValue);
                                             const inputValue = Number(e.target.value);
                                             const clampedValue = Math.min(inputValue, row.availableQuantity || 0);
                                             handleChange(row.id, "quantity", clampedValue);
@@ -1275,13 +1247,6 @@ export default function DirectInvoice() {
                                         onChange={(v) => handleChange(row.id, priceColumnLabel === "Price before Tax" ? "priceBeforeTax" : "priceAfterTax", v)}
                                     />
                                 </TableCell>
-                                <TableCell>
-                                    <FormattedNumberField
-                                        size="small"
-                                        value={row.discount}
-                                        InputProps={{ readOnly: true }}
-                                    />
-                                </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
                                 <TableCell>
                                     {i === rows.length - 1 ? (
@@ -1295,21 +1260,6 @@ export default function DirectInvoice() {
                                         </Button>
                                     ) : (
                                         <Stack direction="row" spacing={1} justifyContent="center">
-                                            <Button
-                                                variant="outlined"
-                                                size="small"
-                                                startIcon={<EditIcon />}
-                                                onClick={() => {
-                                                    // Focus on the first editable field (item code)
-                                                    const rowElement = document.querySelector(`[data-row-id="${row.id}"]`);
-                                                    if (rowElement) {
-                                                        const firstInput = rowElement.querySelector('input') as HTMLInputElement;
-                                                        if (firstInput) firstInput.focus();
-                                                    }
-                                                }}
-                                            >
-                                                Edit
-                                            </Button>
                                             <Button
                                                 variant="outlined"
                                                 color="error"
@@ -1379,96 +1329,26 @@ export default function DirectInvoice() {
                     </TableFooter>
                 </Table>
             </TableContainer>
-            {/* Cash Payment Section */}
-            <Paper sx={{ p: 2, borderRadius: 2 }}>
-                <Typography variant="subtitle1" sx={{ mb: 2, textAlign: 'center' }}>
-                    Cash Payment
-                </Typography>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            select
-                            fullWidth
-                            label="Deliver From Location"
-                            value={String(deliverFrom || "")}
-                            onChange={(e) => setDeliverFrom(e.target.value)}
-                            size="small"
-                        >
-                            {locations.map((loc: any) => (
-                                <MenuItem key={loc.loc_code} value={String(loc.loc_code)}>
-                                    {loc.location_name}
-                                </MenuItem>
-                            ))}
-                        </TextField>
-                    </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            select
-                            fullWidth
-                            label="Cash Account"
-                            value={String(cashAccount || "")}
-                            onChange={(e) => setCashAccount(e.target.value)}
-                            size="small"
-                            SelectProps={{
-                                renderValue: (selected) => {
-                                    if (!selected) return "Select";
-                                    const acc = cashBankAccounts.find(
-                                        (a: any) => String(a.id) === String(selected)
-                                    );
-                                    return acc ? bankAccountLabel(acc) : String(selected);
-                                },
-                            }}
-                            helperText={
-                                cashBankAccounts.length === 0
-                                    ? "No bank accounts found — add one under Banking maintenance."
-                                    : selectedCashBankAccount
-                                        ? undefined
-                                        : cashAccount
-                                            ? "Selected account is not in the list."
-                                            : undefined
-                            }
-                        >
-                            <MenuItem value="">Select</MenuItem>
-                            {cashBankAccounts.map((acc: any) => (
-                                <MenuItem key={acc.id} value={String(acc.id)}>
-                                    {bankAccountLabel(acc)}
-                                </MenuItem>
-                            ))}
-                        </TextField>
-                    </Grid>
+            <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handlePlaceQuotation}
+                    disabled={submitting}
+                    sx={{ width: 200 }}
+                >
+                    {submitting ? "Saving..." : "Place Invoice"}
+                </Button>
+            </Box>
 
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            multiline
-                            rows={2}
-                            label="Comments"
-                            value={comments}
-                            onChange={(e) => setComments(e.target.value)}
-                        />
-                    </Grid>
-                </Grid>
-
-                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2, gap: 2 }}>
-                    <Button variant="outlined" onClick={() => navigate(-1)}>
-                        Cancel Invoice
-                    </Button>
-                    <Button variant="contained" color="primary" onClick={handlePlaceQuotation} disabled={!!dateError || submitting}>
-                        {submitting ? "Saving..." : "Place Invoice"}
-                    </Button>
-                </Box>
-            </Paper>
             <AddedConfirmationModal
                 open={open}
-                title="Success"
-                content="Sales Invoice has been added successfully!"
-                addFunc={async () => { }}
                 handleClose={() => setOpen(false)}
-                onSuccess={() => {
-                    // Form was already cleared on successful submission
-                    window.history.back();
-                }}
+                content="Invoice Placed successfully"
+                title="Success"
+                addFunc={async () => { }}
+                onSuccess={() => window.history.back()}
             />
         </FormPageLayout>
     );
