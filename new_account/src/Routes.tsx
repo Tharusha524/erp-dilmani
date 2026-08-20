@@ -120,6 +120,9 @@ import RevaluateCurrenciesForm from "./views/BankindAndGeneralLedger/Maintenance
 import GlAccountClassesTable from "./views/BankindAndGeneralLedger/Maintenance/GlAccountClasses/GlAccountClassesTable";
 import AddGlAccountClassesForm from "./views/BankindAndGeneralLedger/Maintenance/GlAccountClasses/AddGlAccountClassesForm";
 import UpdateGlAccountClassesForm from "./views/BankindAndGeneralLedger/Maintenance/GlAccountClasses/UpdateGlAccountClassesForm";
+import ClassTypesTable from "./views/BankindAndGeneralLedger/Maintenance/ClassTypes/ClassTypesTable";
+import AddClassTypeForm from "./views/BankindAndGeneralLedger/Maintenance/ClassTypes/AddClassTypeForm";
+import UpdateClassTypeForm from "./views/BankindAndGeneralLedger/Maintenance/ClassTypes/UpdateClassTypeForm";
 import AddChartofAccounts from "./views/Setup/Maintenance/ChartOfAccounts/AddChartOfAccounts";
 import ItemTaxTypesTable from "./views/Setup/CompanySetup/ItemTaxTypes/ItemTaxTypesTable";
 import AddItemTaxTypes from "./views/Setup/CompanySetup/ItemTaxTypes/AddItemTaxTypes";
@@ -3898,6 +3901,30 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['GL account classes']}>
               {withLayout(MainLayout, UpdateGlAccountClassesForm)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bankingandgeneralledger/maintenance/class-types"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Class Types (GL)']}>
+              {withLayout(MainLayout, ClassTypesTable)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bankingandgeneralledger/maintenance/add-class-type"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Class Types (GL)']}>
+              {withLayout(MainLayout, AddClassTypeForm)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bankingandgeneralledger/maintenance/update-class-type/:id"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Class Types (GL)']}>
+              {withLayout(MainLayout, UpdateClassTypeForm)}
             </ProtectedRoute>
           }
         />

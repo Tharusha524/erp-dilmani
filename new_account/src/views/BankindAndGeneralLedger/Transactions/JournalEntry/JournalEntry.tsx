@@ -54,6 +54,9 @@ import {
 import { buildChartGroupMetaMap } from "../../../../utils/trialAccountBalance";
 import { invalidateFinancialReports } from "../../../../utils/invalidateFinancialReports";
 import { getBankAccounts } from "../../../../api/BankAccount/BankAccountApi";
+import { getCostCenters } from "../../../../api/CostCenter/CostCenterApi";
+import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
+import { getSuppliers } from "../../../../api/Supplier/SupplierApi";
 import { getCurrencies } from "../../../../api/Currency/currencyApi";
 import { getTaxTypes } from "../../../../api/Tax/taxServices";
 import api from "../../../../api/apiClient";
@@ -62,6 +65,7 @@ import PageTitle from "../../../../components/PageTitle";
 import PageLoader from "../../../../components/PageLoader";
 import theme from "../../../../theme";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
+import { useAuth } from "../../../../context/AuthContext";
 
 // TabPanel helper
 function TabPanel({ children, value, index }: { children: React.ReactNode; value: number; index: number }) {
@@ -84,6 +88,8 @@ function emptyTaxLine(): TaxLineFormState {
 }
 
 export default function JournalEntry() {
+  const { hasEditPermission } = useAuth();
+  const canEdit = hasEditPermission('Journal entries to bank related accounts');
   const navigate = useNavigate();
   const location = useLocation();
   const editState = location.state as {
@@ -150,6 +156,29 @@ export default function JournalEntry() {
     queryFn: getBankAccounts,
   });
 
+  // Fetch cost centers for the line-level Cost Center dropdown (optional field)
+  const { data: costCenters = [] } = useQuery({
+    queryKey: ["costCenters"],
+    queryFn: getCostCenters,
+  });
+
+  // Fetch customers/suppliers for the line-level Counterparty dropdown, shown
+  // only when the selected account is a Trade Debtors / Trade Creditors
+  // control account (optional field).
+  const { data: customers = [] } = useQuery({
+    queryKey: ["customers"],
+    queryFn: getCustomers,
+  });
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ["suppliers"],
+    queryFn: getSuppliers,
+  });
+
+  const isDebtorAccountRow = (accountDescription: string) =>
+    /DEBTOR|DEBITOR|RECEIVABLE/i.test(accountDescription || "");
+  const isCreditorAccountRow = (accountDescription: string) =>
+    /CREDITOR|CREDITER|PAYABLE/i.test(accountDescription || "");
+
   // Fetch currencies for currency dropdown
   const { data: currencies = [] } = useQuery({
     queryKey: ["currencies"],
@@ -194,6 +223,8 @@ export default function JournalEntry() {
       credit: "",
       memo: "",
       selectedAccountCode: "",
+      personTypeId: "",
+      personId: "",
     },
     {
       id: 2,
@@ -204,6 +235,8 @@ export default function JournalEntry() {
       credit: "",
       memo: "",
       selectedAccountCode: "",
+      personTypeId: "",
+      personId: "",
     },
   ]);
 
@@ -275,11 +308,13 @@ export default function JournalEntry() {
       id: index + 1,
       accountCode: String(line.account_code ?? ""),
       accountDescription: "",
-      costCenter: line.costCenter ? String(line.costCenter) : "",
+      costCenter: line.cost_center_id ? String(line.cost_center_id) : "",
       debit: Number(line.debit ?? 0) !== 0 ? String(line.debit) : "",
       credit: Number(line.credit ?? 0) !== 0 ? String(line.credit) : "",
       memo: line.memo || "",
       selectedAccountCode: String(line.account_code ?? ""),
+      personTypeId: line.person_type_id ? String(line.person_type_id) : "",
+      personId: line.person_id ? String(line.person_id) : "",
     }));
 
     setRows(
@@ -296,6 +331,8 @@ export default function JournalEntry() {
               credit: "",
               memo: "",
               selectedAccountCode: "",
+              personTypeId: "",
+              personId: "",
             },
           ]
     );
@@ -375,11 +412,31 @@ export default function JournalEntry() {
               selectedAccountCode: code,
               accountCode: code,
               accountDescription: accountName,
+              // Counterparty only applies to Debtors/Creditors control accounts —
+              // clear it if the newly picked account is neither.
+              personTypeId:
+                isDebtorAccountRow(accountName) || isCreditorAccountRow(accountName)
+                  ? row.personTypeId
+                  : "",
+              personId:
+                isDebtorAccountRow(accountName) || isCreditorAccountRow(accountName)
+                  ? row.personId
+                  : "",
             }
           : row
       )
     );
     setOpenSelectRowId(null);
+  };
+
+  const handleCounterpartyChange = (id: number, personType: 2 | 3, value: string) => {
+    setRows((prev) =>
+      prev.map((row) =>
+        row.id === id
+          ? { ...row, personTypeId: value ? String(personType) : "", personId: value }
+          : row
+      )
+    );
   };
 
   const handleDebitCreditChange = (id: number, field: "debit" | "credit", value: string) => {
@@ -458,13 +515,7 @@ export default function JournalEntry() {
     const postedDifference = totalDebit - totalCredit;
     const openingBalance = computeOpeningBalanceSummary(rows, accountTypeByCode, chartGroupMeta);
     const columnBalanced = isJournalColumnBalanced(rows);
-    const openingBalanceHint = getOpeningBalanceEquationHint(
-      openingBalance,
-      rows,
-      accountTypeByCode,
-      chartGroupMeta,
-      columnBalanced
-    );
+    const openingBalanceHint = getOpeningBalanceEquationHint(openingBalance, columnBalanced);
     return {
       signedDebit: debitTotal,
       signedCredit: creditTotal,
@@ -492,6 +543,8 @@ export default function JournalEntry() {
         credit: "",
         memo: "",
         selectedAccountCode: "",
+        personTypeId: "",
+        personId: "",
       },
     ]);
   };
@@ -531,6 +584,8 @@ export default function JournalEntry() {
           debit,
           credit,
           memo: r.memo,
+          personTypeId: r.personTypeId,
+          personId: r.personId,
         };
       });
 
@@ -565,8 +620,13 @@ export default function JournalEntry() {
       return;
     }
 
+    // The Assets = Liabilities + Equity check only makes sense for pure balance-sheet
+    // entries (e.g. entering opening balances). A normal entry that includes an
+    // Income/Expense line is expected to leave that equation looking "unbalanced"
+    // here, since P&L accounts aren't part of the balance sheet — so it must not
+    // block posting.
     const ob = journalTotals.openingBalance;
-    if (ob.hasBalanceSheetLines && !ob.equationBalanced) {
+    if (ob.hasBalanceSheetLines && !ob.equationBalanced && !ob.hasProfitAndLossLines) {
       setSaveError(
         `Opening balance: Total Assets (${formatBsAmount(ob.totalAssets)}) must equal Liabilities + Equity (${formatBsAmount(ob.liabilitiesPlusEquity)}). Difference: ${formatBsAmount(Math.abs(ob.difference))}`
       );
@@ -612,7 +672,9 @@ export default function JournalEntry() {
           debit: r.debit,
           credit: r.credit,
           memo: r.memo,
-          costCenter: r.costCenter || undefined,
+          cost_center_id: r.costCenter ? Number(r.costCenter) : undefined,
+          person_type_id: r.personTypeId ? Number(r.personTypeId) : undefined,
+          person_id: r.personId ? Number(r.personId) : undefined,
         })),
       };
 
@@ -882,6 +944,7 @@ export default function JournalEntry() {
               <TableCell>Account Code</TableCell>
               <TableCell>Account Description</TableCell>
               <TableCell>Cost Center</TableCell>
+              <TableCell>Counterparty</TableCell>
               <TableCell width={130}>Debit</TableCell>
               <TableCell width={130}>Credit</TableCell>
               <TableCell>Memo</TableCell>
@@ -982,7 +1045,65 @@ export default function JournalEntry() {
                   </TextField>
                 </TableCell>
                 <TableCell>
-                  <TextField size="small" value={row.costCenter} onChange={(e) => handleChange(row.id, "costCenter", e.target.value)} />
+                  <TextField
+                    select
+                    size="small"
+                    sx={{ minWidth: 160 }}
+                    value={row.costCenter ? String(row.costCenter) : ""}
+                    onChange={(e) => handleChange(row.id, "costCenter", e.target.value)}
+                  >
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {(costCenters as any[]).map((cc: any) => (
+                      <MenuItem key={cc.id} value={String(cc.id)}>
+                        {cc.reference ? `${cc.reference} - ${cc.name}` : cc.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </TableCell>
+                <TableCell>
+                  {isDebtorAccountRow(row.accountDescription) ? (
+                    <TextField
+                      select
+                      size="small"
+                      sx={{ minWidth: 180 }}
+                      value={row.personId ? String(row.personId) : ""}
+                      onChange={(e) => handleCounterpartyChange(row.id, 2, e.target.value)}
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {(customers as any[]).map((c: any) => (
+                        <MenuItem key={c.debtor_no} value={String(c.debtor_no)}>
+                          {c.name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  ) : isCreditorAccountRow(row.accountDescription) ? (
+                    <TextField
+                      select
+                      size="small"
+                      sx={{ minWidth: 180 }}
+                      value={row.personId ? String(row.personId) : ""}
+                      onChange={(e) => handleCounterpartyChange(row.id, 3, e.target.value)}
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {(suppliers as any[]).map((s: any) => (
+                        <MenuItem key={s.supplier_id} value={String(s.supplier_id)}>
+                          {s.supp_name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  ) : (
+                    <TextField select size="small" sx={{ minWidth: 180 }} value="" disabled>
+                      <MenuItem value="">
+                        <em>N/A</em>
+                      </MenuItem>
+                    </TextField>
+                  )}
                 </TableCell>
                 <TableCell>
                   <FormattedNumberField
@@ -1033,7 +1154,7 @@ export default function JournalEntry() {
 
           <TableFooter>
             <TableRow>
-              <TableCell colSpan={4}>
+              <TableCell colSpan={5}>
                 <Typography align="right" sx={{ pr: 2, fontWeight: 600, fontSize: "0.85rem" }}>
                   Entered (+/−)
                 </Typography>
@@ -1063,7 +1184,7 @@ export default function JournalEntry() {
               </TableCell>
             </TableRow>
             <TableRow sx={{ backgroundColor: "action.hover" }}>
-              <TableCell colSpan={4}>
+              <TableCell colSpan={5}>
                 <Typography align="right" sx={{ pr: 2, fontWeight: 600, fontSize: "0.85rem" }}>
                   Posted to GL
                 </Typography>
@@ -1097,7 +1218,7 @@ export default function JournalEntry() {
             {journalTotals.openingBalance.hasBalanceSheetLines && (
               <>
                 <TableRow sx={{ backgroundColor: "#e3f2fd" }}>
-                  <TableCell colSpan={4}>
+                  <TableCell colSpan={5}>
                     <Typography align="right" sx={{ pr: 2, fontWeight: 600, fontSize: "0.85rem" }}>
                       Balance Sheet (net)
                     </Typography>
@@ -1126,7 +1247,7 @@ export default function JournalEntry() {
                 </TableRow>
                 {journalTotals.openingBalanceHint && (
                   <TableRow sx={{ backgroundColor: "#fff3e0" }}>
-                    <TableCell colSpan={8}>
+                    <TableCell colSpan={9}>
                       <Typography sx={{ fontSize: "0.78rem", color: "warning.dark" }}>
                         {journalTotals.openingBalanceHint}
                       </Typography>
@@ -1254,7 +1375,7 @@ export default function JournalEntry() {
         <Button
           variant="contained"
           color="primary"
-          disabled={!!dateError || isSaving}
+          disabled={!!dateError || isSaving || !canEdit}
           onClick={handleSaveJournalEntry}
         >
           {isSaving

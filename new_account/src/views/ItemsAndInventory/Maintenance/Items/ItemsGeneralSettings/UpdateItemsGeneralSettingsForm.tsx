@@ -195,6 +195,30 @@ export default function ItemsGeneralSettingsForm({ itemId }: ItemGeneralSettingP
     }));
   }, [itemData]);
 
+  // Service items don't carry inventory/COGS/WIP — those fields are hidden
+  // from the form, so keep them silently mirroring Sales Account instead of
+  // leaving them blank (they're still required by the backend).
+  useEffect(() => {
+    if (!isService) return;
+    setFormData((prev) => {
+      if (
+        prev.inventoryAccount === prev.salesAccount &&
+        prev.cogsAccount === prev.salesAccount &&
+        prev.inventoryAdjustmentAccount === prev.salesAccount &&
+        prev.wipAccount === prev.salesAccount
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        inventoryAccount: prev.salesAccount,
+        cogsAccount: prev.salesAccount,
+        inventoryAdjustmentAccount: prev.salesAccount,
+        wipAccount: prev.salesAccount,
+      };
+    });
+  }, [isService, formData.salesAccount]);
+
   // mutation to update item
   const updateMutation = useMutation({
     mutationFn: ({
@@ -598,40 +622,42 @@ export default function ItemsGeneralSettingsForm({ itemId }: ItemGeneralSettingP
                 )}
 
                 {/* C.O.G.S Account */}
-                <FormControl size="small" fullWidth error={!!errors.cogsAccount}>
-                  <InputLabel>C.O.G.S. Account</InputLabel>
-                  <Select
-                    name="cogsAccount"
-                    value={formData.cogsAccount}
-                    onChange={handleSelectChange}
-                    label="C.O.G.S. Account"
-                  >
-                    {Object.entries(
-                      chartMasters.reduce((acc: any, item: any) => {
-                        const type = item.account_type || "Unknown";
-                        if (!acc[type]) acc[type] = [];
-                        acc[type].push(item);
-                        return acc;
-                      }, {})
-                    ).flatMap(([typeKey, accounts]: any) => {
-                      const typeText = accountTypeMap[Number(typeKey)] || "Unknown";
-                      return [
-                        <ListSubheader key={`header-${typeKey}`}>
-                          {typeText}
-                        </ListSubheader>,
-                        ...accounts.map((acc: any) => (
-                          <MenuItem
-                            key={acc.account_code}
-                            value={acc.account_code}
-                          >
-                            {acc.account_code} - {acc.account_name}
-                          </MenuItem>
-                        )),
-                      ];
-                    })}
-                  </Select>
-                  <FormHelperText>{errors.cogsAccount || " "}</FormHelperText>
-                </FormControl>
+                {!isService && (
+                  <FormControl size="small" fullWidth error={!!errors.cogsAccount}>
+                    <InputLabel>C.O.G.S. Account</InputLabel>
+                    <Select
+                      name="cogsAccount"
+                      value={formData.cogsAccount}
+                      onChange={handleSelectChange}
+                      label="C.O.G.S. Account"
+                    >
+                      {Object.entries(
+                        chartMasters.reduce((acc: any, item: any) => {
+                          const type = item.account_type || "Unknown";
+                          if (!acc[type]) acc[type] = [];
+                          acc[type].push(item);
+                          return acc;
+                        }, {})
+                      ).flatMap(([typeKey, accounts]: any) => {
+                        const typeText = accountTypeMap[Number(typeKey)] || "Unknown";
+                        return [
+                          <ListSubheader key={`header-${typeKey}`}>
+                            {typeText}
+                          </ListSubheader>,
+                          ...accounts.map((acc: any) => (
+                            <MenuItem
+                              key={acc.account_code}
+                              value={acc.account_code}
+                            >
+                              {acc.account_code} - {acc.account_name}
+                            </MenuItem>
+                          )),
+                        ];
+                      })}
+                    </Select>
+                    <FormHelperText>{errors.cogsAccount || " "}</FormHelperText>
+                  </FormControl>
+                )}
 
                 {!isService && (
                   <FormControl
@@ -677,7 +703,8 @@ export default function ItemsGeneralSettingsForm({ itemId }: ItemGeneralSettingP
                   </FormControl>
                 )}
 
-                <FormControl size="small" fullWidth error={!!errors.wipAccount}>
+                {!isService && (
+                  <FormControl size="small" fullWidth error={!!errors.wipAccount}>
                     <InputLabel>WIP / Assembly Account</InputLabel>
                     <Select
                       name="wipAccount"
@@ -714,6 +741,7 @@ export default function ItemsGeneralSettingsForm({ itemId }: ItemGeneralSettingP
                       {errors.wipAccount || "Required — defaults from item category (dflt_wip_act)"}
                     </FormHelperText>
                   </FormControl>
+                )}
               </Stack>
 
 

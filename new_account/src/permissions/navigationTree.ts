@@ -290,6 +290,7 @@ export const NAVIGATION_PERMISSION_TREE: NavModule[] = [
           { label: "GL Account Groups", id: id("GL account groups"), path: "/bankingandgeneralledger/maintenance/gl-account-groups" },
           { label: "Account Types (GL)", id: id("Company GL setup"), path: "/bankingandgeneralledger/maintenance/gl-types" },
           { label: "GL Account Classes", id: id("GL account classes"), path: "/bankingandgeneralledger/maintenance/gl-account-classes" },
+          { label: "Class Types", id: id("Class Types (GL)"), path: "/bankingandgeneralledger/maintenance/class-types" },
           { label: "Closing GL Transactions", id: id("Banking & GL Configuration"), path: "/bankingandgeneralledger/maintenance/closing-gl-transactions" },
           { label: "Revaluation of Currency Accounts", id: id("Revaluation of currency accounts"), path: "/bankingandgeneralledger/maintenance/revaluation-of-currency-accounts" },
         ],
