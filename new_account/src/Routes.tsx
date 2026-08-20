@@ -543,13 +543,6 @@ const AppRoutes = () => {
         />
 
         <Route
-          path="/stock"
-          element={
-            withLayout(MainLayout, Stock)
-          }
-        />
-
-        <Route
           path="/workorder/dashboard"
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['Work order dashboard page']}>
@@ -3942,11 +3935,19 @@ const AppRoutes = () => {
         />
         <Route
           path="/stock"
-          element={withLayout(MainLayout, Stock)}
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Stock page']}>
+              {withLayout(MainLayout, Stock)}
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/stock/manage"
-          element={withLayout(MainLayout, ManageStock)}
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Manage Stock page']}>
+              {withLayout(MainLayout, ManageStock)}
+            </ProtectedRoute>
+          }
         />
       </Route>
     </Routes>

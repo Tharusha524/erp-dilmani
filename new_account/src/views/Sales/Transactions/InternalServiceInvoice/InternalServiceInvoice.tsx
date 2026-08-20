@@ -29,7 +29,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSalesOrders, getSalesOrderByOrderNo } from "../../../../api/SalesOrders/SalesOrdersApi";
 import { getSalesOrderDetailsByOrderNo } from "../../../../api/SalesOrders/SalesOrderDetailsApi";
-import { directSalesInvoice } from "../../../../api/SalesInvoice/SalesInvoiceApi";
+import { createInternalServiceInvoice } from "../../../../api/InternalServiceInvoice/InternalServiceInvoiceApi";
 import { createWorkOrder } from "../../../../api/WorkOrder/workOrderApi";
 import ReferenceBarcode from "../../../../components/ReferenceBarcode";
 import { getDebtorTrans } from "../../../../api/DebtorTrans/DebtorTransApi";
@@ -850,7 +850,7 @@ export default function InternalServiceInvoice() {
 
             const finalBranchCode = branch || (branches.filter((b: any) => String(b.debtor_no) === String(customer))[0]?.branch_code) || 1;
 
-            const result = await directSalesInvoice({
+            const result = await createInternalServiceInvoice({
                 debtor_no: Number(customer),
                 branch_code: Number(finalBranchCode),
                 tran_date: invoiceDate,
@@ -876,10 +876,6 @@ export default function InternalServiceInvoice() {
                     description: row.description,
                 })),
             });
-
-            if (result.gl_warning) {
-                console.warn("Invoice GL warning:", result.gl_warning);
-            }
 
             const invoiceReferenceForLink = result.reference ?? reference;
             if (finalWorkOrderChoice === "create") {
@@ -909,11 +905,9 @@ export default function InternalServiceInvoice() {
             invalidateFinancialReports(queryClient);
             navigate("/sales/transactions/internal-service-invoice/success", {
                 state: {
-                    orderNo: result.order_no,
+                    id: result.id,
                     reference: result.reference ?? reference,
                     invoiceDate,
-                    trans_no: result.trans_no,
-                    trans_type: 10,
                 },
             });
         } catch (e: any) {

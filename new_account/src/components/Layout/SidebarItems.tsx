@@ -228,6 +228,7 @@ const baseSidebarItems: Array<SidebarItem> = [
     title: "Stock",
     href: "/stock",
     icon: <FolderIcon fontSize="small" />,
+    requiredPermission: getModulePermissionIds("Stock"),
   },
 ];
 

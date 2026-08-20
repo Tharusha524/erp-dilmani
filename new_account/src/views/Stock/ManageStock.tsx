@@ -133,7 +133,7 @@ const ManageStock = () => {
     <Box p={3} sx={{ maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
       <Stack direction="row" spacing={2} sx={{ mb: 3 }} alignItems="center">
         <Typography variant="h5" fontWeight="bold" sx={{ flexGrow: 1 }}>
-          Manage Standalone Stocks
+          Manage Items
         </Typography>
         <Button variant="outlined" onClick={() => navigate('/stock')}>
           Back to Stock Page

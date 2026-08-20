@@ -209,6 +209,8 @@ export const PERMISSION_ID_MAP: Record<string, number> = {
   "Background color settings page": 5037,
   "Internal service invoice entry": 5038,
   "Class Types (GL)": 5039,
+  "Stock page": 5040,
+  "Manage Stock page": 5041,
 };
 
 export const PERMISSION_NAME_BY_ID: Record<number, string> = Object.fromEntries(

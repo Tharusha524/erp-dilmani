@@ -380,6 +380,7 @@ Route::post('sales/delivery/{transNo}/void', [SalesDeliveryController::class, 'v
 Route::put('sales/delivery/{transNo}', [SalesDeliveryController::class, 'update']);
 Route::post('sales/invoice/from-delivery', [SalesInvoiceController::class, 'invoiceFromDelivery']);
 Route::post('sales/invoice/direct', [SalesInvoiceController::class, 'directInvoice']);
+Route::apiResource('internal-service-invoices', \App\Http\Controllers\InternalServiceInvoiceController::class)->only(['index', 'store', 'show']);
 Route::post('sales/invoice/{transNo}/void', [SalesInvoiceController::class, 'void']);
 Route::put('sales/invoice/{transNo}', [SalesInvoiceController::class, 'update']);
 Route::post('sales/payments', [SalesPaymentController::class, 'store']);

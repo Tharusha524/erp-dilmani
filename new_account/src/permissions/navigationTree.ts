@@ -312,6 +312,18 @@ export const NAVIGATION_PERMISSION_TREE: NavModule[] = [
     ],
   },
   {
+    label: "Stock",
+    submenus: [
+      {
+        label: "Stock",
+        pages: [
+          { label: "Stock", id: id("Stock page"), path: "/stock" },
+          { label: "Manage Stock", id: id("Manage Stock page"), path: "/stock/manage" },
+        ],
+      },
+    ],
+  },
+  {
     label: "Setup",
     submenus: [
       {
