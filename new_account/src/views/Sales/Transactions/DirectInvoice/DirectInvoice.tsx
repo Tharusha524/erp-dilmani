@@ -35,7 +35,8 @@ import ReferenceBarcode from "../../../../components/ReferenceBarcode";
 import { getDebtorTrans } from "../../../../api/DebtorTrans/DebtorTransApi";
 import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
-import { getBranches } from "../../../../api/CustomerBranch/CustomerBranchApi";
+import { getBranches, createBranch } from "../../../../api/CustomerBranch/CustomerBranchApi";
+import { getSysPrefs } from "../../../../api/OrganizationSettings/SysPrefsApi";
 import { getPaymentTerms } from "../../../../api/PaymentTerm/PaymentTermApi";
 import { getSalesTypes } from "../../../../api/SalesMaintenance/salesService";
 import { getInventoryLocations } from "../../../../api/InventoryLocation/InventoryLocationApi";
@@ -794,9 +795,58 @@ export default function DirectInvoice() {
     const customerEmail = selectedCustomer?.email || selectedCustomer?.contact_email || null;
     const customerAddr = selectedCustomer?.address || selectedCustomer?.delivery_address || address || null;
 
+    // If the customer has no branch yet, silently create a default "Main Branch"
+    // for them (same defaults Add Customer uses) instead of blocking the invoice —
+    // staff shouldn't have to go set up a branch by hand first.
+    const ensureCustomerBranch = async (): Promise<string> => {
+        if (branch) return branch;
+
+        const customerBranches = branches.filter((b: any) => String(b.debtor_no) === String(customer));
+        if (customerBranches.length > 0) {
+            const defaultBranch = customerBranches.find((b: any) => !b.inactive) || customerBranches[0];
+            const branchCode = String(defaultBranch.branch_code);
+            setBranch(branchCode);
+            return branchCode;
+        }
+
+        const sysPrefs = await getSysPrefs();
+        const getPref = (name: string) => sysPrefs.find((p: any) => p.name === name)?.value || "";
+
+        const newBranch = await createBranch({
+            debtor_no: Number(customer),
+            br_name: `${customerName || "Customer"} Main Branch`,
+            branch_ref: selectedCustomer?.debtor_ref || String(customer),
+            br_address: customerAddr || customerName || "",
+            phone: customerPhone || "",
+            email: customerEmail || "",
+            sales_account: getPref("salesAccount"),
+            sales_discount_account: getPref("salesDiscountAccount"),
+            receivables_account: getPref("receivableAccount"),
+            payment_discount_account: getPref("promptPaymentDiscountAccount"),
+            contact_person: customerName || "",
+            inactive: false,
+        });
+
+        await queryClient.invalidateQueries({ queryKey: ["branches"] });
+        const branchCode = String((newBranch as any)?.branch_code ?? (newBranch as any)?.branchCode ?? "");
+        setBranch(branchCode);
+        return branchCode;
+    };
+
     const handlePlaceQuotation = async () => {
         if (!customer) { enqueueSnackbar("Select customer first", { variant: "warning" }); return; }
-        if (!branch) { enqueueSnackbar("Select branch first", { variant: "warning" }); return; }
+        let effectiveBranch = branch;
+        try {
+            effectiveBranch = await ensureCustomerBranch();
+        } catch (branchErr) {
+            console.error("Failed to auto-create customer branch", branchErr);
+            enqueueSnackbar(
+                "Could not create a branch for this customer automatically. Please add one manually.",
+                { variant: "error", autoHideDuration: 8000 }
+            );
+            return;
+        }
+        if (!effectiveBranch) { enqueueSnackbar("Select branch first", { variant: "warning" }); return; }
         if (!deliverFrom) { enqueueSnackbar("Select deliver-from location", { variant: "warning" }); return; }
         if (!priceList) { enqueueSnackbar("Please select a price list.", { variant: "warning" }); return; }
         if (!workOrderChoice) {
@@ -849,7 +899,7 @@ export default function DirectInvoice() {
 
             const result = await directSalesInvoice({
                 debtor_no: Number(customer),
-                branch_code: Number(branch),
+                branch_code: Number(effectiveBranch),
                 tran_date: invoiceDate,
                 due_date: validUntil || invoiceDate,
                 order_type: orderTypeId,

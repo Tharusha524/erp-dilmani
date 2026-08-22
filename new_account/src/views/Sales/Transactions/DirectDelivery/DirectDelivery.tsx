@@ -26,7 +26,8 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
-import { getBranches } from "../../../../api/CustomerBranch/CustomerBranchApi";
+import { getBranches, createBranch } from "../../../../api/CustomerBranch/CustomerBranchApi";
+import { getSysPrefs } from "../../../../api/OrganizationSettings/SysPrefsApi";
 import { getPaymentTerms } from "../../../../api/PaymentTerm/PaymentTermApi";
 import { getSalesTypes } from "../../../../api/SalesMaintenance/salesService";
 import { getInventoryLocations } from "../../../../api/InventoryLocation/InventoryLocationApi";
@@ -637,9 +638,55 @@ export default function DirectDelivery() {
         }
     }, [salesOrders]);
 
+    // If the customer has no branch yet, silently create a default "Main Branch"
+    // for them (same defaults Add Customer uses) instead of blocking the order —
+    // staff shouldn't have to go set up a branch by hand first.
+    const ensureCustomerBranch = async (): Promise<string> => {
+        if (branch) return branch;
+
+        const customerBranches = branches.filter((b: any) => String(b.debtor_no) === String(customer));
+        if (customerBranches.length > 0) {
+            const defaultBranch = customerBranches.find((b: any) => !b.inactive) || customerBranches[0];
+            const branchCode = String(defaultBranch.branch_code);
+            setBranch(branchCode);
+            return branchCode;
+        }
+
+        const sysPrefs = await getSysPrefs();
+        const getPref = (name: string) => sysPrefs.find((p: any) => p.name === name)?.value || "";
+
+        const newBranch = await createBranch({
+            debtor_no: Number(customer),
+            br_name: `${customerName || "Customer"} Main Branch`,
+            branch_ref: selectedCustomer?.debtor_ref || String(customer),
+            br_address: customerAddr || customerName || "",
+            phone: customerPhone || "",
+            email: customerEmail || "",
+            sales_account: getPref("salesAccount"),
+            sales_discount_account: getPref("salesDiscountAccount"),
+            receivables_account: getPref("receivableAccount"),
+            payment_discount_account: getPref("promptPaymentDiscountAccount"),
+            contact_person: customerName || "",
+            inactive: false,
+        });
+
+        await queryClient.invalidateQueries({ queryKey: ["branches"] });
+        const branchCode = String((newBranch as any)?.branch_code ?? (newBranch as any)?.branchCode ?? "");
+        setBranch(branchCode);
+        return branchCode;
+    };
+
     const handlePlaceQuotation = async () => {
         if (!customer) { alert("Select customer first"); return; }
-        if (!branch) { alert("Select branch first"); return; }
+        let effectiveBranch = branch;
+        try {
+            effectiveBranch = await ensureCustomerBranch();
+        } catch (branchErr) {
+            console.error("Failed to auto-create customer branch", branchErr);
+            alert("Could not create a branch for this customer automatically. Please add one manually.");
+            return;
+        }
+        if (!effectiveBranch) { alert("Select branch first"); return; }
         if (!deliverFrom) { alert("Select deliver-from location"); return; }
         if (!priceList) { alert("Please select a price list."); return; }
         const orderTypeId = Number(priceList);
@@ -672,7 +719,7 @@ export default function DirectDelivery() {
 
             const result = await directSalesDelivery({
                 debtor_no: Number(customer),
-                branch_code: Number(branch),
+                branch_code: Number(effectiveBranch),
                 tran_date: deliveryDate,
                 due_date: validUntil || deliveryDate,
                 order_type: orderTypeId,

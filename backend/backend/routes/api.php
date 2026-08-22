@@ -174,6 +174,13 @@ Route::get('/user', function (Request $request) {
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
+// Public image proxy for Work Order part photos — kept outside auth:sanctum
+// because plain <img src> tags can't attach a Bearer token. The GCS bucket
+// itself stays private; this just streams the one file the app already
+// stored a reference to, same exposure level the old local storage:link had.
+Route::get('/work-order-images/{path}', [\App\Http\Controllers\WoSheetOrderController::class, 'showImage'])
+    ->where('path', '.*');
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/standalone-stocks', [StandaloneStockController::class, 'index']);
     Route::post('/standalone-stocks', [StandaloneStockController::class, 'store']);

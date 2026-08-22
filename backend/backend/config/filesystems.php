@@ -67,6 +67,19 @@ return [
             'report' => false,
         ],
 
+        // Google Cloud Storage — used for Work Order part images. Driver
+        // registered in App\Providers\GoogleCloudStorageServiceProvider.
+        'gcs' => [
+            'driver' => 'gcs',
+            'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+            'key_file' => env('GOOGLE_CLOUD_KEY_FILE', storage_path('app/gcs-key.json')),
+            'bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+            'path_prefix' => env('GOOGLE_CLOUD_STORAGE_PATH_PREFIX', ''),
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

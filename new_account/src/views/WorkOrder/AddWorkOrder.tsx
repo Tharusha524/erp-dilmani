@@ -43,8 +43,12 @@ const PRICE_ITEM_NAMES = ["ELDERS", "PRESCHOOL", "BOYS", "SHORTS", "BOTTOM", "SK
 
 const storageUrl = (path: string | null | undefined): string | null => {
   if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
   const apiBase = getApiBaseUrl().replace(/\/+$/, "");
   const backendBase = apiBase.replace(/\/index\.php\/api$/i, "").replace(/\/api$/i, "");
+  // Newer uploads (Google Cloud Storage) come back as our own /api/work-order-images
+  // proxy path — the bucket is private, so images are streamed through our server.
+  if (path.startsWith("/api/")) return `${backendBase}${path}`;
   return `${backendBase}/storage/${path.replace(/^\/+/, "")}`;
 };
 

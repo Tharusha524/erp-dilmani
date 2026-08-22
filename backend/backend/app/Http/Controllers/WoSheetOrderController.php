@@ -11,10 +11,64 @@ use App\Models\WoSheetStatus;
 use App\Models\WoSheetStatusAssignment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class WoSheetOrderController extends Controller
 {
+    /**
+     * Stores a Work Order part image on Google Cloud Storage (falls back to
+     * the local "public" disk if GCS isn't configured, e.g. in local dev)
+     * and returns a directly-usable, full URL — not a bare relative path —
+     * so the frontend never has to guess which disk it came from.
+     *
+     * The GCS bucket is private (no public read access), so instead of a
+     * direct Google URL this returns our own /work-order-images/{path}
+     * proxy route (see showImage()) — the browser never touches GCS
+     * directly, only our server does, using its service-account key.
+     */
+    private function storeWorkOrderImage(UploadedFile $file): string
+    {
+        $bucket = config('filesystems.disks.gcs.bucket');
+
+        if ($bucket) {
+            $path = $file->store('work_order_images', 'gcs');
+
+            return '/api/work-order-images/'.$path;
+        }
+
+        $path = $file->store('work_order_images', 'public');
+
+        return Storage::disk('public')->url($path);
+    }
+
+    /**
+     * Streams a Work Order part image out of the (private) GCS bucket.
+     * Public route — <img src> tags can't send a Bearer token — but the
+     * path is restricted to the work_order_images/ prefix, so this exposes
+     * only what the app itself already chose to store there, at the same
+     * "unauthenticated but URL-guessing required" exposure the old local
+     * storage:link had.
+     */
+    public function showImage(string $path)
+    {
+        if (! preg_match('#^work_order_images/[A-Za-z0-9._-]+$#', $path)) {
+            abort(404);
+        }
+
+        $disk = config('filesystems.disks.gcs.bucket') ? 'gcs' : 'public';
+
+        if (! Storage::disk($disk)->exists($path)) {
+            abort(404);
+        }
+
+        return response(Storage::disk($disk)->get($path), 200, [
+            'Content-Type' => Storage::disk($disk)->mimeType($path) ?: 'application/octet-stream',
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
+    }
+
     /**
      * Only a user assigned as responsible for the order's current status
      * (set in Work Order Settings) may act on it — Admins always may.
@@ -264,10 +318,10 @@ class WoSheetOrderController extends Controller
             ]);
 
             if ($request->hasFile('front_image')) {
-                $order->front_image_path = $request->file('front_image')->store('work_order_images', 'public');
+                $order->front_image_path = $this->storeWorkOrderImage($request->file('front_image'));
             }
             if ($request->hasFile('back_image')) {
-                $order->back_image_path = $request->file('back_image')->store('work_order_images', 'public');
+                $order->back_image_path = $this->storeWorkOrderImage($request->file('back_image'));
             }
             if ($order->isDirty()) {
                 $order->save();
@@ -462,10 +516,10 @@ class WoSheetOrderController extends Controller
             ]);
 
             if ($request->hasFile('front_image')) {
-                $order->front_image_path = $request->file('front_image')->store('work_order_images', 'public');
+                $order->front_image_path = $this->storeWorkOrderImage($request->file('front_image'));
             }
             if ($request->hasFile('back_image')) {
-                $order->back_image_path = $request->file('back_image')->store('work_order_images', 'public');
+                $order->back_image_path = $this->storeWorkOrderImage($request->file('back_image'));
             }
 
             $order->save();
