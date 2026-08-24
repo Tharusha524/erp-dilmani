@@ -529,7 +529,7 @@ export default function DirectInvoice() {
             }
         }
         handleChange(rowId, "availableQuantity", availableQty);
-        handleChange(rowId, "quantity", Math.min(1, availableQty));
+        handleChange(rowId, "quantity", 1);
         const itemData = await getItemById(selectedItem.stock_id);
         if (itemData) {
             const unitName = itemUnits.find((u: any) => u.id === itemData.units)?.abbr || "";
@@ -1301,16 +1301,8 @@ export default function DirectInvoice() {
                                         size="small"
                                         value={row.quantity}
                                         onChange={(e) => {
-                                            // const newValue = Number(e.target.value);
-                                            // // Prevent entering quantity greater than available stock
-                                            // if (newValue > row.availableQuantity && row.availableQuantity > 0) {
-                                            //     // Don't update if it exceeds available quantity
-                                            //     return;
-                                            // }
-                                            // handleChange(row.id, "quantity", newValue);
                                             const inputValue = Number(e.target.value);
-                                            const clampedValue = Math.min(inputValue, row.availableQuantity || 0);
-                                            handleChange(row.id, "quantity", clampedValue);
+                                            handleChange(row.id, "quantity", inputValue);
                                         }}
                                         inputProps={{ min: 0 }}
                                     />
