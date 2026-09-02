@@ -34,6 +34,11 @@ class PaymentTypeSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'name' => 'Advance + Balance',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
     }
 }

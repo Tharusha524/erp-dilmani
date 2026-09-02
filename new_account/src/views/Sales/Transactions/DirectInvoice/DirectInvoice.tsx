@@ -67,6 +67,7 @@ import {
     isCashSalePaymentTerm,
     validateCustomerCreditForSale,
 } from "../../../../utils/customerCredit";
+import { isAdvanceBalancePaymentTerm } from "../../../../utils/paymentTermHelpers";
 import { useCustomerCredit } from "../../../../hooks/useCustomerCredit";
 import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSummaryFields";
 import CustomerCurrencyField from "../../../../components/CustomerCurrencyField";
@@ -135,6 +136,7 @@ export default function DirectInvoice() {
     });
     const [deliverFrom, setDeliverFrom] = useState("");
     const [cashAccount, setCashAccount] = useState("");
+    const [advanceAmount, setAdvanceAmount] = useState<string>("");
     const [costCenter, setCostCenter] = useState("");
     const [comments, setComments] = useState("");
     const [dateError, setDateError] = useState("");
@@ -859,6 +861,7 @@ export default function DirectInvoice() {
             return;
         }
         const isCashSale = isCashSalePaymentTerm(paymentTerms, payment);
+        const isAdvanceBalance = isAdvanceBalancePaymentTerm(paymentTerms, payment);
         if (isCashSale && !cashAccount) { enqueueSnackbar("Select cash account", { variant: "warning" }); return; }
         // FrontAccounting direct invoice: no stock issue on invoice-only entry.
         const lineRows = rows.filter((r) => r.itemCode && r.quantity > 0);
@@ -872,10 +875,27 @@ export default function DirectInvoice() {
             : subTotal;
         const invoiceTotalPreview =
             invoiceNetPreview + totalTaxAmount + (shippingCharge || 0);
+
+        const advanceAmountNum = Number(advanceAmount) || 0;
+        if (isAdvanceBalance) {
+            if (advanceAmountNum <= 0) {
+                enqueueSnackbar("Enter the advance amount received.", { variant: "warning" });
+                return;
+            }
+            if (advanceAmountNum > invoiceTotalPreview + 0.001) {
+                enqueueSnackbar("Advance amount cannot exceed the invoice total.", { variant: "warning" });
+                return;
+            }
+            if (!cashAccount) { enqueueSnackbar("Select cash/bank account for the advance", { variant: "warning" }); return; }
+        }
+
+        const creditCheckAmount = isAdvanceBalance
+            ? Math.max(0, invoiceTotalPreview - advanceAmountNum)
+            : invoiceTotalPreview;
         const creditError = validateCustomerCreditForSale({
             summary: creditSummary,
-            documentTotal: invoiceTotalPreview,
-            skipCreditCheck: isCashSalePaymentTerm(paymentTerms, payment),
+            documentTotal: creditCheckAmount,
+            skipCreditCheck: isCashSale,
         });
         if (creditError) {
             enqueueSnackbar(creditError, { variant: "error", autoHideDuration: 8000 });
@@ -896,6 +916,8 @@ export default function DirectInvoice() {
             const unitPriceFor = (row: any) =>
                 priceColumnLabel === "Price after Tax" ? row.priceAfterTax : row.priceBeforeTax;
             const isCashSale = isCashSalePaymentTerm(paymentTerms, payment);
+            const isAdvanceBalance = isAdvanceBalancePaymentTerm(paymentTerms, payment);
+            const advanceAmountNum = isAdvanceBalance ? (Number(advanceAmount) || 0) : 0;
 
             const result = await directSalesInvoice({
                 debtor_no: Number(customer),
@@ -914,7 +936,8 @@ export default function DirectInvoice() {
                 comments: comments || undefined,
                 reference: reference || nextInvoiceReference || undefined,
                 cash_sale: isCashSale,
-                bank_account_id: isCashSale ? Number(cashAccount) || null : null,
+                advance_amount: advanceAmountNum || undefined,
+                bank_account_id: (isCashSale || advanceAmountNum > 0) ? Number(cashAccount) || null : null,
                 lines: lineRows.map((row) => ({
                     stock_id: row.itemCode,
                     quantity: Number(row.quantity),
@@ -1421,10 +1444,10 @@ export default function DirectInvoice() {
                     </TableFooter>
                 </Table>
             </TableContainer>
-            {/* Cash Payment Section */}
+            {/* Cash Payment / Advance Payment Section */}
             <Paper sx={{ p: 2, borderRadius: 2 }}>
                 <Typography variant="subtitle1" sx={{ mb: 2, textAlign: 'center' }}>
-                    Cash Payment
+                    {isAdvanceBalancePaymentTerm(paymentTerms, payment) ? "Advance Payment" : "Cash Payment"}
                 </Typography>
                 <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
@@ -1479,6 +1502,30 @@ export default function DirectInvoice() {
                             ))}
                         </TextField>
                     </Grid>
+
+                    {isAdvanceBalancePaymentTerm(paymentTerms, payment) && (
+                        <>
+                            <Grid item xs={12} sm={6}>
+                                <FormattedNumberField
+                                    label="Advance Received"
+                                    name="advanceAmount"
+                                    size="small"
+                                    fullWidth
+                                    value={advanceAmount}
+                                    onChange={(e) => setAdvanceAmount(e.target.value)}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="Balance Due"
+                                    value={formatMoney(Math.max(0, documentTotal - (Number(advanceAmount) || 0)))}
+                                    InputProps={{ readOnly: true }}
+                                />
+                            </Grid>
+                        </>
+                    )}
 
                     <Grid item xs={12}>
                         <TextField

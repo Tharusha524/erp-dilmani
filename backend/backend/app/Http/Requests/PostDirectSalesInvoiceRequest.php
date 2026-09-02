@@ -41,6 +41,7 @@ class PostDirectSalesInvoiceRequest extends FormRequest
             'deliver_to' => 'nullable|string',
             'cash_sale' => 'nullable|boolean',
             'bank_account_id' => 'nullable|integer',
+            'advance_amount' => 'nullable|numeric|min:0',
             'lines' => 'required|array|min:1',
             'lines.*.stock_id' => 'required|string|max:20',
             'lines.*.quantity' => 'required|numeric|min:0.0001',

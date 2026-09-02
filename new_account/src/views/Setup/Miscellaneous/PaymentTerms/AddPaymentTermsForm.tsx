@@ -54,6 +54,11 @@ export default function AddPaymentTermsForm() {
   // Replace with actual IDs from your DB
   const AFTER_NO_OF_DAYS_ID = 3;
   const DAY_IN_FOLLOWING_MONTH_ID = 4;
+  // "Advance + Balance": balance due days field behaves like AFTER_NO_OF_DAYS,
+  // looked up by name since its seeded id can vary between installs.
+  const advanceBalanceTypeId = paymentTypes.find(
+    (t) => t.name === "Advance + Balance"
+  )?.id;
 
   const handleAdditionalDaysChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAdditionalDays(e.target.value);
@@ -108,7 +113,8 @@ export default function AddPaymentTermsForm() {
           description: formData.termsDescription,
           payment_type: selectedPaymentTypeId,
           days_before_due:
-            selectedPaymentTypeId === AFTER_NO_OF_DAYS_ID
+            selectedPaymentTypeId === AFTER_NO_OF_DAYS_ID ||
+              selectedPaymentTypeId === advanceBalanceTypeId
               ? parseInt(additionalDays || "0")
               : 0,
           day_in_following_month:
@@ -136,7 +142,8 @@ export default function AddPaymentTermsForm() {
   // Show days field only for specific types
   const showDaysField =
     parseInt(formData.paymentType) === AFTER_NO_OF_DAYS_ID ||
-    parseInt(formData.paymentType) === DAY_IN_FOLLOWING_MONTH_ID;
+    parseInt(formData.paymentType) === DAY_IN_FOLLOWING_MONTH_ID ||
+    parseInt(formData.paymentType) === advanceBalanceTypeId;
 
   return (
     <FormPageLayout>
@@ -192,7 +199,9 @@ export default function AddPaymentTermsForm() {
               label={
                 parseInt(formData.paymentType) === AFTER_NO_OF_DAYS_ID
                   ? "Days"
-                  : "Day in Following Month"
+                  : parseInt(formData.paymentType) === advanceBalanceTypeId
+                    ? "Balance Due (Days)"
+                    : "Day in Following Month"
               }
               name="additionalDays"
               size="small"

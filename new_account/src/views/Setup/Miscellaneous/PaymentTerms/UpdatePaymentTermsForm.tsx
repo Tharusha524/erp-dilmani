@@ -57,6 +57,9 @@ export default function UpdatePaymentTermsForm() {
 
   const AFTER_NO_OF_DAYS_ID = 3;
   const DAY_IN_FOLLOWING_MONTH_ID = 4;
+  const advanceBalanceTypeId = paymentTypes.find(
+    (t) => t.name === "Advance + Balance"
+  )?.id;
 
   const handleAdditionalDaysChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAdditionalDays(e.target.value);
@@ -98,7 +101,10 @@ export default function UpdatePaymentTermsForm() {
           description: formData.termsDescription,
           payment_type: selectedPaymentType.id,
           days_before_due:
-            selectedPaymentType.id === AFTER_NO_OF_DAYS_ID ? parseInt(additionalDays || "0") : 0,
+            selectedPaymentType.id === AFTER_NO_OF_DAYS_ID ||
+              selectedPaymentType.id === advanceBalanceTypeId
+              ? parseInt(additionalDays || "0")
+              : 0,
           day_in_following_month:
             selectedPaymentType.id === DAY_IN_FOLLOWING_MONTH_ID ? parseInt(additionalDays || "0") : 0,
           inactive: false,
@@ -143,7 +149,10 @@ export default function UpdatePaymentTermsForm() {
           paymentType: paymentTypeObj ? paymentTypeObj.name : "",
         });
 
-        if (term.payment_type === AFTER_NO_OF_DAYS_ID) setAdditionalDays(term.days_before_due?.toString() || "");
+        const advanceTypeId = types.find((t) => t.name === "Advance + Balance")?.id;
+        if (term.payment_type === AFTER_NO_OF_DAYS_ID || term.payment_type === advanceTypeId) {
+          setAdditionalDays(term.days_before_due?.toString() || "");
+        }
         if (term.payment_type === DAY_IN_FOLLOWING_MONTH_ID) setAdditionalDays(term.day_in_following_month?.toString() || "");
       } catch (error) {
         console.error("Failed to fetch payment term", error);
@@ -159,9 +168,11 @@ export default function UpdatePaymentTermsForm() {
 
   if (loading) return <CircularProgress sx={{ mt: 4 }} />;
 
+  const selectedTypeId = paymentTypes.find((pt) => pt.name === formData.paymentType)?.id;
   const showDaysField =
-    paymentTypes.find((pt) => pt.name === formData.paymentType)?.id === AFTER_NO_OF_DAYS_ID ||
-    paymentTypes.find((pt) => pt.name === formData.paymentType)?.id === DAY_IN_FOLLOWING_MONTH_ID;
+    selectedTypeId === AFTER_NO_OF_DAYS_ID ||
+    selectedTypeId === DAY_IN_FOLLOWING_MONTH_ID ||
+    selectedTypeId === advanceBalanceTypeId;
 
   return (
     <FormPageLayout>
@@ -210,9 +221,11 @@ export default function UpdatePaymentTermsForm() {
           {showDaysField && (
             <FormattedNumberField
               label={
-                paymentTypes.find((pt) => pt.name === formData.paymentType)?.id === AFTER_NO_OF_DAYS_ID
+                selectedTypeId === AFTER_NO_OF_DAYS_ID
                   ? "Days"
-                  : "Day in Following Month"
+                  : selectedTypeId === advanceBalanceTypeId
+                    ? "Balance Due (Days)"
+                    : "Day in Following Month"
               }
               name="additionalDays"
               size="small"

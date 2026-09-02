@@ -44,6 +44,7 @@ export interface DirectSalesInvoicePayload {
   deliver_to?: string;
   cash_sale?: boolean;
   bank_account_id?: number | null;
+  advance_amount?: number;
   lines: DirectSalesInvoiceLine[];
 }
 

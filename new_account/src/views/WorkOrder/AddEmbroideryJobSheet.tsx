@@ -22,7 +22,12 @@ import { enqueueSnackbar } from "notistack";
 import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import { createWorkOrder, getWorkOrder, updateWorkOrder } from "../../api/WorkOrder/workOrderApi";
 import { getOrganization } from "../../api/OrganizationSettings/organizationSettingsApi";
-import { cleanWoNumberInput, formatWoAmount, formatWoNumberInputDisplay } from "../../utils/workOrderNumberFormat";
+import {
+  cleanWoNumberInput,
+  formatWoAmount,
+  formatWoNumberInputDisplay,
+  formatWoQuantity,
+} from "../../utils/workOrderNumberFormat";
 import { getApiBaseUrl } from "../../config/backendConfig";
 
 const storageUrl = (path: string | null | undefined): string | null => {
@@ -37,26 +42,51 @@ const storageUrl = (path: string | null | undefined): string | null => {
 };
 
 const AREAS = ["Front", "Back", "Sleeves", "Others"] as const;
-const SIZE_COLUMNS = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
 
-type AreaLine = { qty: string; stitches: string; stitchesPrice: string; totalPrice: string };
+// Free-form quantity entry grid per area (matches the paper job sheet's blank
+// Front/Back/Sleeves/Others grid): 2 columns x GRID_ROWS rows, each cell capped
+// at MAX_PER_CELL. Cells are stored column-major (index = col*GRID_ROWS + row)
+// so index+1 naturally walks down a column then rolls into the next column —
+// exactly the fill order the job sheet is filled in by hand.
+const GRID_ROWS = 14;
+const GRID_COLS = 2;
+const GRID_CELLS = GRID_ROWS * GRID_COLS;
+const MAX_PER_CELL = 15;
+
+const emptyGrid = (): string[] => Array(GRID_CELLS).fill("");
+const emptyAreaGrids = (): Record<string, string[]> =>
+  Object.fromEntries(AREAS.map((a) => [a, emptyGrid()]));
+
+type AreaLine = { stitches: string; stitchesPrice: string };
 
 const emptyAreaLines = (): Record<string, AreaLine> =>
-  Object.fromEntries(AREAS.map((a) => [a, { qty: "", stitches: "", stitchesPrice: "", totalPrice: "" }]));
+  Object.fromEntries(AREAS.map((a) => [a, { stitches: "", stitchesPrice: "" }]));
 
-/** Extracts qty/stitches/stitchesPrice back out of an item_name like
+/** Extracts stitches/stitchesPrice back out of an item_name like
  * "Front (Qty 10, Stitches 5000, Stitches Price 2)" — inverse of the string
- * handleSubmit builds when saving. */
-const parseAreaLineFromItemName = (itemName: string, price: string): AreaLine => {
-  const qtyMatch = itemName.match(/Qty ([\d.]+)/);
+ * handleSubmit builds when saving. Qty is no longer stored here — it's
+ * derived from the size-breakdown grid. */
+const parseAreaLineFromItemName = (itemName: string): AreaLine => {
   const stitchesMatch = itemName.match(/Stitches ([\d.]+)/);
   const stitchesPriceMatch = itemName.match(/Stitches Price ([\d.]+)/);
   return {
-    qty: qtyMatch?.[1] || "",
     stitches: stitchesMatch?.[1] || "",
     stitchesPrice: stitchesPriceMatch?.[1] || "",
-    totalPrice: price || "",
   };
+};
+
+/** Distributes a legacy total qty (from job sheets saved before the grid
+ * existed) into grid cells at MAX_PER_CELL per cell, so editing an old job
+ * sheet still shows its total instead of a blank grid. */
+const distributeQtyIntoGrid = (qty: number): string[] => {
+  const grid = emptyGrid();
+  let remaining = qty;
+  for (let i = 0; i < GRID_CELLS && remaining > 0; i += 1) {
+    const cell = Math.min(MAX_PER_CELL, remaining);
+    grid[i] = String(cell);
+    remaining -= cell;
+  }
+  return grid;
 };
 
 const AddEmbroideryJobSheet = () => {
@@ -81,9 +111,12 @@ const AddEmbroideryJobSheet = () => {
   const [customer, setCustomer] = useState("");
   const [jobName, setJobName] = useState("");
   const [areaLines, setAreaLines] = useState<Record<string, AreaLine>>(emptyAreaLines());
-  const [sizeQty, setSizeQty] = useState<Record<string, string>>({});
+  const [areaGrids, setAreaGrids] = useState<Record<string, string[]>>(emptyAreaGrids());
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const cellRefs = React.useRef<Record<string, (HTMLInputElement | null)[]>>(
+    Object.fromEntries(AREAS.map((a) => [a, Array(GRID_CELLS).fill(null)]))
+  );
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -103,25 +136,67 @@ const AddEmbroideryJobSheet = () => {
     const nextAreaLines = emptyAreaLines();
     existingOrder.price_items?.forEach((p) => {
       const area = AREAS.find((a) => p.item_name === a || p.item_name.startsWith(`${a} (`));
-      if (area) nextAreaLines[area] = parseAreaLineFromItemName(p.item_name, String(p.price));
+      if (area) nextAreaLines[area] = parseAreaLineFromItemName(p.item_name);
     });
     setAreaLines(nextAreaLines);
 
-    const nextSizeQty: Record<string, string> = {};
-    existingOrder.sizes?.forEach((s) => {
-      nextSizeQty[`${s.category}-${s.size_label}`] = String(s.quantity);
+    // Rebuild each area's grid from saved "Cell-N" size rows. Job sheets saved
+    // before the grid existed only have a single total qty (parsed from the
+    // item_name above) and no Cell-N rows — fall back to distributing that
+    // total across cells so editing an old sheet still shows its quantity.
+    const nextAreaGrids = emptyAreaGrids();
+    AREAS.forEach((area) => {
+      const cellSizes = (existingOrder.sizes || []).filter(
+        (s) => s.category === area && /^Cell-\d+$/.test(s.size_label)
+      );
+      if (cellSizes.length > 0) {
+        const grid = emptyGrid();
+        cellSizes.forEach((s) => {
+          const idx = parseInt(s.size_label.replace("Cell-", ""), 10) - 1;
+          if (idx >= 0 && idx < GRID_CELLS) grid[idx] = String(s.quantity);
+        });
+        nextAreaGrids[area] = grid;
+      } else {
+        const qtyMatch = existingOrder.price_items?.find(
+          (p) => p.item_name === area || p.item_name.startsWith(`${area} (`)
+        )?.item_name.match(/Qty ([\d.]+)/);
+        const legacyQty = qtyMatch ? parseInt(qtyMatch[1], 10) : 0;
+        if (legacyQty > 0) nextAreaGrids[area] = distributeQtyIntoGrid(legacyQty);
+      }
     });
-    setSizeQty(nextSizeQty);
+    setAreaGrids(nextAreaGrids);
   }, [existingOrder]);
 
   const updateAreaLine = (area: string, field: keyof AreaLine, value: string) => {
     setAreaLines((prev) => ({ ...prev, [area]: { ...prev[area], [field]: value } }));
   };
 
-  const sizeKey = (area: string, size: string) => `${area}-${size}`;
+  const areaQty = (area: string): number =>
+    (areaGrids[area] || []).reduce((sum, v) => sum + (parseInt(v || "0", 10) || 0), 0);
 
-  const totalOrderQuantity = AREAS.reduce((sum, area) => sum + (parseInt(areaLines[area].qty || "0", 10) || 0), 0);
-  const grandTotalPrice = AREAS.reduce((sum, area) => sum + (parseFloat(areaLines[area].totalPrice || "0") || 0), 0);
+  const areaTotalPrice = (area: string): number =>
+    areaQty(area) * (parseFloat(areaLines[area].stitchesPrice || "0") || 0);
+
+  const updateGridCell = (area: string, index: number, rawValue: string) => {
+    let cleaned = cleanWoNumberInput(rawValue);
+    const num = parseInt(cleaned, 10);
+    if (!Number.isNaN(num) && num > MAX_PER_CELL) cleaned = String(MAX_PER_CELL);
+
+    setAreaGrids((prev) => {
+      const nextGrid = [...prev[area]];
+      nextGrid[index] = cleaned;
+      return { ...prev, [area]: nextGrid };
+    });
+
+    // Auto-advance to the next cell once this one hits the cap — column-major
+    // indexing means index+1 is "down the column, then into the next column".
+    if (cleaned === String(MAX_PER_CELL) && index + 1 < GRID_CELLS) {
+      setTimeout(() => cellRefs.current[area]?.[index + 1]?.focus(), 0);
+    }
+  };
+
+  const totalOrderQuantity = AREAS.reduce((sum, area) => sum + areaQty(area), 0);
+  const grandTotalPrice = AREAS.reduce((sum, area) => sum + areaTotalPrice(area), 0);
 
   const { mutate: submitJobSheet, isPending } = useMutation({
     mutationFn: (formData: FormData) =>
@@ -159,27 +234,28 @@ const AddEmbroideryJobSheet = () => {
     let priceIndex = 0;
     AREAS.forEach((area) => {
       const line = areaLines[area];
-      if (line.qty || line.stitches || line.stitchesPrice || line.totalPrice) {
+      const qty = areaQty(area);
+      const totalPrice = areaTotalPrice(area);
+      if (qty || line.stitches || line.stitchesPrice || totalPrice) {
         const details = [
-          line.qty && `Qty ${line.qty}`,
+          qty && `Qty ${qty}`,
           line.stitches && `Stitches ${line.stitches}`,
           line.stitchesPrice && `Stitches Price ${line.stitchesPrice}`,
         ]
           .filter(Boolean)
           .join(", ");
         formData.append(`price_items[${priceIndex}][item_name]`, details ? `${area} (${details})` : area);
-        formData.append(`price_items[${priceIndex}][price]`, line.totalPrice || "0");
+        formData.append(`price_items[${priceIndex}][price]`, String(totalPrice || 0));
         priceIndex += 1;
       }
     });
 
     let sizeIndex = 0;
     AREAS.forEach((area) => {
-      SIZE_COLUMNS.forEach((size) => {
-        const qty = sizeQty[sizeKey(area, size)];
+      areaGrids[area].forEach((qty, cellIndex) => {
         if (qty && parseInt(qty, 10) > 0) {
           formData.append(`sizes[${sizeIndex}][category]`, area);
-          formData.append(`sizes[${sizeIndex}][size_label]`, size);
+          formData.append(`sizes[${sizeIndex}][size_label]`, `Cell-${cellIndex + 1}`);
           formData.append(`sizes[${sizeIndex}][quantity]`, qty);
           sizeIndex += 1;
         }
@@ -249,7 +325,11 @@ const AddEmbroideryJobSheet = () => {
                     {AREAS.map((area) => (
                       <TableRow key={area}>
                         <TableCell sx={{ fontWeight: "bold" }}>{area}</TableCell>
-                        {(["qty", "stitches", "stitchesPrice", "totalPrice"] as const).map((field) => (
+                        {/* Qty is auto-summed from the Size Breakdown grid below, read-only here. */}
+                        <TableCell align="center" sx={{ fontWeight: 600 }}>
+                          {formatWoQuantity(areaQty(area))}
+                        </TableCell>
+                        {(["stitches", "stitchesPrice"] as const).map((field) => (
                           <TableCell key={field} align="center" padding="none">
                             <TextField
                               variant="outlined"
@@ -263,6 +343,10 @@ const AddEmbroideryJobSheet = () => {
                             />
                           </TableCell>
                         ))}
+                        {/* Total Price = Qty x Stitches Price, auto-calculated. */}
+                        <TableCell align="center" sx={{ fontWeight: 600 }}>
+                          {formatWoAmount(areaTotalPrice(area))}
+                        </TableCell>
                       </TableRow>
                     ))}
                     <TableRow>
@@ -285,41 +369,41 @@ const AddEmbroideryJobSheet = () => {
           <Typography variant="subtitle2" fontWeight="bold" gutterBottom align="center">
             Size Breakdown by Area
           </Typography>
+          <Typography variant="caption" color="text.secondary" display="block" align="center" gutterBottom>
+            Fill each column top to bottom (max {MAX_PER_CELL} per cell) — it auto-jumps to the next cell,
+            and the total feeds into the Qty above automatically.
+          </Typography>
           <Grid container spacing={2}>
             {AREAS.map((area) => (
               <Grid item xs={12} sm={6} md={3} key={area}>
                 <Typography variant="subtitle2" fontWeight="bold" align="center" gutterBottom>
-                  {area}
+                  {area} — Total: {formatWoQuantity(areaQty(area))}
                 </Typography>
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: "bold" }}>Size</TableCell>
-                        <TableCell sx={{ fontWeight: "bold" }} align="center">Qty</TableCell>
-                      </TableRow>
-                    </TableHead>
                     <TableBody>
-                      {SIZE_COLUMNS.map((size) => (
-                        <TableRow key={size}>
-                          <TableCell>{size}</TableCell>
-                          <TableCell align="center" padding="none">
-                            <TextField
-                              variant="outlined"
-                              size="small"
-                              type="text"
-                              inputMode="numeric"
-                              fullWidth
-                              value={formatWoNumberInputDisplay(sizeQty[sizeKey(area, size)] || "")}
-                              onChange={(e) =>
-                                setSizeQty((prev) => ({
-                                  ...prev,
-                                  [sizeKey(area, size)]: cleanWoNumberInput(e.target.value),
-                                }))
-                              }
-                              inputProps={{ style: { textAlign: "center" } }}
-                            />
-                          </TableCell>
+                      {Array.from({ length: GRID_ROWS }).map((_, row) => (
+                        <TableRow key={row}>
+                          {Array.from({ length: GRID_COLS }).map((_, col) => {
+                            const index = col * GRID_ROWS + row;
+                            return (
+                              <TableCell key={col} align="center" padding="none">
+                                <TextField
+                                  inputRef={(el) => {
+                                    cellRefs.current[area][index] = el;
+                                  }}
+                                  variant="outlined"
+                                  size="small"
+                                  type="text"
+                                  inputMode="numeric"
+                                  fullWidth
+                                  value={formatWoNumberInputDisplay(areaGrids[area][index] || "")}
+                                  onChange={(e) => updateGridCell(area, index, e.target.value)}
+                                  inputProps={{ style: { textAlign: "center" }, maxLength: 2 }}
+                                />
+                              </TableCell>
+                            );
+                          })}
                         </TableRow>
                       ))}
                     </TableBody>

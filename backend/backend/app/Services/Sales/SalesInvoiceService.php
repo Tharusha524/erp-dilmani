@@ -320,8 +320,15 @@ class SalesInvoiceService
             );
 
             $isCashSale = (bool) ($payload['cash_sale'] ?? false);
+            $advanceAmount = round((float) ($payload['advance_amount'] ?? 0), 2);
+            if ($advanceAmount > $documentTotal + 0.001) {
+                throw new InvalidArgumentException('Advance amount cannot exceed the invoice total.');
+            }
             if (!$isCashSale) {
-                $this->customerCredit->assertCanExtendCredit($debtorNo, $documentTotal);
+                // When an advance is being collected up-front (Advance + Balance
+                // payment terms), only the remaining balance is extended as credit.
+                $creditPortion = round($documentTotal - $advanceAmount, 2);
+                $this->customerCredit->assertCanExtendCredit($debtorNo, $creditPortion);
             }
 
             $tranDate = (string) ($payload['tran_date'] ?? now()->toDateString());
@@ -386,12 +393,32 @@ class SalesInvoiceService
                     $tranDate,
                     $documentTotal,
                     $transNo,
-                    (int) ($payload['bank_account_id'] ?? 0)
+                    (int) ($payload['bank_account_id'] ?? 0),
+                    isset($payload['cost_center_id']) ? (int) $payload['cost_center_id'] : null,
+                    isset($payload['cost_center2_id']) ? (int) $payload['cost_center2_id'] : null
                 );
                 DebtorTrans::query()
                     ->where('trans_type', self::TYPE_INVOICE)
                     ->where('trans_no', $transNo)
                     ->update(['alloc' => $documentTotal]);
+            } elseif ($advanceAmount > 0.001 && $transNo > 0) {
+                // Advance + Balance: only the advance portion is paid now; the
+                // remainder stays on the customer's account, due per the
+                // invoice's normal payment term.
+                $paymentTransNo = $this->createCashSalePayment(
+                    $debtorNo,
+                    $branchCode,
+                    $tranDate,
+                    $advanceAmount,
+                    $transNo,
+                    (int) ($payload['bank_account_id'] ?? 0),
+                    isset($payload['cost_center_id']) ? (int) $payload['cost_center_id'] : null,
+                    isset($payload['cost_center2_id']) ? (int) $payload['cost_center2_id'] : null
+                );
+                DebtorTrans::query()
+                    ->where('trans_type', self::TYPE_INVOICE)
+                    ->where('trans_no', $transNo)
+                    ->update(['alloc' => $advanceAmount]);
             }
 
             $result = array_merge($invoiceResult, [
@@ -547,7 +574,9 @@ class SalesInvoiceService
         string $tranDate,
         float $amount,
         int $invoiceTransNo,
-        int $bankAccountId
+        int $bankAccountId,
+        ?int $costCenterId = null,
+        ?int $costCenter2Id = null
     ): int {
         if ($bankAccountId <= 0) {
             throw new InvalidArgumentException('Bank account is required for cash sales.');
@@ -577,8 +606,8 @@ class SalesInvoiceService
             'prep_amount' => 0,
             'rate' => CustomerExchangeRate::forDebtor($debtorNo, $tranDate),
             'ship_via' => null,
-            'cost_center_id' => null,
-            'cost_center2_id' => null,
+            'cost_center_id' => $costCenterId ?? 0,
+            'cost_center2_id' => $costCenter2Id ?? 0,
             'payment_terms' => null,
             'tax_included' => 0,
         ]);

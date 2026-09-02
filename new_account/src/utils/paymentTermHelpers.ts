@@ -107,6 +107,17 @@ export function isPrepaymentPaymentTerm(
   return false;
 }
 
+/** "Advance + Balance" term: part paid now, remainder due later (no fixed split). */
+export function isAdvanceBalancePaymentTerm(
+  paymentTerms: any[],
+  payment: string | number | null | undefined
+): boolean {
+  const term = findPaymentTerm(paymentTerms, payment);
+  if (!term) return false;
+  const name = paymentTermTypeName(term);
+  return name.includes("advance");
+}
+
 /** Cash sale term (Cash type / cash_sale flag / zero days non-prepay). */
 export function isCashPaymentTerm(
   paymentTerms: any[],
