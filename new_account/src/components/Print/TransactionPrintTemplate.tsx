@@ -243,6 +243,19 @@ export default function TransactionPrintTemplate({
             value={formatPrintMoney(totals.total, totals.currency)}
             bold
           />
+          {totals.paidAmount != null && totals.paidAmount > 0.001 && totals.paidAmount < totals.total - 0.001 && (
+            <>
+              <TotalRow
+                label="Advance Received"
+                value={formatPrintMoney(totals.paidAmount, totals.currency)}
+              />
+              <TotalRow
+                label="Balance Due"
+                value={formatPrintMoney(totals.total - totals.paidAmount, totals.currency)}
+                bold
+              />
+            </>
+          )}
         </Box>
       </Box>
 

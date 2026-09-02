@@ -39,6 +39,7 @@ class InternalServiceInvoiceRequest extends FormRequest
             'reference' => 'nullable|string|max:60',
             'cash_sale' => 'nullable|boolean',
             'bank_account_id' => 'nullable|integer',
+            'advance_amount' => 'nullable|numeric|min:0',
             'lines' => 'required|array|min:1',
             'lines.*.stock_id' => 'nullable|string|max:30',
             'lines.*.quantity' => 'required|numeric|min:0',

@@ -3,8 +3,6 @@ import React, { useState, useMemo, useEffect } from "react";
 import {
     Box,
     Button,
-    Checkbox,
-    FormControlLabel,
     Stack,
     Table,
     TableBody,
@@ -18,8 +16,6 @@ import {
     Typography,
     MenuItem,
     Grid,
-    Alert,
-    ListSubheader,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -27,15 +23,12 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getSalesOrders, getSalesOrderByOrderNo } from "../../../../api/SalesOrders/SalesOrdersApi";
-import { getSalesOrderDetailsByOrderNo } from "../../../../api/SalesOrders/SalesOrderDetailsApi";
 import { createInternalServiceInvoice } from "../../../../api/InternalServiceInvoice/InternalServiceInvoiceApi";
-import { createWorkOrder } from "../../../../api/WorkOrder/workOrderApi";
-import ReferenceBarcode from "../../../../components/ReferenceBarcode";
 import { getDebtorTrans } from "../../../../api/DebtorTrans/DebtorTransApi";
 import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
-import { getBranches } from "../../../../api/CustomerBranch/CustomerBranchApi";
+import { getBranches, createBranch } from "../../../../api/CustomerBranch/CustomerBranchApi";
+import { getSysPrefs } from "../../../../api/OrganizationSettings/SysPrefsApi";
 import { getPaymentTerms } from "../../../../api/PaymentTerm/PaymentTermApi";
 import { getSalesTypes } from "../../../../api/SalesMaintenance/salesService";
 import { getInventoryLocations } from "../../../../api/InventoryLocation/InventoryLocationApi";
@@ -47,15 +40,11 @@ import { getSalesPricingByStockId } from "../../../../api/SalesPricing/SalesPric
 import { getShippingCompanies } from "../../../../api/ShippingCompany/ShippingCompanyApi";
 import { getFiscalYears } from "../../../../api/FiscalYear/FiscalYearApi";
 import { getCompanies } from "../../../../api/CompanySetup/CompanySetupApi";
-import auditTrailApi from "../../../../api/AuditTrail/AuditTrailApi";
 import useCurrentUser from "../../../../hooks/useCurrentUser";
 import { getSalesPosList } from "../../../../api/SalePos/SalePosApi";
 import { getTaxGroupItemsByGroupId } from "../../../../api/Tax/TaxGroupItemApi";
 import { getTaxTypes } from "../../../../api/Tax/taxServices";
-import { createTransTaxDetail } from "../../../../api/TransTaxDetail/TransTaxDetailApi";
-import { getStockMoves, createStockMove } from "../../../../api/StockMoves/StockMovesApi";
-import { getGlTransByTransaction } from "../../../../api/GlTrans/GlTransApi";
-import { invalidateFinancialReports } from "../../../../utils/invalidateFinancialReports";
+import { getStockMoves } from "../../../../api/StockMoves/StockMovesApi";
 import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
@@ -66,6 +55,7 @@ import {
     isCashSalePaymentTerm,
     validateCustomerCreditForSale,
 } from "../../../../utils/customerCredit";
+import { isAdvanceBalancePaymentTerm } from "../../../../utils/paymentTermHelpers";
 import { useCustomerCredit } from "../../../../hooks/useCustomerCredit";
 import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSummaryFields";
 import CustomerCurrencyField from "../../../../components/CustomerCurrencyField";
@@ -81,11 +71,6 @@ import { resolveSalesItemLinePrices } from "../../../../utils/resolveSalesItemPr
 import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
-
-function sanitizeEmail(value: string | null | undefined): string | null {
-    if (!value || typeof value !== "string") return null;
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) ? value.trim() : null;
-}
 
 function bankAccountTypeId(acc: any): number {
     const raw = acc?.account_type ?? acc?.accountType;
@@ -110,6 +95,14 @@ function bankAccountLabel(acc: any): string {
     return gl ? `${name} (${gl})` : String(name);
 }
 
+/**
+ * Internal Service Invoice — same core screen/logic as Direct Invoice
+ * (customer, items, pricing, tax, payment terms, advance payment), minus
+ * Work Order creation and the reference barcode. Everything it saves goes
+ * to internal_service_invoices / internal_service_invoice_lines, not
+ * debtor_trans/stock_moves/gl_trans — so it never affects customer
+ * balances, stock quantities, or GL/reports elsewhere.
+ */
 export default function InternalServiceInvoice() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -117,8 +110,6 @@ export default function InternalServiceInvoice() {
     const { code: homeCurrencyCode } = useHomeCurrency();
 
     const [open, setOpen] = useState(false);
-    const [templateOrderNo, setTemplateOrderNo] = useState<number | null>(null);
-    const [hasPopulatedFromTemplate, setHasPopulatedFromTemplate] = useState(false);
 
     // ===== Form fields =====
     const [customer, setCustomer] = useState("");
@@ -134,23 +125,16 @@ export default function InternalServiceInvoice() {
     });
     const [deliverFrom, setDeliverFrom] = useState("");
     const [cashAccount, setCashAccount] = useState("");
+    const [advanceAmount, setAdvanceAmount] = useState<string>("");
     const [costCenter, setCostCenter] = useState("");
     const [comments, setComments] = useState("");
     const [dateError, setDateError] = useState("");
     const [shippingCharge, setShippingCharge] = useState(0);
     const [priceColumnLabel, setPriceColumnLabel] = useState("Price After Tax");
-    const [companyName, setCompanyName] = useState("DIO Solutions (Pvt) Ltd");
-    const [companyAddress, setCompanyAddress] = useState("Colombo, Sri Lanka");
-    const [companyTelephone, setCompanyTelephone] = useState("011-XXXXXXX");
 
-    // Additional fields for Quotation Delivery Details
-    const [validUntil, setValidUntil] = useState("");
     const [deliverTo, setDeliverTo] = useState("");
     const [address, setAddress] = useState("");
-    const [contactPhoneNumber, setContactPhoneNumber] = useState("");
     const [customerReference, setCustomerReference] = useState("");
-    // Mutually exclusive: must pick one before the invoice can be placed.
-    const [workOrderChoice, setWorkOrderChoice] = useState<"create" | "none" | "">("");
     const [shippingCompany, setShippingCompany] = useState("");
 
     // Normalize select values when API returned relation objects (e.g. sales_type: { id: 1 })
@@ -189,7 +173,6 @@ export default function InternalServiceInvoice() {
     const { data: paymentTerms = [] } = useQuery({ queryKey: ["payments"], queryFn: getPaymentTerms });
     const { data: priceLists = [] } = useQuery({ queryKey: ["priceLists"], queryFn: getSalesTypes });
     const { data: locations = [] } = useQuery({ queryKey: ["locations"], queryFn: getInventoryLocations });
-    //   const { data: cashAccounts = [] } = useQuery({ queryKey: ["cashAccounts"], queryFn: getCashAccounts });
     const { data: items = [] } = useQuery({ queryKey: ["items"], queryFn: getItems });
     const { data: itemUnits = [] } = useQuery({ queryKey: ["itemUnits"], queryFn: getItemUnits });
     const { data: categories = [] } = useQuery({ queryKey: ["itemCategories"], queryFn: () => getItemCategories() });
@@ -199,7 +182,6 @@ export default function InternalServiceInvoice() {
     const { data: costCenters = [] } = useQuery({ queryKey: ["costCenters"], queryFn: getCostCenters });
     const { data: bankAccounts = [] } = useQuery({ queryKey: ["bankAccounts"], queryFn: getBankAccounts });
     const { user } = useCurrentUser();
-    const { data: salesOrders = [] } = useQuery({ queryKey: ["salesOrders"], queryFn: getSalesOrders });
     const { data: debtorTrans = [] } = useQuery({ queryKey: ["debtorTrans"], queryFn: getDebtorTrans });
     const { data: taxTypes = [] } = useQuery({ queryKey: ["taxTypes"], queryFn: getTaxTypes });
     const { data: posList = [] } = useQuery({ queryKey: ["salesPos"], queryFn: getSalesPosList });
@@ -268,7 +250,6 @@ export default function InternalServiceInvoice() {
     // Auto-select POS and set default bank account / location
     useEffect(() => {
         if (posList && posList.length > 0) {
-            // Usually there's one default POS for the user or first active one
             const defaultPos = posList.find((p: any) => !p.inactive) || posList[0];
             if (defaultPos) {
                 if (defaultPos.pos_account && !cashAccount) {
@@ -323,7 +304,6 @@ export default function InternalServiceInvoice() {
                     const shipId = relationId(selectedBranch.shipping_company, "shipper_id", "id");
                     if (shipId) setShippingCompany(shipId);
                 }
-                // Fetch tax group details
                 if (selectedBranch.tax_group) {
                     getTaxGroupItemsByGroupId(selectedBranch.tax_group).then(setTaxGroupItems);
                 }
@@ -352,13 +332,6 @@ export default function InternalServiceInvoice() {
         }
     }, [customer, customers, payment, priceList, discount]);
 
-    // Set templateOrderNo from navigation state
-    useEffect(() => {
-        if (location.state?.orderNo) {
-            setTemplateOrderNo(location.state.orderNo);
-        }
-    }, [location.state]);
-
     useEffect(() => {
         if (payment && paymentTerms.length > 0) {
             const term = paymentTerms.find(
@@ -380,61 +353,6 @@ export default function InternalServiceInvoice() {
             setCashAccount(String(cashBankAccounts[0].id));
         }
     }, [cashAccount, cashBankAccounts]);
-
-    // Populate form from template order
-    useEffect(() => {
-        if (templateOrderNo && salesOrders.length > 0 && !hasPopulatedFromTemplate) {
-            const order = salesOrders.find((o: any) => o.order_no === templateOrderNo);
-            if (order) {
-                // Populate form fields
-                setCustomer(order.debtor_no || "");
-                setBranch(order.branch_code || "");
-                setInvoiceDate(order.ord_date || new Date().toISOString().split("T")[0]);
-                setPriceList(relationId(order.order_type, "id") || String(order.order_type || ""));
-                setDeliverFrom(String(order.from_stk_loc || ""));
-                setComments(order.comments || "");
-                setShippingCharge(order.freight_cost || 0);
-                setValidUntil(order.delivery_date || "");
-                setDeliverTo(order.deliver_to || "");
-                setAddress(order.delivery_address || "");
-                setContactPhoneNumber(order.contact_phone || "");
-                setCustomerReference(order.customer_ref || "");
-                const shipVia = relationId(order.ship_via, "shipper_id", "id") || String(order.ship_via || "");
-                if (shipVia) setShippingCompany(shipVia);
-
-                // Fetch order details and populate rows
-                const fetchOrderDetails = async () => {
-                    try {
-                        const orderDetails = await getSalesOrderDetailsByOrderNo(templateOrderNo);
-                        if (orderDetails && orderDetails.length > 0) {
-                            const populatedRows = await Promise.all(orderDetails.map(async (detail: any, index: number) => {
-                                const itemData = await getItemById(detail.stk_code);
-                                const unitName = itemData ? itemUnits.find((u: any) => u.id === itemData.units)?.abbr || "" : "";
-                                return {
-                                    id: index + 1,
-                                    itemCode: detail.stk_code || "",
-                                    description: detail.description || "",
-                                    quantity: detail.quantity || 0,
-                                    unit: unitName,
-                                    priceAfterTax: detail.unit_price || 0,
-                                    priceBeforeTax: detail.unit_price || 0, // Assuming same for now
-                                    discount: detail.discount_percent || 0,
-                                    total: (detail.quantity || 0) * (detail.unit_price || 0) * (1 - (detail.discount_percent || 0) / 100),
-                                    selectedItemId: detail.stk_code,
-                                    materialCost: itemData?.material_cost || 0,
-                                };
-                            }));
-                            setRows(populatedRows);
-                        }
-                    } catch (error) {
-                        console.error('Failed to fetch order details:', error);
-                    }
-                };
-                fetchOrderDetails();
-                setHasPopulatedFromTemplate(true);
-            }
-        }
-    }, [templateOrderNo, hasPopulatedFromTemplate]);
 
     // Handle date change with validation
     const handleDateChange = (value: string) => {
@@ -519,7 +437,6 @@ export default function InternalServiceInvoice() {
         if (deliverFrom && selectedItem.stock_id) {
             try {
                 const stockMoves = await getStockMoves();
-                // Filter stock moves by location and stock_id, then sum quantities
                 const relevantMoves = stockMoves.filter((move: any) =>
                     String(move.loc_code) === String(deliverFrom) &&
                     String(move.stock_id) === String(selectedItem.stock_id)
@@ -537,7 +454,6 @@ export default function InternalServiceInvoice() {
             const unitName = itemUnits.find((u: any) => u.id === itemData.units)?.abbr || "";
             handleChange(rowId, "unit", unitName);
             handleChange(rowId, "materialCost", itemData.material_cost || 0);
-            // Fetch pricing
             const pricingList = await getSalesPricingByStockId(selectedItem.stock_id);
             const { priceAfterTax, priceBeforeTax } = resolveSalesItemLinePrices({
                 pricingList,
@@ -561,7 +477,6 @@ export default function InternalServiceInvoice() {
         const month = String(invDate.getMonth() + 1).padStart(2, "0");
         const yearShort = String(invDate.getFullYear()).slice(-2);
 
-        // Count this specific customer's own invoices so far (trans_type=10 = invoice)
         const customerRefs = debtorTrans
             .filter((d: any) => Number(d.trans_type) === 10 && d.reference && String(d.debtor_no) === String(customer))
             .map((d: any) => d.reference as string);
@@ -578,7 +493,7 @@ export default function InternalServiceInvoice() {
         setReference(`SI/${formattedNumber}/${month}/${yearShort}`);
     }, [customer, invoiceDate, debtorTrans]);
 
-    // Auto-select first customer on load (match DirectDelivery behaviour)
+    // Auto-select first customer on load
     useEffect(() => {
         if (customers.length > 0 && !customer) {
             setCustomer(customers[0].debtor_no);
@@ -618,7 +533,6 @@ export default function InternalServiceInvoice() {
                 setDeliverTo(selectedBranch.br_name || "");
                 setAddress(selectedBranch.br_address || "");
 
-                // Fetch tax group items for this branch
                 if (selectedBranch.tax_group) {
                     getTaxGroupItemsByGroupId(selectedBranch.tax_group)
                         .then((items) => setTaxGroupItems(items))
@@ -704,7 +618,6 @@ export default function InternalServiceInvoice() {
                     const updatedRows = await Promise.all(
                         rows.map(async (row) => {
                             if (row.selectedItemId) {
-                                // Filter stock moves by location and stock_id, then sum quantities
                                 const relevantMoves = stockMoves.filter((move: any) =>
                                     String(move.loc_code) === String(deliverFrom) &&
                                     String(move.stock_id) === String(row.selectedItemId)
@@ -718,11 +631,9 @@ export default function InternalServiceInvoice() {
                     setRows(updatedRows);
                 } catch (error) {
                     console.error("Error updating available quantities:", error);
-                    // Reset available quantities if there's an error
                     setRows(rows.map(row => ({ ...row, availableQuantity: 0 })));
                 }
             } else {
-                // Reset available quantities if no location selected
                 setRows(rows.map(row => ({ ...row, availableQuantity: 0 })));
             }
         };
@@ -739,7 +650,6 @@ export default function InternalServiceInvoice() {
                 let newPayment = customerPaymentTermId(selectedCustomer);
                 const newPriceList = customerSalesTypeId(selectedCustomer);
 
-                // If the customer's default payment term has payment_type === 1 then ignore it (don't auto-select)
                 if (newPayment) {
                     const ptObj = paymentTerms.find((pt: any) => String(pt.terms_indicator) === String(newPayment));
                     if (ptObj) {
@@ -780,16 +690,7 @@ export default function InternalServiceInvoice() {
         }
     }, [customer, customers, paymentTerms]);
 
-    // === Save flow: create sales_order, sales_order_details and two debtor_trans + details
     const [submitting, setSubmitting] = useState(false);
-    const [orderNo, setOrderNo] = useState<number>(1);
-
-    useEffect(() => {
-        if (salesOrders.length > 0) {
-            const maxOrderNo = Math.max(...salesOrders.map((o: any) => o.order_no));
-            setOrderNo(maxOrderNo + 1);
-        }
-    }, [salesOrders]);
 
     // Helper to get selected customer object
     const customerName = selectedCustomer?.name || null;
@@ -797,23 +698,67 @@ export default function InternalServiceInvoice() {
     const customerEmail = selectedCustomer?.email || selectedCustomer?.contact_email || null;
     const customerAddr = selectedCustomer?.address || selectedCustomer?.delivery_address || address || null;
 
-    const handlePlaceQuotation = async () => {
-        if (!customer) { enqueueSnackbar("Select 'To Branch / Department' first", { variant: "warning" }); return; }
-        if (!branch) {
-            const customerBranches = branches.filter((b: any) => String(b.debtor_no) === String(customer));
-            if (customerBranches.length > 0) setBranch(customerBranches[0].branch_code);
-            else { enqueueSnackbar("Selected department has no valid branch", { variant: "warning" }); return; }
+    // If the customer has no branch yet, silently create a default "Main Branch"
+    // for them (same defaults Add Customer uses) instead of blocking the invoice.
+    const ensureCustomerBranch = async (): Promise<string> => {
+        if (branch) return branch;
+
+        const customerBranches = branches.filter((b: any) => String(b.debtor_no) === String(customer));
+        if (customerBranches.length > 0) {
+            const defaultBranch = customerBranches.find((b: any) => !b.inactive) || customerBranches[0];
+            const branchCode = String(defaultBranch.branch_code);
+            setBranch(branchCode);
+            return branchCode;
         }
-        if (!deliverFrom) { enqueueSnackbar("Select 'From Branch / Warehouse'", { variant: "warning" }); return; }
 
-        // Provide defaults for hidden fields
-        const finalPriceList = priceList || (priceLists.length > 0 ? priceLists[0].id : 1);
-        const orderTypeId = Number(relationId(finalPriceList, "id"));
-        const finalPayment = payment || (paymentTerms.length > 0 ? paymentTerms[0].terms_indicator : 4);
-        const finalWorkOrderChoice = workOrderChoice || "none";
+        const sysPrefs = await getSysPrefs();
+        const getPref = (name: string) => sysPrefs.find((p: any) => p.name === name)?.value || "";
 
-        const isCashSale = isCashSalePaymentTerm(paymentTerms, finalPayment);
-        // FrontAccounting direct invoice: no stock issue on invoice-only entry.
+        const newBranch = await createBranch({
+            debtor_no: Number(customer),
+            br_name: `${customerName || "Customer"} Main Branch`,
+            branch_ref: selectedCustomer?.debtor_ref || String(customer),
+            br_address: customerAddr || customerName || "",
+            phone: customerPhone || "",
+            email: customerEmail || "",
+            sales_account: getPref("salesAccount"),
+            sales_discount_account: getPref("salesDiscountAccount"),
+            receivables_account: getPref("receivableAccount"),
+            payment_discount_account: getPref("promptPaymentDiscountAccount"),
+            contact_person: customerName || "",
+            inactive: false,
+        });
+
+        await queryClient.invalidateQueries({ queryKey: ["branches"] });
+        const branchCode = String((newBranch as any)?.branch_code ?? (newBranch as any)?.branchCode ?? "");
+        setBranch(branchCode);
+        return branchCode;
+    };
+
+    const handlePlaceQuotation = async () => {
+        if (!customer) { enqueueSnackbar("Select customer first", { variant: "warning" }); return; }
+        let effectiveBranch = branch;
+        try {
+            effectiveBranch = await ensureCustomerBranch();
+        } catch (branchErr) {
+            console.error("Failed to auto-create customer branch", branchErr);
+            enqueueSnackbar(
+                "Could not create a branch for this customer automatically. Please add one manually.",
+                { variant: "error", autoHideDuration: 8000 }
+            );
+            return;
+        }
+        if (!effectiveBranch) { enqueueSnackbar("Select branch first", { variant: "warning" }); return; }
+        if (!deliverFrom) { enqueueSnackbar("Select deliver-from location", { variant: "warning" }); return; }
+        if (!priceList) { enqueueSnackbar("Please select a price list.", { variant: "warning" }); return; }
+        const orderTypeId = Number(relationId(priceList, "id"));
+        if (!orderTypeId || !priceLists.some((pl: any) => Number(pl.id) === orderTypeId)) {
+            enqueueSnackbar("Please select a valid price list.", { variant: "warning" });
+            return;
+        }
+        const isCashSale = isCashSalePaymentTerm(paymentTerms, payment);
+        const isAdvanceBalance = isAdvanceBalancePaymentTerm(paymentTerms, payment);
+        if (isCashSale && !cashAccount) { enqueueSnackbar("Select cash account", { variant: "warning" }); return; }
         const lineRows = rows.filter((r) => r.itemCode && r.quantity > 0);
         if (lineRows.length === 0) {
             enqueueSnackbar("At least one item must be added to the invoice.", { variant: "warning" });
@@ -825,10 +770,27 @@ export default function InternalServiceInvoice() {
             : subTotal;
         const invoiceTotalPreview =
             invoiceNetPreview + totalTaxAmount + (shippingCharge || 0);
+
+        const advanceAmountNum = Number(advanceAmount) || 0;
+        if (isAdvanceBalance) {
+            if (advanceAmountNum <= 0) {
+                enqueueSnackbar("Enter the advance amount received.", { variant: "warning" });
+                return;
+            }
+            if (advanceAmountNum > invoiceTotalPreview + 0.001) {
+                enqueueSnackbar("Advance amount cannot exceed the invoice total.", { variant: "warning" });
+                return;
+            }
+            if (!cashAccount) { enqueueSnackbar("Select cash/bank account for the advance", { variant: "warning" }); return; }
+        }
+
+        const creditCheckAmount = isAdvanceBalance
+            ? Math.max(0, invoiceTotalPreview - advanceAmountNum)
+            : invoiceTotalPreview;
         const creditError = validateCustomerCreditForSale({
             summary: creditSummary,
-            documentTotal: invoiceTotalPreview,
-            skipCreditCheck: isCashSalePaymentTerm(paymentTerms, payment),
+            documentTotal: creditCheckAmount,
+            skipCreditCheck: isCashSale,
         });
         if (creditError) {
             enqueueSnackbar(creditError, { variant: "error", autoHideDuration: 8000 });
@@ -839,22 +801,21 @@ export default function InternalServiceInvoice() {
         try {
             const defaultShipperId = shippingCompanies.length > 0 ? shippingCompanies[0].shipper_id : 1;
             const shipViaId = Number(relationId(shippingCompany, "shipper_id", "id")) || Number(defaultShipperId) || 1;
-            const paymentTermsId = finalPayment
-                ? Number(relationId(finalPayment, "terms_indicator", "id")) || null
+            const paymentTermsId = payment
+                ? Number(relationId(payment, "terms_indicator", "id")) || null
                 : null;
             const stockLoc =
                 relationId(deliverFrom, "loc_code", "code").slice(0, 5)
                 || String(deliverFrom || "").slice(0, 5);
             const unitPriceFor = (row: any) =>
                 priceColumnLabel === "Price after Tax" ? row.priceAfterTax : row.priceBeforeTax;
-
-            const finalBranchCode = branch || (branches.filter((b: any) => String(b.debtor_no) === String(customer))[0]?.branch_code) || 1;
+            const advanceAmountFinal = isAdvanceBalance ? advanceAmountNum : 0;
 
             const result = await createInternalServiceInvoice({
                 debtor_no: Number(customer),
-                branch_code: Number(finalBranchCode),
+                branch_code: Number(effectiveBranch),
                 tran_date: invoiceDate,
-                due_date: validUntil || invoiceDate,
+                due_date: invoiceDate,
                 order_type: orderTypeId,
                 ship_via: shipViaId,
                 payment_terms: paymentTermsId,
@@ -867,7 +828,8 @@ export default function InternalServiceInvoice() {
                 comments: comments || undefined,
                 reference: reference || nextInvoiceReference || undefined,
                 cash_sale: isCashSale,
-                bank_account_id: isCashSale ? Number(cashAccount) || null : null,
+                advance_amount: advanceAmountFinal || undefined,
+                bank_account_id: (isCashSale || advanceAmountFinal > 0) ? Number(cashAccount) || null : null,
                 lines: lineRows.map((row) => ({
                     stock_id: row.itemCode,
                     quantity: Number(row.quantity),
@@ -877,32 +839,7 @@ export default function InternalServiceInvoice() {
                 })),
             });
 
-            const invoiceReferenceForLink = result.reference ?? reference;
-            if (finalWorkOrderChoice === "create") {
-                try {
-                    const woFormData = new FormData();
-                    woFormData.append("category", "sublimation_tshirt");
-                    woFormData.append("department", "Factory");
-                    woFormData.append("customer", customerName || "");
-                    woFormData.append("order_date", invoiceDate);
-                    woFormData.append("delivery_date", validUntil || invoiceDate);
-                    woFormData.append("invoice_reference", invoiceReferenceForLink || "");
-                    await createWorkOrder(woFormData);
-                } catch (woErr) {
-                    console.error("Automatic work order creation failed", woErr);
-                    enqueueSnackbar(
-                        "Invoice saved, but automatic Factory work order creation failed. Please create it manually.",
-                        { variant: "warning", autoHideDuration: 8000 }
-                    );
-                }
-            }
-
             setOpen(true);
-            await queryClient.invalidateQueries({ queryKey: ["salesOrders"] });
-            await queryClient.invalidateQueries({ queryKey: ["debtorTrans"] });
-            await queryClient.invalidateQueries({ queryKey: ["bankTrans"] });
-            await queryClient.invalidateQueries({ queryKey: ["customerCreditSummary", customer] });
-            invalidateFinancialReports(queryClient);
             navigate("/sales/transactions/internal-service-invoice/success", {
                 state: {
                     id: result.id,
@@ -951,7 +888,6 @@ export default function InternalServiceInvoice() {
             return [];
         }
 
-        // Calculate tax amounts for each tax type
         return taxGroupItems.map((item: any) => {
             const taxTypeData = taxTypes.find((t: any) => t.id === item.tax_type_id);
             const taxRate = taxTypeData?.default_rate || 0;
@@ -959,12 +895,8 @@ export default function InternalServiceInvoice() {
 
             let taxAmount = 0;
             if (selectedPriceList?.taxIncl) {
-                // For prices that include tax, we need to extract the tax amount
-                // Tax amount = subtotal - (subtotal / (1 + rate/100))
                 taxAmount = subTotal - (subTotal / (1 + taxRate / 100));
             } else {
-                // For prices that don't include tax, calculate tax on subtotal
-                // Tax amount = subtotal * (rate/100)
                 taxAmount = subTotal * (taxRate / 100);
             }
 
@@ -987,18 +919,6 @@ export default function InternalServiceInvoice() {
         customers
     );
 
-    // Find currently selected payment term object so we can inspect its payment_type
-    const selectedPaymentTerm = useMemo(() => {
-        return paymentTerms.find((pt: any) => String(pt.terms_indicator) === String(payment));
-    }, [payment, paymentTerms]);
-
-    const selectedPaymentType = useMemo(() => {
-        const pt = selectedPaymentTerm?.payment_type;
-        if (pt == null) return null;
-        if (typeof pt === "number") return pt;
-        return pt.id ?? pt.payment_type ?? null;
-    }, [selectedPaymentTerm]);
-
     // Only show payment terms where payment_type != 1
     const visiblePaymentTerms = useMemo(() => {
         return paymentTerms.filter((pt: any) => {
@@ -1007,7 +927,6 @@ export default function InternalServiceInvoice() {
             return Number(id) !== 1;
         });
     }, [paymentTerms]);
-
 
     return (
         <FormPageLayout>
@@ -1032,136 +951,135 @@ export default function InternalServiceInvoice() {
                 </Button>
             </Box>
             {/* Form fields */}
-            <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, textAlign: 'left', p: 2, pb: 0 }}>
-                INTERNAL SALES INVOICE
-            </Typography>
-
-            <Paper sx={{ p: 2, borderRadius: 2, mb: 3 }}>
-                <Grid container spacing={3}>
-                    <Grid item xs={12} sm={4}>
-                        <TextField
-                            label="Company Name"
-                            fullWidth
-                            size="small"
-                            value={companyName}
-                            onChange={(e) => setCompanyName(e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                        <TextField
-                            label="Address"
-                            fullWidth
-                            size="small"
-                            value={companyAddress}
-                            onChange={(e) => setCompanyAddress(e.target.value)}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                        <TextField
-                            label="Telephone"
-                            fullWidth
-                            size="small"
-                            value={companyTelephone}
-                            onChange={(e) => setCompanyTelephone(e.target.value)}
-                        />
-                    </Grid>
-                </Grid>
-            </Paper>
-
-            <Paper sx={{ p: 2, borderRadius: 2, mb: 3 }}>
-                <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            label="Invoice No"
-                            fullWidth
-                            size="small"
-                            value={reference || nextInvoiceReference || ""}
-                            InputProps={{ readOnly: true }}
-                        />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            label="Invoice Date"
-                            type="date"
-                            fullWidth
-                            size="small"
-                            value={invoiceDate}
-                            onChange={(e) => handleDateChange(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                            inputProps={{
-                                min: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_from).toISOString().split('T')[0] : undefined,
-                                max: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_to).toISOString().split('T')[0] : undefined,
-                            }}
-                            error={!!dateError}
-                            helperText={dateError}
-                        />
+            <Paper sx={{ p: 2, borderRadius: 2 }}>
+                <Grid container spacing={2}>
+                    <Grid item xs={12} sm={3}>
+                        <Stack spacing={2}>
+                            <TextField
+                                select
+                                fullWidth
+                                label="Customer"
+                                value={String(customer || "")}
+                                onChange={(e) => setCustomer(e.target.value)}
+                                size="small"
+                            >
+                                {customers.map((c: any) => (
+                                    <MenuItem key={c.debtor_no} value={String(c.debtor_no)}>
+                                        {c.name}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                            <TextField
+                                select
+                                fullWidth
+                                label="Branch"
+                                value={String(branch || "")}
+                                onChange={(e) => setBranch(e.target.value)}
+                                size="small"
+                            >
+                                {branches
+                                    .filter((b: any) => String(b.debtor_no) === String(customer))
+                                    .map((b: any) => (
+                                        <MenuItem key={b.branch_code} value={String(b.branch_code)}>
+                                            {b.br_name}
+                                        </MenuItem>
+                                    ))}
+                            </TextField>
+                            <CustomerCurrencyField customer={selectedCustomer} />
+                            <TextField
+                                label="Reference"
+                                fullWidth
+                                size="small"
+                                value={reference}
+                                InputProps={{ readOnly: true }}
+                            />
+                        </Stack>
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            select
-                            fullWidth
-                            label="From Branch / Warehouse"
-                            value={String(deliverFrom || "")}
-                            onChange={(e) => setDeliverFrom(e.target.value)}
-                            size="small"
-                        >
-                            {locations.map((loc: any) => (
-                                <MenuItem key={loc.loc_code} value={String(loc.loc_code)}>
-                                    {loc.location_name}
-                                </MenuItem>
-                            ))}
-                        </TextField>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            select
-                            fullWidth
-                            label="To Branch / Department"
-                            value={String(customer || "")}
-                            onChange={(e) => {
-                                setCustomer(e.target.value);
-                                const customerBranches = branches.filter((b: any) => String(b.debtor_no) === String(e.target.value));
-                                if (customerBranches.length > 0) {
-                                    setBranch(customerBranches[0].branch_code);
-                                }
-                            }}
-                            size="small"
-                        >
-                            {customers.map((c: any) => (
-                                <MenuItem key={c.debtor_no} value={String(c.debtor_no)}>
-                                    {c.name}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+                    <Grid item xs={12} sm={3}>
+                        <Stack spacing={2}>
+                            <CustomerCreditSummaryFields
+                                summary={creditSummary}
+                                documentTotal={documentTotal}
+                                isLoading={creditLoading}
+                                currencyCode={customerCurrency}
+                            />
+                            <TextField label="Customer Discount (%)" fullWidth size="small" value={discount} InputProps={{ readOnly: true }} />
+                        </Stack>
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            select
-                            fullWidth
-                            label="Cost Center"
-                            value={costCenter}
-                            onChange={(e) => setCostCenter(e.target.value)}
-                            size="small"
-                        >
-                            <MenuItem value="">None</MenuItem>
-                            {costCenters.map((cc: any) => (
-                                <MenuItem key={cc.id} value={cc.id}>
-                                    {cc.name}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+                    <Grid item xs={12} sm={3}>
+                        <Stack spacing={2}>
+                            <TextField
+                                select
+                                fullWidth
+                                label="Payment Type"
+                                value={String(payment || "")}
+                                onChange={(e) => setPayment(e.target.value)}
+                                size="small"
+                                SelectProps={{
+                                    renderValue: (selected) => {
+                                        const sel = visiblePaymentTerms.find((pt: any) => String(pt.terms_indicator) === String(selected));
+                                        return sel ? sel.description : (selected as string);
+                                    },
+                                }}
+                            >
+                                {visiblePaymentTerms.map((p: any) => (
+                                    <MenuItem key={p.terms_indicator} value={String(p.terms_indicator)}>
+                                        {p.description}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                            <TextField
+                                select
+                                fullWidth
+                                label="Price List"
+                                value={String(priceList || "")}
+                                onChange={(e) => setPriceList(e.target.value)}
+                                size="small"
+                            >
+                                {priceLists.map((pl: any) => (
+                                    <MenuItem key={pl.id} value={String(pl.id)}>
+                                        {pl.typeName}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Stack>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <TextField
-                            label="Reference"
-                            fullWidth
-                            size="small"
-                            value={comments}
-                            onChange={(e) => setComments(e.target.value)}
-                            placeholder="e.g., Internal stock issue for production"
-                        />
+
+                    <Grid item xs={12} sm={3}>
+                        <Stack spacing={2}>
+                            <TextField
+                                label="Invoice Date"
+                                type="date"
+                                fullWidth
+                                size="small"
+                                value={invoiceDate}
+                                onChange={(e) => handleDateChange(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                                inputProps={{
+                                    min: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_from).toISOString().split('T')[0] : undefined,
+                                    max: selectedFiscalYear ? new Date(selectedFiscalYear.fiscal_year_to).toISOString().split('T')[0] : undefined,
+                                }}
+                                error={!!dateError}
+                                helperText={dateError}
+                            />
+                            <TextField
+                                select
+                                fullWidth
+                                label="Cost Center"
+                                value={costCenter}
+                                onChange={(e) => setCostCenter(e.target.value)}
+                                size="small"
+                            >
+                                <MenuItem value="">None</MenuItem>
+                                {costCenters.map((cc: any) => (
+                                    <MenuItem key={cc.id} value={cc.id}>
+                                        {cc.name}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Stack>
                     </Grid>
                 </Grid>
             </Paper>
@@ -1171,12 +1089,14 @@ export default function InternalServiceInvoice() {
                 <Table>
                     <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
                         <TableRow>
+                            <TableCell>No</TableCell>
                             <TableCell>Item Code</TableCell>
                             <TableCell>Description</TableCell>
-                            <TableCell>Qty</TableCell>
+                            <TableCell>Quantity</TableCell>
                             <TableCell>Unit</TableCell>
-                            <TableCell>Unit Price</TableCell>
-                            <TableCell>Amount (LKR)</TableCell>
+                            <TableCell>{priceColumnLabel}</TableCell>
+                            <TableCell>Discount (%)</TableCell>
+                            <TableCell>Total</TableCell>
                             <TableCell>Action</TableCell>
                         </TableRow>
                     </TableHead>
@@ -1184,6 +1104,7 @@ export default function InternalServiceInvoice() {
                     <TableBody>
                         {rows.map((row, i) => (
                             <TableRow key={row.id} data-row-id={row.id}>
+                                <TableCell>{i + 1}</TableCell>
                                 <TableCell>
                                     <ItemSearchSelect
                                         displayField="code"
@@ -1240,6 +1161,13 @@ export default function InternalServiceInvoice() {
                                         onChange={(v) => handleChange(row.id, priceColumnLabel === "Price before Tax" ? "priceBeforeTax" : "priceAfterTax", v)}
                                     />
                                 </TableCell>
+                                <TableCell>
+                                    <FormattedNumberField
+                                        size="small"
+                                        value={row.discount}
+                                        InputProps={{ readOnly: true }}
+                                    />
+                                </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
                                 <TableCell>
                                     {i === rows.length - 1 ? (
@@ -1253,6 +1181,20 @@ export default function InternalServiceInvoice() {
                                         </Button>
                                     ) : (
                                         <Stack direction="row" spacing={1} justifyContent="center">
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                startIcon={<EditIcon />}
+                                                onClick={() => {
+                                                    const rowElement = document.querySelector(`[data-row-id="${row.id}"]`);
+                                                    if (rowElement) {
+                                                        const firstInput = rowElement.querySelector('input') as HTMLInputElement;
+                                                        if (firstInput) firstInput.focus();
+                                                    }
+                                                }}
+                                            >
+                                                Edit
+                                            </Button>
                                             <Button
                                                 variant="outlined"
                                                 color="error"
@@ -1288,7 +1230,6 @@ export default function InternalServiceInvoice() {
                             <TableCell></TableCell>
                         </TableRow>
 
-                        {/* Show tax breakdown */}
                         {taxCalculations.length > 0 && (
                             <>
                                 <TableRow>
@@ -1322,26 +1263,119 @@ export default function InternalServiceInvoice() {
                     </TableFooter>
                 </Table>
             </TableContainer>
+            {/* Cash Payment / Advance Payment Section */}
+            <Paper sx={{ p: 2, borderRadius: 2 }}>
+                <Typography variant="subtitle1" sx={{ mb: 2, textAlign: 'center' }}>
+                    {isAdvanceBalancePaymentTerm(paymentTerms, payment) ? "Advance Payment" : "Cash Payment"}
+                </Typography>
+                <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Deliver From Location"
+                            value={String(deliverFrom || "")}
+                            onChange={(e) => setDeliverFrom(e.target.value)}
+                            size="small"
+                        >
+                            {locations.map((loc: any) => (
+                                <MenuItem key={loc.loc_code} value={String(loc.loc_code)}>
+                                    {loc.location_name}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
 
-            <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handlePlaceQuotation}
-                    disabled={submitting}
-                    sx={{ width: 200 }}
-                >
-                    {submitting ? "Saving..." : "Place Invoice"}
-                </Button>
-            </Box>
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            select
+                            fullWidth
+                            label="Cash Account"
+                            value={String(cashAccount || "")}
+                            onChange={(e) => setCashAccount(e.target.value)}
+                            size="small"
+                            SelectProps={{
+                                renderValue: (selected) => {
+                                    if (!selected) return "Select";
+                                    const acc = cashBankAccounts.find(
+                                        (a: any) => String(a.id) === String(selected)
+                                    );
+                                    return acc ? bankAccountLabel(acc) : String(selected);
+                                },
+                            }}
+                            helperText={
+                                cashBankAccounts.length === 0
+                                    ? "No bank accounts found — add one under Banking maintenance."
+                                    : selectedCashBankAccount
+                                        ? undefined
+                                        : cashAccount
+                                            ? "Selected account is not in the list."
+                                            : undefined
+                            }
+                        >
+                            <MenuItem value="">Select</MenuItem>
+                            {cashBankAccounts.map((acc: any) => (
+                                <MenuItem key={acc.id} value={String(acc.id)}>
+                                    {bankAccountLabel(acc)}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </Grid>
 
+                    {isAdvanceBalancePaymentTerm(paymentTerms, payment) && (
+                        <>
+                            <Grid item xs={12} sm={6}>
+                                <FormattedNumberField
+                                    label="Advance Received"
+                                    name="advanceAmount"
+                                    size="small"
+                                    fullWidth
+                                    value={advanceAmount}
+                                    onChange={(e) => setAdvanceAmount(e.target.value)}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    label="Balance Due"
+                                    value={formatMoney(Math.max(0, documentTotal - (Number(advanceAmount) || 0)))}
+                                    InputProps={{ readOnly: true }}
+                                />
+                            </Grid>
+                        </>
+                    )}
+
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={2}
+                            label="Comments"
+                            value={comments}
+                            onChange={(e) => setComments(e.target.value)}
+                        />
+                    </Grid>
+                </Grid>
+
+                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2, gap: 2 }}>
+                    <Button variant="outlined" onClick={() => navigate(-1)}>
+                        Cancel Invoice
+                    </Button>
+                    <Button variant="contained" color="primary" onClick={handlePlaceQuotation} disabled={!!dateError || submitting}>
+                        {submitting ? "Saving..." : "Place Invoice"}
+                    </Button>
+                </Box>
+            </Paper>
             <AddedConfirmationModal
                 open={open}
-                handleClose={() => setOpen(false)}
-                content="Invoice Placed successfully"
                 title="Success"
+                content="Internal Service Invoice has been added successfully!"
                 addFunc={async () => { }}
-                onSuccess={() => window.history.back()}
+                handleClose={() => setOpen(false)}
+                onSuccess={() => {
+                    window.history.back();
+                }}
             />
         </FormPageLayout>
     );

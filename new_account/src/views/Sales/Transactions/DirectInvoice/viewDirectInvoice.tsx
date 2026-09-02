@@ -367,6 +367,7 @@ export default function ViewDirectInvoice() {
             taxIncluded: Boolean(selectedPriceList?.taxIncl),
             total: parseFloat(totalAmount),
             currency: currencyValue !== "-" ? currencyValue : undefined,
+            paidAmount: debtorTransEntry ? Number(debtorTransEntry.alloc ?? 0) : undefined,
           }}
           footerNote="Payment is due by the due date shown above. Please quote invoice reference when remitting."
         />

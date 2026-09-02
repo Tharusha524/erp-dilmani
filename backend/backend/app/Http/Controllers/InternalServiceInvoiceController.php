@@ -33,6 +33,18 @@ class InternalServiceInvoiceController extends Controller
 
         $invoice = DB::transaction(function () use ($data, $lines) {
             $data['created_by'] = $request->user()->id ?? null;
+
+            $documentTotal = array_reduce($lines, function (float $sum, array $line) {
+                $qty = (float) ($line['quantity'] ?? 0);
+                $unitPrice = (float) ($line['unit_price'] ?? 0);
+                $discount = (float) ($line['discount_percent'] ?? 0);
+                return $sum + ($qty * $unitPrice * (1 - $discount / 100));
+            }, 0.0) + (float) ($data['freight_cost'] ?? 0);
+
+            $advanceAmount = round((float) ($data['advance_amount'] ?? 0), 2);
+            $data['advance_amount'] = $advanceAmount;
+            $data['balance_due'] = round(max(0, $documentTotal - $advanceAmount), 2);
+
             $invoice = InternalServiceInvoice::create($data);
             $invoice->lines()->createMany($lines);
 

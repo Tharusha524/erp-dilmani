@@ -25,12 +25,16 @@ class InternalServiceInvoice extends Model
         'reference',
         'cash_sale',
         'bank_account_id',
+        'advance_amount',
+        'balance_due',
         'created_by',
     ];
 
     protected $casts = [
         'cash_sale' => 'boolean',
         'freight_cost' => 'float',
+        'advance_amount' => 'float',
+        'balance_due' => 'float',
     ];
 
     public function lines(): HasMany

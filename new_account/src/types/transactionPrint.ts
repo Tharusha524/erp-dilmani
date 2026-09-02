@@ -25,6 +25,10 @@ export type TransactionPrintTotals = {
   taxIncluded?: boolean;
   total: number;
   currency?: string;
+  /** Amount already received/allocated against this document (e.g. an
+   * advance payment) — when provided (and less than total), the template
+   * shows "Advance Received" and "Balance Due" rows below the total. */
+  paidAmount?: number;
 };
 
 export type TransactionPrintTemplateProps = {
