@@ -258,6 +258,7 @@ import DirectDelivery from "./views/Sales/Transactions/DirectDelivery/DirectDeli
 import DirectInvoice from "./views/Sales/Transactions/DirectInvoice/DirectInvoice";
 import InternalServiceInvoice from "./views/Sales/Transactions/InternalServiceInvoice/InternalServiceInvoice";
 import InternalServiceInvoiceSuccess from "./views/Sales/Transactions/InternalServiceInvoice/InternalServiceInvoiceSuccess";
+import ViewInternalServiceInvoice from "./views/Sales/Transactions/InternalServiceInvoice/ViewInternalServiceInvoice";
 import CustomerPayments from "./views/Sales/Transactions/CustomerPayments/CustomerPayments";
 import CustomerCreditNotes from "./views/Sales/Transactions/CustomerCreditNotes/CustomerCreditNotes";
 import SalesQuotationInquiry from "./views/Sales/InquiriesAndReports/SalesQuotationInquiry/SalesQuotationInquiry";
@@ -1508,6 +1509,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['Internal service invoice entry']}>
               {withLayout(MainLayout, InternalServiceInvoiceSuccess)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales/transactions/internal-service-invoice/view"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Internal service invoice entry']}>
+              {withLayout(MainLayout, ViewInternalServiceInvoice)}
             </ProtectedRoute>
           }
         />

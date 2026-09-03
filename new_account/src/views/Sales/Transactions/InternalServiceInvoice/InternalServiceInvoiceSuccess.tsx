@@ -51,6 +51,24 @@ export default function InternalServiceInvoiceSuccess() {
                     <Button
                         variant="outlined"
                         sx={{ width: '300px' }}
+                        onClick={() => navigate("/sales/transactions/internal-service-invoice/view", { state })}
+                    >
+                        View This Invoice
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        sx={{ width: '300px' }}
+                        onClick={() =>
+                            navigate("/sales/transactions/internal-service-invoice/view", {
+                                state: { ...state, autoPrint: true },
+                            })
+                        }
+                    >
+                        Print Sales Invoice
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        sx={{ width: '300px' }}
                         onClick={() => (window.location.href = "mailto:?subject=ERP%20Document")}
                     >
                         Email Sales Invoice

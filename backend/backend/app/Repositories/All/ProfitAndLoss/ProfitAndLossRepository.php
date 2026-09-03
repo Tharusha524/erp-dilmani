@@ -87,7 +87,7 @@ class ProfitAndLossRepository extends BaseRepository implements ProfitAndLossInt
             ->orderBy('cm.account_code')
             ->get();
 
-        return $rawRows
+        $rows = $rawRows
             ->map(function ($row) {
                 $type = (int) $row->account_type;
                 if (! TrialAccountBalance::isProfitAndLossAccount($type)) {
@@ -128,6 +128,168 @@ class ProfitAndLossRepository extends BaseRepository implements ProfitAndLossInt
             })
             ->filter()
             ->values();
+
+        // Internal Service Invoice (Embroidery/Printing) is deliberately isolated
+        // from gl_trans — merge its Income/Factory-Expense pair in, computed
+        // fresh here on every request, never written to the ledger. Which
+        // lines show depends on the cost center filter (see method below).
+        $rows = $rows->concat($this->internalServiceInvoicePnlRows($fromDate, $toDate, $compareTo, $costCenter));
+
+        return $rows;
+    }
+
+    /**
+     * Embroidery/Sticker Printing income and its mirrored Factory expense,
+     * sourced from internal_service_invoices (identified by their existing
+     * Cost Center selection) — same amount posted as income for that
+     * category and as a Factory expense, per the 1:1 internal-transfer rule.
+     *
+     * Cost center filter behaviour:
+     *  - No filter ("Entire"): both the income and the mirrored expense show.
+     *  - Filtered by Embroidery/Printing: only that category's income shows
+     *    (the expense belongs to Factory, not to the category itself).
+     *  - Filtered by Factory: only the mirrored expense lines show.
+     *  - Any other cost center: nothing (unrelated to Internal Service Invoice).
+     *
+     * @return Collection<int, object>
+     */
+    private function internalServiceInvoicePnlRows(
+        string $fromDate,
+        string $toDate,
+        string $compareTo,
+        ?string $costCenter = null
+    ): Collection {
+        if (! Schema::hasTable('internal_service_invoices') || ! Schema::hasTable('cost_centers')) {
+            return collect();
+        }
+
+        $costCenterRows = DB::table('cost_centers')
+            ->whereIn(DB::raw('LOWER(name)'), ['embroidery', 'sticker printing', 'printing', 'factory'])
+            ->get(['id', 'name']);
+
+        $categories = $costCenterRows
+            ->reject(fn ($cc) => strtolower($cc->name) === 'factory')
+            ->mapWithKeys(fn ($cc) => [
+                (int) $cc->id => str_contains(strtolower($cc->name), 'print') ? 'Printing' : 'Embroidery',
+            ]);
+        $factoryId = optional($costCenterRows->first(fn ($cc) => strtolower($cc->name) === 'factory'))->id;
+        $factoryId = $factoryId !== null ? (int) $factoryId : null;
+
+        if ($categories->isEmpty()) {
+            return collect();
+        }
+
+        // Decide which side(s) to include based on the selected cost center.
+        $showIncomeForCostCenter = null; // null = show income for every category
+        $showExpense = true;
+        if ($costCenter !== null && $costCenter !== '') {
+            $selected = (int) $costCenter;
+            if ($factoryId !== null && $selected === $factoryId) {
+                $showIncomeForCostCenter = -1; // no category matches -> no income rows
+                $showExpense = true;
+            } elseif ($categories->has($selected)) {
+                $showIncomeForCostCenter = $selected;
+                $showExpense = false;
+            } else {
+                // Unrelated cost center selected — nothing to add.
+                return collect();
+            }
+        }
+
+        [$compareFromDate, $compareToDate] = $this->internalServiceInvoiceCompareRange($compareTo, $fromDate, $toDate);
+
+        $sumFor = function (string $from, ?string $to) use ($categories) {
+            if ($to === null) {
+                return [];
+            }
+
+            return DB::table('internal_service_invoices')
+                ->whereIn('cost_center_id', $categories->keys())
+                ->whereDate('tran_date', '>=', $from)
+                ->whereDate('tran_date', '<=', $to)
+                ->groupBy('cost_center_id')
+                ->selectRaw('cost_center_id, SUM(advance_amount + balance_due) as total')
+                ->pluck('total', 'cost_center_id')
+                ->all();
+        };
+
+        $periodTotals = $sumFor($fromDate, $toDate);
+        $compareTotals = $sumFor($compareFromDate ?? $fromDate, $compareToDate);
+
+        $achieve = function (float $period, float $compare): string {
+            if (abs($compare) < 0.001) {
+                return '999.0';
+            }
+
+            return number_format(($period / $compare) * 100, 1, '.', '');
+        };
+
+        $rows = collect();
+        foreach ($categories as $costCenterId => $categoryName) {
+            $period = round((float) ($periodTotals[$costCenterId] ?? 0), 2);
+            $compare = round((float) ($compareTotals[$costCenterId] ?? 0), 2);
+            if (abs($period) + abs($compare) < 0.001) {
+                continue;
+            }
+
+            $includeIncome = $showIncomeForCostCenter === null || $showIncomeForCostCenter === $costCenterId;
+            if ($includeIncome) {
+                $rows->push((object) [
+                    'account_code' => 'ISI-'.strtoupper($categoryName).'-INC',
+                    'groupAccountName' => $categoryName.' Income',
+                    'account_type' => 9,
+                    'type' => $categoryName.' Income',
+                    'typeName' => $categoryName.' Income',
+                    'classId' => '3',
+                    'className' => 'Income',
+                    'period' => $period,
+                    'compareValue' => $compare,
+                    'achievePercent' => $achieve($period, $compare),
+                ]);
+            }
+
+            // Same amount mirrored as a Factory expense (internal transfer).
+            if ($showExpense) {
+                $rows->push((object) [
+                    'account_code' => 'ISI-'.strtoupper($categoryName).'-EXP',
+                    'groupAccountName' => $categoryName,
+                    'account_type' => 10,
+                    'type' => 'Factory Expense',
+                    'typeName' => 'Factory Expense',
+                    'classId' => '5',
+                    'className' => 'Costs',
+                    'period' => $period,
+                    'compareValue' => $compare,
+                    'achievePercent' => $achieve($period, $compare),
+                ]);
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function internalServiceInvoiceCompareRange(string $compareTo, string $fromDate, string $toDate): array
+    {
+        if ($compareTo === 'Period Y-1') {
+            return [
+                date('Y-m-d', strtotime($fromDate.' -1 year')),
+                date('Y-m-d', strtotime($toDate.' -1 year')),
+            ];
+        }
+
+        if ($compareTo === 'Accumulated') {
+            $fyStart = ActiveFiscalYear::containingDate($fromDate)['fiscal_year_from'];
+            if ($fromDate <= $fyStart) {
+                return [null, null];
+            }
+
+            return [$fyStart, Carbon::parse($fromDate)->subDay()->toDateString()];
+        }
+
+        return [null, null];
     }
 
     private function buildComparisonSubquery(string $compareTo, string $fromDate, string $toDate, ?string $costCenter = null)

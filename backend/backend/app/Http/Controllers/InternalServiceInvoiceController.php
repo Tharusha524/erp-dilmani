@@ -31,7 +31,7 @@ class InternalServiceInvoiceController extends Controller
         $lines = $data['lines'];
         unset($data['lines']);
 
-        $invoice = DB::transaction(function () use ($data, $lines) {
+        $invoice = DB::transaction(function () use ($data, $lines, $request) {
             $data['created_by'] = $request->user()->id ?? null;
 
             $documentTotal = array_reduce($lines, function (float $sum, array $line) {

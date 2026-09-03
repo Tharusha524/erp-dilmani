@@ -276,16 +276,22 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
                         <TableHead>
                           <TableRow>
                             <TableCell sx={{ fontWeight: "bold" }}>Category</TableCell>
-                            <TableCell sx={{ fontWeight: "bold" }}>Size</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }} align="right">Qty</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {order.sizes.map((s) => (
-                            <TableRow key={s.id}>
-                              <TableCell>{s.category}</TableCell>
-                              <TableCell>{s.size_label}</TableCell>
-                              <TableCell align="right">{formatWoQuantity(s.quantity)}</TableCell>
+                          {/* Summed per category (Front/Back/Sleeves/Others) instead of
+                              one row per grid cell — the individual Cell-N breakdown is
+                              only meaningful on the entry screen, not here. */}
+                          {Object.entries(
+                            order.sizes.reduce<Record<string, number>>((totals, s) => {
+                              totals[s.category] = (totals[s.category] || 0) + Number(s.quantity || 0);
+                              return totals;
+                            }, {})
+                          ).map(([category, qty]) => (
+                            <TableRow key={category}>
+                              <TableCell>{category}</TableCell>
+                              <TableCell align="right">{formatWoQuantity(qty)}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>

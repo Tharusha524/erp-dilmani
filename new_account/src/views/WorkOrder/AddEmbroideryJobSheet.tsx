@@ -44,18 +44,21 @@ const storageUrl = (path: string | null | undefined): string | null => {
 const AREAS = ["Front", "Back", "Sleeves", "Others"] as const;
 
 // Free-form quantity entry grid per area (matches the paper job sheet's blank
-// Front/Back/Sleeves/Others grid): 2 columns x GRID_ROWS rows, each cell capped
-// at MAX_PER_CELL. Cells are stored column-major (index = col*GRID_ROWS + row)
-// so index+1 naturally walks down a column then rolls into the next column —
-// exactly the fill order the job sheet is filled in by hand.
+// Front/Back/Sleeves/Others grid): starts at 2 columns x GRID_ROWS rows, each
+// cell capped at MAX_PER_CELL. Cells are stored column-major (index =
+// col*GRID_ROWS + row) so index+1 naturally walks down a column then rolls
+// into the next column — the fill order the job sheet is filled in by hand.
+// Each area grows its own extra column once its existing columns fill up —
+// it never crosses into another area's grid.
 const GRID_ROWS = 14;
-const GRID_COLS = 2;
-const GRID_CELLS = GRID_ROWS * GRID_COLS;
+const DEFAULT_COLS = 2;
 const MAX_PER_CELL = 15;
 
-const emptyGrid = (): string[] => Array(GRID_CELLS).fill("");
+const emptyGrid = (cols: number = DEFAULT_COLS): string[] => Array(GRID_ROWS * cols).fill("");
 const emptyAreaGrids = (): Record<string, string[]> =>
   Object.fromEntries(AREAS.map((a) => [a, emptyGrid()]));
+const emptyAreaCols = (): Record<string, number> =>
+  Object.fromEntries(AREAS.map((a) => [a, DEFAULT_COLS]));
 
 type AreaLine = { stitches: string; stitchesPrice: string };
 
@@ -75,18 +78,25 @@ const parseAreaLineFromItemName = (itemName: string): AreaLine => {
   };
 };
 
+/** How many columns are needed to hold `cellsNeeded` cells, at least DEFAULT_COLS. */
+const colsForCells = (cellsNeeded: number): number =>
+  Math.max(DEFAULT_COLS, Math.ceil(cellsNeeded / GRID_ROWS));
+
 /** Distributes a legacy total qty (from job sheets saved before the grid
  * existed) into grid cells at MAX_PER_CELL per cell, so editing an old job
- * sheet still shows its total instead of a blank grid. */
-const distributeQtyIntoGrid = (qty: number): string[] => {
-  const grid = emptyGrid();
+ * sheet still shows its total instead of a blank grid. Grows extra columns
+ * if the total needs more than the default 2. */
+const distributeQtyIntoGrid = (qty: number): { grid: string[]; cols: number } => {
+  const cellsNeeded = Math.max(1, Math.ceil(qty / MAX_PER_CELL));
+  const cols = colsForCells(cellsNeeded);
+  const grid = emptyGrid(cols);
   let remaining = qty;
-  for (let i = 0; i < GRID_CELLS && remaining > 0; i += 1) {
+  for (let i = 0; i < grid.length && remaining > 0; i += 1) {
     const cell = Math.min(MAX_PER_CELL, remaining);
     grid[i] = String(cell);
     remaining -= cell;
   }
-  return grid;
+  return { grid, cols };
 };
 
 const AddEmbroideryJobSheet = () => {
@@ -112,10 +122,11 @@ const AddEmbroideryJobSheet = () => {
   const [jobName, setJobName] = useState("");
   const [areaLines, setAreaLines] = useState<Record<string, AreaLine>>(emptyAreaLines());
   const [areaGrids, setAreaGrids] = useState<Record<string, string[]>>(emptyAreaGrids());
+  const [areaCols, setAreaCols] = useState<Record<string, number>>(emptyAreaCols());
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const cellRefs = React.useRef<Record<string, (HTMLInputElement | null)[]>>(
-    Object.fromEntries(AREAS.map((a) => [a, Array(GRID_CELLS).fill(null)]))
+    Object.fromEntries(AREAS.map((a) => [a, Array(GRID_ROWS * DEFAULT_COLS).fill(null)]))
   );
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,26 +156,45 @@ const AddEmbroideryJobSheet = () => {
     // item_name above) and no Cell-N rows — fall back to distributing that
     // total across cells so editing an old sheet still shows its quantity.
     const nextAreaGrids = emptyAreaGrids();
+    const nextAreaCols = emptyAreaCols();
     AREAS.forEach((area) => {
       const cellSizes = (existingOrder.sizes || []).filter(
         (s) => s.category === area && /^Cell-\d+$/.test(s.size_label)
       );
       if (cellSizes.length > 0) {
-        const grid = emptyGrid();
+        const maxIdx = Math.max(...cellSizes.map((s) => parseInt(s.size_label.replace("Cell-", ""), 10) - 1));
+        const cols = colsForCells(maxIdx + 1);
+        const grid = emptyGrid(cols);
         cellSizes.forEach((s) => {
           const idx = parseInt(s.size_label.replace("Cell-", ""), 10) - 1;
-          if (idx >= 0 && idx < GRID_CELLS) grid[idx] = String(s.quantity);
+          if (idx >= 0 && idx < grid.length) grid[idx] = String(s.quantity);
         });
         nextAreaGrids[area] = grid;
+        nextAreaCols[area] = cols;
       } else {
         const qtyMatch = existingOrder.price_items?.find(
           (p) => p.item_name === area || p.item_name.startsWith(`${area} (`)
         )?.item_name.match(/Qty ([\d.]+)/);
         const legacyQty = qtyMatch ? parseInt(qtyMatch[1], 10) : 0;
-        if (legacyQty > 0) nextAreaGrids[area] = distributeQtyIntoGrid(legacyQty);
+        if (legacyQty > 0) {
+          const { grid, cols } = distributeQtyIntoGrid(legacyQty);
+          nextAreaGrids[area] = grid;
+          nextAreaCols[area] = cols;
+        }
       }
     });
     setAreaGrids(nextAreaGrids);
+    setAreaCols(nextAreaCols);
+    // Grow the input-ref arrays to match whatever column counts were restored.
+    AREAS.forEach((area) => {
+      const needed = GRID_ROWS * nextAreaCols[area];
+      if (cellRefs.current[area].length < needed) {
+        cellRefs.current[area] = [
+          ...cellRefs.current[area],
+          ...Array(needed - cellRefs.current[area].length).fill(null),
+        ];
+      }
+    });
   }, [existingOrder]);
 
   const updateAreaLine = (area: string, field: keyof AreaLine, value: string) => {
@@ -185,12 +215,28 @@ const AddEmbroideryJobSheet = () => {
     setAreaGrids((prev) => {
       const nextGrid = [...prev[area]];
       nextGrid[index] = cleaned;
+
+      // Once this area's last cell hits the cap, grow it a fresh column of
+      // its own — Front/Back/Sleeves/Others each expand independently and
+      // never spill into one another.
+      if (cleaned === String(MAX_PER_CELL) && index === nextGrid.length - 1) {
+        nextGrid.push(...Array(GRID_ROWS).fill(""));
+        setAreaCols((prevCols) => ({ ...prevCols, [area]: prevCols[area] + 1 }));
+        if (cellRefs.current[area].length < nextGrid.length) {
+          cellRefs.current[area] = [
+            ...cellRefs.current[area],
+            ...Array(nextGrid.length - cellRefs.current[area].length).fill(null),
+          ];
+        }
+      }
+
       return { ...prev, [area]: nextGrid };
     });
 
     // Auto-advance to the next cell once this one hits the cap — column-major
-    // indexing means index+1 is "down the column, then into the next column".
-    if (cleaned === String(MAX_PER_CELL) && index + 1 < GRID_CELLS) {
+    // indexing means index+1 is "down the column, then into the next column"
+    // (or into the newly-grown column when this area's grid was full).
+    if (cleaned === String(MAX_PER_CELL)) {
       setTimeout(() => cellRefs.current[area]?.[index + 1]?.focus(), 0);
     }
   };
@@ -371,7 +417,8 @@ const AddEmbroideryJobSheet = () => {
           </Typography>
           <Typography variant="caption" color="text.secondary" display="block" align="center" gutterBottom>
             Fill each column top to bottom (max {MAX_PER_CELL} per cell) — it auto-jumps to the next cell,
-            and the total feeds into the Qty above automatically.
+            growing a new column of its own once an area fills up, and the total feeds into the Qty above
+            automatically.
           </Typography>
           <Grid container spacing={2}>
             {AREAS.map((area) => (
@@ -379,12 +426,12 @@ const AddEmbroideryJobSheet = () => {
                 <Typography variant="subtitle2" fontWeight="bold" align="center" gutterBottom>
                   {area} — Total: {formatWoQuantity(areaQty(area))}
                 </Typography>
-                <TableContainer component={Paper} variant="outlined">
+                <TableContainer component={Paper} variant="outlined" sx={{ overflowX: "auto" }}>
                   <Table size="small">
                     <TableBody>
                       {Array.from({ length: GRID_ROWS }).map((_, row) => (
                         <TableRow key={row}>
-                          {Array.from({ length: GRID_COLS }).map((_, col) => {
+                          {Array.from({ length: areaCols[area] }).map((_, col) => {
                             const index = col * GRID_ROWS + row;
                             return (
                               <TableCell key={col} align="center" padding="none">
