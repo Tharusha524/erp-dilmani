@@ -450,6 +450,7 @@ Route::apiResource('stock-damages', StockDamageController::class)->only(['index'
 Route::get('stock-damages-summary', [StockDamageController::class, 'summary']);
 
 Route::get('inventory/low-stock', [LowStockController::class, 'index']);
+Route::get('inventory/stock-list', [\App\Http\Controllers\StockListController::class, 'index']);
 
 Route::get('sales-analytics/dashboard-summary', [SalesAnalyticsController::class, 'dashboardSummary']);
 Route::get('sales-analytics/product-performance', [SalesAnalyticsController::class, 'productPerformance']);

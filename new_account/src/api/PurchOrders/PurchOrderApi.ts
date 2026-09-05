@@ -98,6 +98,15 @@ export const postPurchOrderWithDetails = async (payload: {
   return response.data as { order: PurchOrderPayload & { order_no: number }; order_no: number; lines: unknown[] };
 };
 
+/**
+ * Lines for a purchase order, including quantity_ordered/quantity_received
+ * so the caller can compute what's still outstanding to receive.
+ */
+export const getPurchOrderDetails = async (orderNo: number | string) => {
+  const response = await api.get(`${PURCH_ORDERS_URL}/${orderNo}/details`);
+  return response.data as PurchOrderLinePayload[];
+};
+
 export const getNextPurchOrderNo = async (): Promise<number> => {
   try {
     const response = await api.get(`${PURCH_ORDERS_URL}/next-order-no`);
