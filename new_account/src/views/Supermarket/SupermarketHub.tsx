@@ -34,12 +34,16 @@ const cards = [
   { title: "Offers & Discounts", description: "Product, category, tier & customer offers", href: "/supermarket/offers", icon: <LocalOfferIcon />, color: "#c62828" },
   { title: "Win-Back Campaigns", description: "Re-engage inactive customers via SMS/WhatsApp", href: "/supermarket/win-back", icon: <CampaignIcon />, color: "#00838f" },
   { title: "Stock Damage", description: "Record and review damaged stock", href: "/supermarket/stock-damage", icon: <ReportProblemIcon />, color: "#ed6c02" },
-  { title: "POS Shifts", description: "Open/close cashier tills & cash-up", href: "/supermarket/pos-shifts", icon: <PointOfSaleIcon />, color: "#1976d2" },
-  { title: "Stock Adjustments", description: "Add, reduce, or override stock with a reason", href: "/supermarket/stock-adjustments", icon: <InventoryIcon />, color: "#6d4c41" },
-  { title: "Stock Transfers", description: "Move stock between branches", href: "/supermarket/stock-transfers", icon: <SwapHorizIcon />, color: "#5e35b1" },
+  // POS Shifts — disabled per request, feature/page code kept as-is.
+  /* { title: "POS Shifts", description: "Open/close cashier tills & cash-up", href: "/supermarket/pos-shifts", icon: <PointOfSaleIcon />, color: "#1976d2" }, */
+  // Stock Adjustments — merged into the "Stock" page's Adjustments tab, one button instead of two.
+  /* { title: "Stock Adjustments", description: "Add, reduce, or override stock with a reason", href: "/supermarket/stock-adjustments", icon: <InventoryIcon />, color: "#6d4c41" }, */
+  // Stock Transfers — disabled per request, feature/page code kept as-is.
+  /* { title: "Stock Transfers", description: "Move stock between branches", href: "/supermarket/stock-transfers", icon: <SwapHorizIcon />, color: "#5e35b1" }, */
   { title: "Inventory Audits", description: "Physical stock counts & reconciliation", href: "/supermarket/inventory-audits", icon: <FactCheckIcon />, color: "#00695c" },
   { title: "Offline Sales & Purchases", description: "Log transactions made outside the system", href: "/supermarket/offline-entries", icon: <ReceiptIcon />, color: "#8d6e63" },
-  { title: "Warranty", description: "Track warranties, check status, manage claims", href: "/supermarket/warranty", icon: <VerifiedUserIcon />, color: "#0277bd" },
+  // Warranty — disabled per request, feature/page code kept as-is.
+  /* { title: "Warranty", description: "Track warranties, check status, manage claims", href: "/supermarket/warranty", icon: <VerifiedUserIcon />, color: "#0277bd" }, */
   { title: "Vouchers", description: "Issue and redeem gift vouchers", href: "/supermarket/vouchers", icon: <CardGiftcardIcon />, color: "#ad1457" },
   { title: "Customer Segments", description: "RFM segmentation — Champion, At Risk, Dormant", href: "/supermarket/customer-segments", icon: <GroupsIcon />, color: "#283593" },
   { title: "Product Variants", description: "Size/color/weight combos, with barcode label printing", href: "/supermarket/product-variants", icon: <StyleIcon />, color: "#00838f" },

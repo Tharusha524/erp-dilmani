@@ -32,4 +32,10 @@ export const deleteStockMove = async (id: number) => {
   return response.data;
 };
 
+// A single product's stock movement history — most recent first.
+export const getStockMoveHistory = async (stockId: string) => {
+  const response = await api.get(`${API_URL}-history`, { params: { stock_id: stockId } });
+  return response.data;
+};
+
 

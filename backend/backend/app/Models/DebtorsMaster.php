@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class DebtorsMaster extends Model
+class DebtorsMaster extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, HasApiTokens, Notifiable;
 
     protected $table = 'debtors_master';
     protected $primaryKey = 'debtor_no';
@@ -18,6 +20,7 @@ class DebtorsMaster extends Model
         'address',
         'mobile',
         'email',
+        'password',
         'date_of_birth',
         'last_purchase_date',
         'gst',
@@ -34,6 +37,11 @@ class DebtorsMaster extends Model
         'inactive',
     ];
 
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
     protected $casts = [
         'inactive' => 'boolean',
         'discount' => 'decimal:2',
@@ -41,6 +49,8 @@ class DebtorsMaster extends Model
         'credit_limit' => 'float',
         'date_of_birth' => 'date',
         'last_purchase_date' => 'date',
+        'mobile_verified_at' => 'datetime',
+        'password' => 'hashed',
     ];
 
     protected $with = ['currency', 'salesType', 'creditStatus', 'paymentTerm'];
@@ -78,5 +88,10 @@ class DebtorsMaster extends Model
     public function loyaltyCard()
     {
         return $this->hasOne(LoyaltyCard::class, 'debtor_no', 'debtor_no');
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(CustomerNotification::class, 'debtor_no', 'debtor_no');
     }
 }

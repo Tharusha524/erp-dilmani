@@ -194,17 +194,35 @@ class OfferController extends Controller
     }
 
     /**
-     * Popularity report: which offers were redeemed most often / most value.
+     * Popularity/effectiveness report: which offers were redeemed most
+     * often, how much discount they cost, and — the actual "effective"
+     * measure — how much real sale revenue those redemptions were attached
+     * to (via each redemption's linked debtor_trans).
      */
     public function popularity()
     {
+        $revenueByOffer = DB::table('offer_redemptions as r')
+            ->join('debtor_trans as dt', function ($join) {
+                $join->on('dt.trans_no', '=', 'r.debtor_trans_no')
+                     ->on('dt.trans_type', '=', 'r.debtor_trans_type');
+            })
+            ->select('r.offer_id')
+            ->selectRaw('SUM(dt.ov_amount) as total_revenue')
+            ->groupBy('r.offer_id')
+            ->pluck('total_revenue', 'offer_id');
+
         $rows = OfferRedemption::select('offer_id')
             ->selectRaw('COUNT(*) as redemption_count')
             ->selectRaw('SUM(discount_amount) as total_discount_given')
             ->with('offer:id,offer_name')
             ->groupBy('offer_id')
             ->orderByDesc('redemption_count')
-            ->get();
+            ->get()
+            ->map(function ($row) use ($revenueByOffer) {
+                $row->total_revenue = (float) ($revenueByOffer[$row->offer_id] ?? 0);
+
+                return $row;
+            });
 
         return response()->json($rows);
     }

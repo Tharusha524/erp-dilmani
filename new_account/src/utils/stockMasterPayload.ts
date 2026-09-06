@@ -44,6 +44,10 @@ export function normalizeStockMasterPayload(
   return {
     stock_id: stockId,
     category_id: categoryId,
+    // Optional organizational labels — no GL/accounting fields depend on
+    // these, so simply pass through whatever was given (or omit).
+    brand_id: data.brand_id ?? null,
+    subcategory_id: data.subcategory_id ?? null,
     tax_type_id: taxTypeId,
     description: String(data.description ?? data.itemName ?? "").trim(),
     long_description: String(data.long_description ?? data.description ?? "").trim(),

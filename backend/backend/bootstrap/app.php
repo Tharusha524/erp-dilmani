@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'company.module' => \App\Http\Middleware\EnsureCompanyModuleEnabled::class,
             'log.activity' => \App\Http\Middleware\LogUserActivity::class,
+            'customer.auth' => \App\Http\Middleware\EnsureCustomerToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

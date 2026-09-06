@@ -29,6 +29,7 @@ import { createQuotation, printQuotationPdf } from "../../../api/Quotations/Quot
 import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 import { getApplicableOffers } from "../../../api/Loyalty/loyaltyApi";
 import { lookupBarcode, getLowStock } from "../../../api/Pos/posApi";
+import { getSalesPricingByStockId } from "../../../api/SalesPricing/SalesPricingApi";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
@@ -264,7 +265,11 @@ export default function PosCheckoutPage() {
           stock_id: item.stock_id,
           description: variant ? `${item.description} (${variant.variant_name})` : item.description,
           quantity,
-          unit_price: Number(item.purchase_cost) || 0,
+          // Charge the real Selling Price when one is set (via Set Price) —
+          // purchase_cost is what we paid the supplier, never what the
+          // customer should be charged. Falls back to purchase_cost only
+          // when no Selling Price has been configured for this product yet.
+          unit_price: Number(item.sale_price ?? item.purchase_cost) || 0,
           discount_percent: 0,
           variant_id: variant?.id,
           variant_name: variant?.variant_name,
@@ -273,9 +278,21 @@ export default function PosCheckoutPage() {
     });
   };
 
-  const addToCart = () => {
+  const addToCart = async () => {
     if (!selectedItem) return;
-    addItemToCart(selectedItem, Number(qty) || 1);
+    // Manual search comes from the shared item list (no sale_price field —
+    // that endpoint is used across the whole ERP and must keep
+    // purchase_cost meaning real cost). Fetch the real Selling Price
+    // separately here so manual search charges the same correct price a
+    // barcode scan of the same product would.
+    let salePrice: number | undefined;
+    try {
+      const pricing = await getSalesPricingByStockId(selectedItem.stock_id);
+      salePrice = (pricing ?? []).find((p: any) => p.sales_type_id === 3 && p.currency_id === 8)?.price;
+    } catch {
+      // Non-fatal — falls back to purchase_cost below, same as before this existed.
+    }
+    addItemToCart({ ...selectedItem, sale_price: salePrice }, Number(qty) || 1);
     setSelectedItem(null);
     setQty("1");
   };
@@ -749,9 +766,19 @@ export default function PosCheckoutPage() {
                     key={r.stock_id}
                     label={r.description}
                     clickable
-                    onClick={() => {
+                    onClick={async () => {
                       const fullItem = (items ?? []).find((i: any) => i.stock_id === r.stock_id);
-                      addItemToCart(fullItem ?? { stock_id: r.stock_id, description: r.description, purchase_cost: 0 }, 1);
+                      let salePrice: number | undefined;
+                      try {
+                        const pricing = await getSalesPricingByStockId(r.stock_id);
+                        salePrice = (pricing ?? []).find((p: any) => p.sales_type_id === 3 && p.currency_id === 8)?.price;
+                      } catch {
+                        // Non-fatal — falls back to purchase_cost.
+                      }
+                      addItemToCart(
+                        { ...(fullItem ?? { stock_id: r.stock_id, description: r.description, purchase_cost: 0 }), sale_price: salePrice },
+                        1
+                      );
                     }}
                   />
                 ))}

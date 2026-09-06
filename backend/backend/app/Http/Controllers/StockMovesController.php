@@ -8,6 +8,8 @@ use App\Services\Accounting\PostingsService;
 use App\Services\Inventory\LocStockQuantityService;
 use App\Support\GlPostingRunner;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StockMovesController extends Controller
 {
@@ -27,6 +29,29 @@ class StockMovesController extends Controller
     public function index(): JsonResponse
     {
         return response()->json($this->stockMovesRepo->all());
+    }
+
+    /**
+     * A single product's stock movement history — the proposal's "track
+     * historical stock information" — most recent first. Read-only report,
+     * new/separate from index() above so nothing that already calls
+     * index() is affected.
+     */
+    public function history(Request $request): JsonResponse
+    {
+        $stockId = trim((string) $request->query('stock_id', ''));
+        if ($stockId === '') {
+            return response()->json(['message' => 'stock_id is required'], 422);
+        }
+
+        $rows = DB::table('stock_moves')
+            ->where('stock_id', $stockId)
+            ->orderByDesc('tran_date')
+            ->orderByDesc('trans_id')
+            ->limit(200)
+            ->get();
+
+        return response()->json($rows);
     }
 
     /**

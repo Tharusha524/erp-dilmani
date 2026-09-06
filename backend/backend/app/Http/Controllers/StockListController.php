@@ -20,6 +20,8 @@ class StockListController extends Controller
 
         $query = DB::table('stock_master as sm')
             ->leftJoin('item_category as ic', 'ic.category_id', '=', 'sm.category_id')
+            ->leftJoin('subcategories as sub', 'sub.id', '=', 'sm.subcategory_id')
+            ->leftJoin('brands as br', 'br.id', '=', 'sm.brand_id')
             ->leftJoin(DB::raw('(select stock_id, sum(quantity) as total_qty from loc_stock group by stock_id) as ls'), 'ls.stock_id', '=', 'sm.stock_id')
             ->leftJoin(DB::raw('(select stock_id, min(item_code) as barcode from item_codes group by stock_id) as codes'), 'codes.stock_id', '=', 'sm.stock_id')
             ->where('sm.inactive', false)
@@ -28,6 +30,8 @@ class StockListController extends Controller
                 'sm.description',
                 'sm.category_id',
                 'ic.description as category_name',
+                'sub.name as subcategory_name',
+                'br.name as brand_name',
                 'sm.purchase_cost',
                 DB::raw('COALESCE(ls.total_qty, 0) as quantity'),
                 'codes.barcode'

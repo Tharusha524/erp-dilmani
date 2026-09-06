@@ -19,6 +19,8 @@ class StockMaster extends Model
     protected $fillable = [
         'stock_id',
         'category_id',
+        'brand_id',
+        'subcategory_id',
         'tax_type_id',
         'description',
         'long_description',

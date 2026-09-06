@@ -73,6 +73,8 @@ export const getFrequentlyBoughtTogether = async (stockId: string) =>
   (await api.get("/sales-analytics/frequently-bought-together", { params: { stock_id: stockId } })).data;
 export const getCustomerSegments = async (lookbackDays = 365) =>
   (await api.get("/sales-analytics/customer-segments", { params: { lookback_days: lookbackDays } })).data;
+export const getCustomerOfferSuggestions = async (lookbackDays = 365) =>
+  (await api.get("/sales-analytics/customer-offer-suggestions", { params: { lookback_days: lookbackDays } })).data;
 
 // ---- POS Settings ----
 export const getPosSettings = async () => (await api.get("/pos-settings")).data;

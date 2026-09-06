@@ -11,10 +11,14 @@ import JsBarcode from "jsbarcode";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
 import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
-import { getItems, getItemById, updateItem } from "../../../api/Item/ItemApi";
+import { getItems } from "../../../api/Item/ItemApi";
 import { getCompanies } from "../../../api/CompanySetup/CompanySetupApi";
+import { getSalesPricingByStockId, createSalesPricing, updateSalesPricing } from "../../../api/SalesPricing/SalesPricingApi";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
 import { notify } from "../../../services/notificationService";
+
+const LKR_CURRENCY_ID = 8;
+const RETAIL_SALES_TYPE_ID = 3;
 
 /**
  * For loose/weighed items (produce, bulk goods) that have no manufacturer
@@ -23,6 +27,10 @@ import { notify } from "../../../services/notificationService";
  * (WT|<stock_id>|<price>). Scanning that sticker at checkout adds the item
  * at exactly that price — never touches accounting until an actual sale
  * happens at POS Checkout.
+ *
+ * Price per kg comes from the real Sales Pricing table (same one Set Price
+ * writes to) — never from purchase_cost, which is what we paid the
+ * supplier, not what the customer should be charged.
  */
 export default function WeighAndPrintPage() {
   const { formatCurrency } = useHomeCurrency();
@@ -35,33 +43,40 @@ export default function WeighAndPrintPage() {
   const { data: companies } = useQuery({ queryKey: ["company-setup-list"], queryFn: getCompanies });
   const company = companies?.[0];
 
-  // Quick "set price per kg" shortcut — skips the full Item Maintenance
-  // screen for the one field a cashier actually needs fixed on the spot.
+  const { data: pricingRows } = useQuery({
+    queryKey: ["sales-pricing", product?.stock_id],
+    queryFn: () => getSalesPricingByStockId(product.stock_id),
+    enabled: !!product,
+  });
+  const currentPricing = (pricingRows ?? []).find(
+    (p: any) => p.sales_type_id === RETAIL_SALES_TYPE_ID && p.currency_id === LKR_CURRENCY_ID
+  );
+
+  // Quick "set price per kg" shortcut — skips a trip to the Set Price page
+  // for the one field a cashier actually needs fixed on the spot. Writes to
+  // the real Sales Pricing table, same place Set Price itself writes to.
   const [editingPrice, setEditingPrice] = useState(false);
   const [priceDraft, setPriceDraft] = useState("");
 
   const savePriceMutation = useMutation({
-    mutationFn: async ({ stockId, price }: { stockId: string; price: number }) => {
-      // updateItem requires the full item payload — fetch the current record
-      // and merge in just the price, rather than risk an incomplete payload.
-      const full = await getItemById(stockId);
-      return updateItem(stockId, { ...full, purchase_cost: price });
+    mutationFn: ({ price }: { price: number }) => {
+      const payload = { stock_id: product.stock_id, currency_id: LKR_CURRENCY_ID, sales_type_id: RETAIL_SALES_TYPE_ID, price };
+      return currentPricing ? updateSalesPricing(currentPricing.id, payload) : createSalesPricing(payload);
     },
-    onSuccess: (_result, variables) => {
-      notify.success("Price updated");
+    onSuccess: () => {
+      notify.success("Price per kg updated");
       setEditingPrice(false);
-      queryClient.invalidateQueries({ queryKey: ["items-all"] });
-      setProduct((prev: any) => (prev ? { ...prev, purchase_cost: variables.price } : prev));
+      queryClient.invalidateQueries({ queryKey: ["sales-pricing", product?.stock_id] });
     },
     onError: () => notify.error("Failed to update price"),
   });
 
   const startEditPrice = () => {
-    setPriceDraft(String(product?.purchase_cost ?? "0"));
+    setPriceDraft(String(currentPricing?.price ?? "0"));
     setEditingPrice(true);
   };
 
-  const unitPrice = Number(product?.purchase_cost) || 0;
+  const unitPrice = Number(currentPricing?.price) || 0;
   const weightKg = Number(weight) || 0;
   const price = Math.round(unitPrice * weightKg * 100) / 100;
   const barcodeValue = product ? `WT|${product.stock_id}|${price.toFixed(2)}` : "";
@@ -103,7 +118,7 @@ export default function WeighAndPrintPage() {
                   options={items ?? []}
                   getOptionLabel={(i: any) => i.description ?? i.stock_id ?? ""}
                   value={product}
-                  onChange={(_, val) => setProduct(val)}
+                  onChange={(_, val) => { setProduct(val); setEditingPrice(false); }}
                   renderInput={(params) => <TextField {...params} label="Product" size="small" />}
                 />
                 <TextField
@@ -121,7 +136,7 @@ export default function WeighAndPrintPage() {
                       <IconButton
                         size="small" color="success"
                         disabled={savePriceMutation.isPending}
-                        onClick={() => savePriceMutation.mutate({ stockId: product.stock_id, price: Number(priceDraft) || 0 })}
+                        onClick={() => savePriceMutation.mutate({ price: Number(priceDraft) || 0 })}
                       >
                         <CheckIcon fontSize="small" />
                       </IconButton>

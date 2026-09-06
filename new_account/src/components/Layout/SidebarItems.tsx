@@ -91,12 +91,16 @@ const baseSidebarItems: Array<SidebarItem> = [
       { title: "Offers & Discounts", href: "/supermarket/offers", icon: <LocalOfferIcon fontSize="small" /> },
       { title: "Win-Back Campaigns", href: "/supermarket/win-back", icon: <CampaignIcon fontSize="small" /> },
       { title: "Stock Damage", href: "/supermarket/stock-damage", icon: <ReportProblemIcon fontSize="small" /> },
-      { title: "POS Shifts", href: "/supermarket/pos-shifts", icon: <PointOfSaleIcon fontSize="small" /> },
-      { title: "Stock Adjustments", href: "/supermarket/stock-adjustments", icon: <InventoryIcon fontSize="small" /> },
-      { title: "Stock Transfers", href: "/supermarket/stock-transfers", icon: <SwapHorizIcon fontSize="small" /> },
+      // POS Shifts — disabled per request, feature/page code kept as-is.
+      // { title: "POS Shifts", href: "/supermarket/pos-shifts", icon: <PointOfSaleIcon fontSize="small" /> },
+      // Stock Adjustments — merged into the "Stock" page's Adjustments tab, one button instead of two.
+      // { title: "Stock Adjustments", href: "/supermarket/stock-adjustments", icon: <InventoryIcon fontSize="small" /> },
+      // Stock Transfers — disabled per request, feature/page code kept as-is.
+      // { title: "Stock Transfers", href: "/supermarket/stock-transfers", icon: <SwapHorizIcon fontSize="small" /> },
       { title: "Inventory Audits", href: "/supermarket/inventory-audits", icon: <FactCheckIcon fontSize="small" /> },
       { title: "Offline Sales & Purchases", href: "/supermarket/offline-entries", icon: <ReceiptIcon fontSize="small" /> },
-      { title: "Warranty", href: "/supermarket/warranty", icon: <VerifiedUserIcon fontSize="small" /> },
+      // Warranty — disabled per request, feature/page code kept as-is.
+      // { title: "Warranty", href: "/supermarket/warranty", icon: <VerifiedUserIcon fontSize="small" /> },
       { title: "Vouchers", href: "/supermarket/vouchers", icon: <CardGiftcardIcon fontSize="small" /> },
       { title: "Customer Segments", href: "/supermarket/customer-segments", icon: <GroupsIcon fontSize="small" /> },
       { title: "Service Tickets", href: "/supermarket/service-tickets", icon: <BuildIcon fontSize="small" /> },

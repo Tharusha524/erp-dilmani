@@ -32,6 +32,8 @@ class StockMasterRequest extends FormRequest
             ],
 
             'category_id' => 'required|integer|exists:item_category,category_id',
+            'brand_id' => 'nullable|integer|exists:brands,id',
+            'subcategory_id' => 'nullable|integer|exists:subcategories,id',
             'tax_type_id' => 'nullable|integer|exists:item_tax_types,id',
             'description' => 'required|string|max:255',
             'long_description' => 'required|string',

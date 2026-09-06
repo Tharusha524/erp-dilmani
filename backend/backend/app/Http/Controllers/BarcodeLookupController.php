@@ -6,9 +6,13 @@ use App\Models\ItemCode;
 use App\Models\ItemVariant;
 use App\Models\StockMaster;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class BarcodeLookupController extends Controller
 {
+    private const LKR_CURRENCY_ID = 8;
+    private const RETAIL_SALES_TYPE_ID = 3;
+
     /**
      * Resolve a scanned/typed barcode to a stock item.
      * Checks for a weighed-item sticker first (WT|<stock_id>|<price> — printed
@@ -16,6 +20,14 @@ class BarcodeLookupController extends Controller
      * item_variants.barcode (a specific size/color/weight variant), then
      * item_codes.item_code (barcode/foreign code), then falls back to
      * stock_master.stock_id for items scanned/entered by their own item code.
+     *
+     * Every branch (except the already-frozen WT| sticker) adds a
+     * `sale_price` field — the real Selling Price from the Sales Pricing
+     * table, when one is set — WITHOUT ever touching `purchase_cost`.
+     * purchase_cost is used across the whole ERP (Purchase Order defaults,
+     * COGS, inventory valuation) and must keep meaning "what we paid for
+     * it"; POS Checkout/Weigh & Print are responsible for preferring
+     * sale_price over purchase_cost when charging the customer.
      */
     public function lookup(Request $request)
     {
@@ -31,7 +43,10 @@ class BarcodeLookupController extends Controller
                 $stock = StockMaster::where('stock_id', $stockId)->where('inactive', false)->first();
                 if ($stock) {
                     $stockArray = $stock->toArray();
-                    $stockArray['purchase_cost'] = (float) $priceStr;
+                    // Weighed-item price is frozen at the scale, printed as
+                    // sale_price so it stays consistent with every other
+                    // branch below — purchase_cost is left as the real cost.
+                    $stockArray['sale_price'] = (float) $priceStr;
                     $stockArray['is_weighted'] = true;
                     return response()->json($stockArray);
                 }
@@ -45,7 +60,8 @@ class BarcodeLookupController extends Controller
             if ($stock) {
                 $stockArray = $stock->toArray();
                 $stockArray['matched_variant'] = $variant->only(['id', 'variant_name', 'price_adjustment']);
-                $stockArray['purchase_cost'] = (float) ($stockArray['purchase_cost'] ?? 0) + (float) $variant->price_adjustment;
+                $baseSalePrice = $this->resolveSalePrice($stock->stock_id) ?? (float) ($stockArray['purchase_cost'] ?? 0);
+                $stockArray['sale_price'] = $baseSalePrice + (float) $variant->price_adjustment;
                 return response()->json($stockArray);
             }
         }
@@ -54,15 +70,35 @@ class BarcodeLookupController extends Controller
         if ($itemCode) {
             $stock = StockMaster::where('stock_id', $itemCode->stock_id)->where('inactive', false)->first();
             if ($stock) {
-                return response()->json($stock);
+                $stockArray = $stock->toArray();
+                $stockArray['sale_price'] = $this->resolveSalePrice($stock->stock_id);
+                return response()->json($stockArray);
             }
         }
 
         $stock = StockMaster::where('stock_id', $code)->where('inactive', false)->first();
         if ($stock) {
-            return response()->json($stock);
+            $stockArray = $stock->toArray();
+            $stockArray['sale_price'] = $this->resolveSalePrice($stock->stock_id);
+            return response()->json($stockArray);
         }
 
         return response()->json(['message' => "No product found for code \"{$code}\""], 404);
+    }
+
+    /**
+     * The real Selling Price for this product (Retail price list, LKR),
+     * from the ERP's Sales Pricing feature — null when none has been set,
+     * so callers can fall back to purchase_cost themselves.
+     */
+    private function resolveSalePrice(string $stockId): ?float
+    {
+        $price = DB::table('sales_pricing')
+            ->where('stock_id', $stockId)
+            ->where('currency_id', self::LKR_CURRENCY_ID)
+            ->where('sales_type_id', self::RETAIL_SALES_TYPE_ID)
+            ->value('price');
+
+        return $price !== null ? (float) $price : null;
     }
 }

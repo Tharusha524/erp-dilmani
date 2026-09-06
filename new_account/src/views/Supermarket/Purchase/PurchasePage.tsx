@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Tabs, Tab, Card, CardContent, Stack, TextField, Autocomplete, Button, Table,
   TableHead, TableRow, TableCell, TableBody, IconButton, Typography, Divider,
-  Checkbox, FormControlLabel,
+  Checkbox, FormControlLabel, Dialog, DialogTitle, DialogContent, DialogActions,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -14,10 +14,17 @@ import PaymentIcon from "@mui/icons-material/Payment";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
 import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
-import { getItems } from "../../../api/Item/ItemApi";
+import { getItems, createItem } from "../../../api/Item/ItemApi";
 import { getSuppliers } from "../../../api/Supplier/SupplierApi";
 import { getInventoryLocations } from "../../../api/InventoryLocation/InventoryLocationApi";
 import { getBankAccounts } from "../../../api/BankAccount/BankAccountApi";
+import { getItemCategories } from "../../../api/ItemCategories/ItemCategoriesApi";
+import { getSubcategories } from "../../../api/Subcategories/SubcategoriesApi";
+import { getBrands } from "../../../api/Brands/BrandsApi";
+import { getChartMasters } from "../../../api/GLAccounts/ChartMasterApi";
+import { getItemTaxTypes } from "../../../api/ItemTaxType/ItemTaxTypeApi";
+import { getItemUnits } from "../../../api/ItemUnit/ItemUnitApi";
+import { getItemTypes } from "../../../api/ItemType/ItemType";
 import {
   postPurchOrderWithDetails, getNextPurchOrderNo, getPurchOrders, getPurchOrderDetails,
 } from "../../../api/PurchOrders/PurchOrderApi";
@@ -76,6 +83,7 @@ interface PoLine { key: string; item: any; quantity: string; unit_price: string 
 
 function CreatePurchaseOrderTab() {
   const { formatCurrency } = useHomeCurrency();
+  const queryClient = useQueryClient();
   const [supplier, setSupplier] = useState<any>(null);
   const [location, setLocation] = useState<any>(null);
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(new Date().toISOString().slice(0, 10));
@@ -89,6 +97,69 @@ function CreatePurchaseOrderTab() {
   const { data: suppliers } = useQuery({ queryKey: ["suppliers-all"], queryFn: getSuppliers });
   const { data: items } = useQuery({ queryKey: ["items-all"], queryFn: getItems });
   const { data: locations } = useQuery({ queryKey: ["inventory-locations-all"], queryFn: getInventoryLocations });
+
+  // "+ New Product" — for a genuinely new item the supplier is delivering
+  // for the first time. Creates a real stock_master record through the
+  // same genuine create-item logic Item Maintenance itself uses (GL
+  // accounts always auto-resolved from the chosen Category, never shown
+  // or entered here). Category is required; Subcategory and Brand are
+  // optional organizational labels only — neither affects accounting.
+  const [newProductOpen, setNewProductOpen] = useState(false);
+  const [newProductName, setNewProductName] = useState("");
+  const [newProductCategory, setNewProductCategory] = useState<any>(null);
+  const [newProductSubcategory, setNewProductSubcategory] = useState<any>(null);
+  const [newProductBrand, setNewProductBrand] = useState<any>(null);
+  const [newProductCost, setNewProductCost] = useState("0");
+
+  const { data: categories } = useQuery({ queryKey: ["item-categories"], queryFn: () => getItemCategories() });
+  const { data: subcategories } = useQuery({
+    queryKey: ["subcategories-for-category", newProductCategory?.category_id],
+    queryFn: () => getSubcategories(newProductCategory.category_id),
+    enabled: !!newProductCategory,
+  });
+  const { data: brands } = useQuery({ queryKey: ["brands-all"], queryFn: getBrands });
+  const { data: chartMasters } = useQuery({ queryKey: ["chart-masters"], queryFn: getChartMasters });
+  const { data: taxTypes } = useQuery({ queryKey: ["item-tax-types"], queryFn: getItemTaxTypes });
+  const { data: units } = useQuery({ queryKey: ["item-units"], queryFn: getItemUnits });
+  const { data: itemTypes } = useQuery({ queryKey: ["item-types"], queryFn: getItemTypes });
+
+  const createProductMutation = useMutation({
+    mutationFn: () => {
+      const taxType = (taxTypes ?? [])[0];
+      const unit = (units ?? []).find((u: any) => /each/i.test(u.name ?? "")) ?? (units ?? [])[0];
+      const purchasedType = (itemTypes ?? []).find((t: any) => /purchased/i.test(t.name ?? "")) ?? (itemTypes ?? [])[0];
+      const stockId = `SM${Date.now()}`;
+
+      return createItem(
+        {
+          stock_id: stockId,
+          description: newProductName.trim(),
+          long_description: newProductName.trim(),
+          category_id: newProductCategory?.category_id,
+          brand_id: newProductBrand?.id,
+          subcategory_id: newProductSubcategory?.id,
+          tax_type_id: taxType?.id,
+          units: unit?.id,
+          mb_flag: purchasedType?.id,
+          purchase_cost: Number(newProductCost) || 0,
+          material_cost: Number(newProductCost) || 0,
+        },
+        { chartMasters: chartMasters ?? [], category: newProductCategory }
+      );
+    },
+    onSuccess: (created) => {
+      notify.success("Product created");
+      queryClient.invalidateQueries({ queryKey: ["items-all"] });
+      setPickedItem(created);
+      setNewProductOpen(false);
+      setNewProductName("");
+      setNewProductCategory(null);
+      setNewProductSubcategory(null);
+      setNewProductBrand(null);
+      setNewProductCost("0");
+    },
+    onError: () => notify.error("Failed to create product — check the fields and try again"),
+  });
 
   const addLine = () => {
     if (!pickedItem) return;
@@ -181,6 +252,7 @@ function CreatePurchaseOrderTab() {
               value={pickedItem} onChange={(_, v) => setPickedItem(v)}
               renderInput={(p) => <TextField {...p} label="Product" size="small" />}
             />
+            <Button size="small" onClick={() => setNewProductOpen(true)} sx={{ whiteSpace: "nowrap" }}>+ New Product</Button>
             <TextField label="Quantity" type="number" size="small" sx={{ width: 120 }} value={pickedQty} onChange={(e) => setPickedQty(e.target.value)} />
             <TextField label="Agreed Price" type="number" size="small" sx={{ width: 140 }} value={pickedPrice} onChange={(e) => setPickedPrice(e.target.value)} />
             <Button variant="outlined" startIcon={<AddIcon />} disabled={!pickedItem} onClick={addLine}>Add Row</Button>
@@ -219,6 +291,55 @@ function CreatePurchaseOrderTab() {
           </Stack>
         </Stack>
       </CardContent>
+
+      <Dialog open={newProductOpen} onClose={() => setNewProductOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>New Product</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Product Name" fullWidth autoFocus
+              value={newProductName} onChange={(e) => setNewProductName(e.target.value)}
+            />
+            <Autocomplete
+              options={categories ?? []}
+              getOptionLabel={(c: any) => c.description ?? ""}
+              value={newProductCategory}
+              onChange={(_, v) => { setNewProductCategory(v); setNewProductSubcategory(null); }}
+              renderInput={(p) => <TextField {...p} label="Category" />}
+            />
+            <Autocomplete
+              options={subcategories ?? []}
+              getOptionLabel={(s: any) => s.name ?? ""}
+              value={newProductSubcategory}
+              onChange={(_, v) => setNewProductSubcategory(v)}
+              disabled={!newProductCategory}
+              renderInput={(p) => <TextField {...p} label="Subcategory (optional)" helperText={!newProductCategory ? "Pick a category first" : undefined} />}
+            />
+            <Autocomplete
+              options={brands ?? []}
+              getOptionLabel={(b: any) => b.name ?? ""}
+              value={newProductBrand}
+              onChange={(_, v) => setNewProductBrand(v)}
+              renderInput={(p) => <TextField {...p} label="Brand (optional)" />}
+            />
+            <TextField
+              label="Cost / unit" type="number" fullWidth
+              value={newProductCost} onChange={(e) => setNewProductCost(e.target.value)}
+              helperText="Sales/inventory accounts are set automatically from the category — nothing to fill in here"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNewProductOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!newProductName.trim() || !newProductCategory || createProductMutation.isPending}
+            onClick={() => createProductMutation.mutate()}
+          >
+            {createProductMutation.isPending ? "Creating..." : "Create"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }

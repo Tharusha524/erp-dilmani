@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Offer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -355,5 +356,57 @@ class SalesAnalyticsController extends Controller
             ->get();
 
         return response()->json($rows);
+    }
+
+    /**
+     * Personalized offer suggestions — read-only, staff-facing "hint", not
+     * an automatic send. For each customer, finds their most-purchased
+     * category over the lookback window, then checks whether an active
+     * category-targeted Offer already exists for it. No new offer is
+     * created and nothing is sent automatically — this only surfaces a
+     * suggestion using data that already exists (purchase history +
+     * existing Offers), same as the proposal's "personalized marketing"
+     * idea, kept safely as a recommendation a staff member acts on.
+     */
+    public function customerOfferSuggestions(Request $request)
+    {
+        $lookbackDays = (int) $request->query('lookback_days', 365);
+        $since = now()->subDays($lookbackDays)->toDateString();
+
+        $rows = DB::table('debtor_trans_details as dtd')
+            ->join('debtor_trans as dt', function ($join) {
+                $join->on('dt.trans_no', '=', 'dtd.debtor_trans_no')
+                     ->on('dt.trans_type', '=', 'dtd.debtor_trans_type');
+            })
+            ->join('stock_master as sm', 'sm.stock_id', '=', 'dtd.stock_id')
+            ->join('item_category as ic', 'ic.category_id', '=', 'sm.category_id')
+            ->where('dt.tran_date', '>=', $since)
+            ->select('dt.debtor_no', 'sm.category_id', 'ic.description as category_name')
+            ->selectRaw('SUM(dtd.quantity) as qty')
+            ->groupBy('dt.debtor_no', 'sm.category_id', 'ic.description')
+            ->get();
+
+        $topCategoryByDebtor = $rows->groupBy('debtor_no')
+            ->map(fn ($group) => $group->sortByDesc('qty')->first());
+
+        $categoryOffers = Offer::query()
+            ->where('offer_type', 'category')
+            ->where('status', 'active')
+            ->get()
+            ->keyBy(fn ($offer) => (string) $offer->target_id);
+
+        $result = $topCategoryByDebtor->map(function ($row) use ($categoryOffers) {
+            $offer = $categoryOffers->get((string) $row->category_id);
+
+            return [
+                'debtor_no' => $row->debtor_no,
+                'preferred_category_id' => $row->category_id,
+                'preferred_category_name' => $row->category_name,
+                'suggested_offer_id' => $offer->id ?? null,
+                'suggested_offer_name' => $offer->offer_name ?? null,
+            ];
+        })->values();
+
+        return response()->json($result);
     }
 }

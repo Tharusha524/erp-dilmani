@@ -347,6 +347,8 @@ Route::apiResource('security-roles', SecurityRolesController::class);
 Route::apiResource('departments', DepartmentController::class)->except(['index']);
 
 Route::apiResource('item-categories', ItemCategoryController::class);
+Route::apiResource('brands', \App\Http\Controllers\BrandController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::apiResource('subcategories', \App\Http\Controllers\SubcategoryController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::apiResource('item-types', ItemTypeController::class);
 
 Route::apiResource('stock-masters', StockMasterController::class);
@@ -383,6 +385,7 @@ Route::post('profit-loss/search', [ProfitAndLossController::class, 'search']);
 Route::apiResource('refs', RefsController::class);
 Route::apiResource('audit-trails', AuditTrailController::class);
 Route::apiResource('stock-moves', StockMovesController::class);
+Route::get('stock-moves-history', [StockMovesController::class, 'history']);
 Route::apiResource('comments', CommentsController::class);
 
 Route::apiResource('trans-types', TransTypesController::class);
@@ -437,6 +440,33 @@ Route::get('loyalty-points/{debtorNo}/history', [LoyaltyPointsController::class,
 Route::apiResource('offers', OfferController::class);
 Route::get('offers-applicable', [OfferController::class, 'applicable']);
 Route::get('offers-popularity', [OfferController::class, 'popularity']);
+
+// ---- Customer mobile app: self-service auth + "me" endpoints ----
+// Additive only: new controllers/routes/columns/tables. Does not modify any
+// existing ERP/accounting controller, route, or table structure.
+Route::post('customer/register', [\App\Http\Controllers\CustomerAuthController::class, 'register']);
+Route::post('customer/login', [\App\Http\Controllers\CustomerAuthController::class, 'login']);
+Route::post('customer/forgot-password', [\App\Http\Controllers\CustomerAuthController::class, 'forgotPassword']);
+Route::post('customer/reset-password', [\App\Http\Controllers\CustomerAuthController::class, 'resetPassword']);
+
+Route::middleware(['auth:sanctum', 'customer.auth'])->prefix('customer')->group(function () {
+    Route::post('logout', [\App\Http\Controllers\CustomerAuthController::class, 'logout']);
+
+    Route::get('me', [\App\Http\Controllers\CustomerMeController::class, 'profile']);
+    Route::put('me', [\App\Http\Controllers\CustomerMeController::class, 'updateProfile']);
+    Route::post('me/change-password', [\App\Http\Controllers\CustomerMeController::class, 'changePassword']);
+
+    Route::get('me/loyalty', [\App\Http\Controllers\CustomerMeController::class, 'loyalty']);
+    Route::get('me/loyalty/history', [\App\Http\Controllers\CustomerMeController::class, 'loyaltyHistory']);
+
+    Route::get('me/offers', [\App\Http\Controllers\CustomerMeController::class, 'offers']);
+
+    Route::get('me/purchases', [\App\Http\Controllers\CustomerMeController::class, 'purchases']);
+    Route::get('me/purchases/{transNo}', [\App\Http\Controllers\CustomerMeController::class, 'receipt']);
+
+    Route::get('me/notifications', [\App\Http\Controllers\CustomerMeController::class, 'notifications']);
+    Route::post('me/notifications/{id}/read', [\App\Http\Controllers\CustomerMeController::class, 'markNotificationRead']);
+});
 
 Route::apiResource('pos-shifts', PosShiftController::class)->only(['index', 'store', 'show']);
 Route::post('pos-shifts/{id}/close', [PosShiftController::class, 'close']);
@@ -497,6 +527,7 @@ Route::post('offers-confirm-coupon-usage', [OfferController::class, 'confirmCoup
 // ---- Frequently bought together / RFM segmentation ----
 Route::get('sales-analytics/frequently-bought-together', [SalesAnalyticsController::class, 'frequentlyBoughtTogether']);
 Route::get('sales-analytics/customer-segments', [SalesAnalyticsController::class, 'customerSegments']);
+Route::get('sales-analytics/customer-offer-suggestions', [SalesAnalyticsController::class, 'customerOfferSuggestions']);
 
 // ---- POS behavior settings ----
 Route::get('pos-settings', [PosSettingController::class, 'index']);

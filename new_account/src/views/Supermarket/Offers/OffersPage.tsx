@@ -17,6 +17,7 @@ import { getLoyaltyTiers } from "../../../api/Loyalty/loyaltyApi";
 import { getItems } from "../../../api/Item/ItemApi";
 import { getItemCategories } from "../../../api/ItemCategories/ItemCategoriesApi";
 import { getCustomers } from "../../../api/Customer/AddCustomerApi";
+import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
 
 const emptyForm = {
   offer_name: "", offer_type: "product", discount_type: "percent",
@@ -26,6 +27,7 @@ const emptyForm = {
 };
 
 export default function OffersPage() {
+  const { formatCurrency } = useHomeCurrency();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -52,6 +54,7 @@ export default function OffersPage() {
   const itemNameByStockId = new Map((allItemsForDisplay ?? []).map((i: any) => [i.stock_id, i.description]));
 
   const popularityMap = new Map<number, number>((popularity ?? []).map((p: any) => [p.offer_id, Number(p.redemption_count)]));
+  const revenueMap = new Map<number, number>((popularity ?? []).map((p: any) => [p.offer_id, Number(p.total_revenue ?? 0)]));
 
   const closeDialog = () => {
     setOpen(false);
@@ -180,6 +183,7 @@ export default function OffersPage() {
                 <TableCell align="right">Discount</TableCell>
                 <TableCell>Valid Period</TableCell>
                 <TableCell align="center">Redemptions</TableCell>
+                <TableCell align="right">Revenue Generated</TableCell>
                 <TableCell align="center">Status</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
@@ -195,6 +199,7 @@ export default function OffersPage() {
                   </TableCell>
                   <TableCell>{String(offer.valid_from).slice(0, 10)} – {String(offer.valid_to).slice(0, 10)}</TableCell>
                   <TableCell align="center">{popularityMap.get(offer.id) ?? 0}</TableCell>
+                  <TableCell align="right">{formatCurrency(revenueMap.get(offer.id) ?? 0)}</TableCell>
                   <TableCell align="center">
                     <Chip label={offer.status} size="small" color={offer.status === "active" ? "success" : "default"} />
                   </TableCell>
@@ -209,7 +214,7 @@ export default function OffersPage() {
                 </TableRow>
               ))}
               {(!offers || offers.length === 0) && (
-                <TableRow><TableCell colSpan={8} align="center"><Typography variant="body2">No offers configured yet.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} align="center"><Typography variant="body2">No offers configured yet.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>

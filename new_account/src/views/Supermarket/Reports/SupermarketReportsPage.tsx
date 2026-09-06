@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Box, Tabs, Tab, Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper,
   Typography, Card, CardContent, Stack, TextField, FormControl, InputLabel, Select, MenuItem,
+  Autocomplete,
 } from "@mui/material";
 import { getInventoryLocations } from "../../../api/InventoryLocation/InventoryLocationApi";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
@@ -10,6 +11,9 @@ import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
 import PageLoader from "../../../components/PageLoader";
 import { getVelocityAndDemand, getDeadStock, getProductProfit, getBusinessActivity, getValuation } from "../../../api/Pos/posAdvancedApi";
+import { getLowestCostBySupplier } from "../../../api/Pos/posApi";
+import { getStockMoveHistory } from "../../../api/StockMoves/StockMovesApi";
+import { getItems } from "../../../api/Item/ItemApi";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
 
 export default function SupermarketReportsPage() {
@@ -35,6 +39,18 @@ export default function SupermarketReportsPage() {
   });
   const { data: valuation, isLoading: l5 } = useQuery({
     queryKey: ["valuation", locCode], queryFn: () => getValuation(locCode || undefined), enabled: tab === "valuation",
+  });
+
+  const { data: lowestCost, isLoading: l6 } = useQuery({
+    queryKey: ["lowest-cost-by-supplier"], queryFn: () => getLowestCostBySupplier(), enabled: tab === "lowest-cost",
+  });
+
+  const { data: items } = useQuery({ queryKey: ["items-all"], queryFn: getItems, enabled: tab === "stock-history" });
+  const [historyProduct, setHistoryProduct] = useState<any>(null);
+  const { data: stockHistory, isLoading: l7 } = useQuery({
+    queryKey: ["stock-move-history", historyProduct?.stock_id],
+    queryFn: () => getStockMoveHistory(historyProduct.stock_id),
+    enabled: tab === "stock-history" && !!historyProduct,
   });
 
   return (
@@ -66,6 +82,8 @@ export default function SupermarketReportsPage() {
         <Tab label="Product Profit" value="profit" />
         <Tab label="Business Activity" value="activity" />
         <Tab label="Valuation" value="valuation" />
+        <Tab label="Lowest Cost Supplier" value="lowest-cost" />
+        <Tab label="Stock History" value="stock-history" />
       </Tabs>
 
       {tab === "velocity" && (l1 ? <PageLoader /> : (
@@ -164,6 +182,66 @@ export default function SupermarketReportsPage() {
           </TableContainer>
         </Box>
       ))}
+
+      {tab === "lowest-cost" && (l6 ? <PageLoader /> : (
+        <TableContainer component={Paper} elevation={2}>
+          <Table size="small">
+            <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+              <TableRow><TableCell>Product</TableCell><TableCell>Best Supplier</TableCell><TableCell align="right">Lowest Price Paid</TableCell></TableRow>
+            </TableHead>
+            <TableBody>
+              {(lowestCost ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell>{r.stock_id}</TableCell>
+                  <TableCell>{r.supplier_name}</TableCell>
+                  <TableCell align="right">{formatCurrency(r.lowest_price)}</TableCell>
+                </TableRow>
+              ))}
+              {(!lowestCost || lowestCost.length === 0) && (
+                <TableRow><TableCell colSpan={3} align="center"><Typography variant="body2">No supplier invoices recorded yet.</Typography></TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ))}
+
+      {tab === "stock-history" && (
+        <Stack spacing={2}>
+          <Autocomplete
+            sx={{ maxWidth: 400 }}
+            options={items ?? []}
+            getOptionLabel={(i: any) => i.description ?? i.stock_id ?? ""}
+            value={historyProduct}
+            onChange={(_, v) => setHistoryProduct(v)}
+            renderInput={(p) => <TextField {...p} label="Search Product" size="small" />}
+          />
+          {!historyProduct ? (
+            <Typography variant="body2" color="text.secondary">Pick a product to see its stock movement history.</Typography>
+          ) : l7 ? <PageLoader /> : (
+            <TableContainer component={Paper} elevation={2}>
+              <Table size="small">
+                <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+                  <TableRow><TableCell>Date</TableCell><TableCell>Location</TableCell><TableCell>Reference</TableCell><TableCell align="right">Qty Change</TableCell><TableCell align="right">Price</TableCell></TableRow>
+                </TableHead>
+                <TableBody>
+                  {(stockHistory ?? []).map((r: any) => (
+                    <TableRow key={r.trans_id}>
+                      <TableCell>{r.tran_date}</TableCell>
+                      <TableCell>{r.loc_code}</TableCell>
+                      <TableCell>{r.reference}</TableCell>
+                      <TableCell align="right" sx={{ color: r.qty >= 0 ? "success.main" : "error.main" }}>{r.qty >= 0 ? "+" : ""}{r.qty}</TableCell>
+                      <TableCell align="right">{formatCurrency(r.price)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!stockHistory || stockHistory.length === 0) && (
+                    <TableRow><TableCell colSpan={5} align="center"><Typography variant="body2">No movement history for this product.</Typography></TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Stack>
+      )}
     </FormPageLayout>
   );
 }

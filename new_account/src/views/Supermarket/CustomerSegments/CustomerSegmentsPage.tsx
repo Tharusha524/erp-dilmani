@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   Box, Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, Chip, Typography,
+  Tooltip,
 } from "@mui/material";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
 import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
 import PageLoader from "../../../components/PageLoader";
-import { getCustomerSegments } from "../../../api/Pos/posOpsApi";
+import { getCustomerSegments, getCustomerOfferSuggestions } from "../../../api/Pos/posOpsApi";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
 
 const segmentColor: Record<string, "success" | "info" | "warning" | "error" | "default"> = {
@@ -22,6 +24,12 @@ export default function CustomerSegmentsPage() {
   const { formatCurrency } = useHomeCurrency();
   const { data, isLoading } = useQuery({ queryKey: ["customer-segments"], queryFn: () => getCustomerSegments() });
 
+  // Personalized offer suggestions — read-only "hint" for staff, not an
+  // automatic send. Shows each customer's most-purchased category and, if
+  // an active offer already targets that category, suggests it.
+  const { data: suggestions } = useQuery({ queryKey: ["customer-offer-suggestions"], queryFn: () => getCustomerOfferSuggestions() });
+  const suggestionByDebtor = new Map((suggestions ?? []).map((s: any) => [s.debtor_no, s]));
+
   return (
     <FormPageLayout>
       <Box sx={{ p: 2, boxShadow: 2, borderRadius: 1, mb: 2 }}>
@@ -36,20 +44,34 @@ export default function CustomerSegmentsPage() {
               <TableRow>
                 <TableCell>Customer</TableCell><TableCell align="right">Days Since Last Purchase</TableCell>
                 <TableCell align="right">Invoices</TableCell><TableCell align="right">Total Spend</TableCell><TableCell align="center">Segment</TableCell>
+                <TableCell>Preferred Category</TableCell><TableCell>Suggested Offer</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {(data ?? []).map((c: any) => (
-                <TableRow key={c.debtor_no} hover>
-                  <TableCell>{c.name}</TableCell>
-                  <TableCell align="right">{c.recency_days}</TableCell>
-                  <TableCell align="right">{c.frequency}</TableCell>
-                  <TableCell align="right">{formatCurrency(c.monetary)}</TableCell>
-                  <TableCell align="center"><Chip label={c.segment} size="small" color={segmentColor[c.segment] ?? "default"} /></TableCell>
-                </TableRow>
-              ))}
+              {(data ?? []).map((c: any) => {
+                const suggestion: any = suggestionByDebtor.get(c.debtor_no);
+                return (
+                  <TableRow key={c.debtor_no} hover>
+                    <TableCell>{c.name}</TableCell>
+                    <TableCell align="right">{c.recency_days}</TableCell>
+                    <TableCell align="right">{c.frequency}</TableCell>
+                    <TableCell align="right">{formatCurrency(c.monetary)}</TableCell>
+                    <TableCell align="center"><Chip label={c.segment} size="small" color={segmentColor[c.segment] ?? "default"} /></TableCell>
+                    <TableCell>{suggestion?.preferred_category_name ?? "—"}</TableCell>
+                    <TableCell>
+                      {suggestion?.suggested_offer_name ? (
+                        <Tooltip title="This customer mostly buys this category — an active offer already targets it">
+                          <Chip icon={<LocalOfferIcon />} label={suggestion.suggested_offer_name} size="small" color="success" variant="outlined" />
+                        </Tooltip>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">No matching offer</Typography>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {(!data || data.length === 0) && (
-                <TableRow><TableCell colSpan={5} align="center"><Typography variant="body2">No customer purchase history yet.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} align="center"><Typography variant="body2">No customer purchase history yet.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>
