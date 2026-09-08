@@ -651,15 +651,6 @@ export default function PosCheckoutPage() {
         </Stack>
       </Box>
 
-      {lowStockItems && lowStockItems.length > 0 && (
-        <Chip
-          sx={{ mb: 2 }}
-          color="warning"
-          icon={<WarningAmberIcon />}
-          label={`Low Stock Alert — ${lowStockItems.length} item${lowStockItems.length === 1 ? "" : "s"} at this location need reordering`}
-        />
-      )}
-
       <Grid container spacing={2}>
         {/* ---- Left: scan/search + cart (a cashier's main working area) ---- */}
         <Grid item xs={12} md={8}>

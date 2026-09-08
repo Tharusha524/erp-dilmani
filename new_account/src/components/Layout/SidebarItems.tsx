@@ -100,13 +100,15 @@ const baseSidebarItems: Array<SidebarItem> = [
       // { title: "Stock Adjustments", href: "/supermarket/stock-adjustments", icon: <InventoryIcon fontSize="small" /> },
       // Stock Transfers — disabled per request, feature/page code kept as-is.
       // { title: "Stock Transfers", href: "/supermarket/stock-transfers", icon: <SwapHorizIcon fontSize="small" /> },
-      { title: "Inventory Audits", href: "/supermarket/inventory-audits", icon: <FactCheckIcon fontSize="small" /> },
+      // Inventory Audits — disabled per request, feature/page code kept as-is.
+      // { title: "Inventory Audits", href: "/supermarket/inventory-audits", icon: <FactCheckIcon fontSize="small" /> },
       { title: "Offline Sales & Purchases", href: "/supermarket/offline-entries", icon: <ReceiptIcon fontSize="small" /> },
       // Warranty — disabled per request, feature/page code kept as-is.
       // { title: "Warranty", href: "/supermarket/warranty", icon: <VerifiedUserIcon fontSize="small" /> },
       { title: "Vouchers", href: "/supermarket/vouchers", icon: <CardGiftcardIcon fontSize="small" /> },
       { title: "Customer Segments", href: "/supermarket/customer-segments", icon: <GroupsIcon fontSize="small" /> },
-      { title: "Service Tickets", href: "/supermarket/service-tickets", icon: <BuildIcon fontSize="small" /> },
+      // Service Tickets — disabled per request, feature/page code kept as-is.
+      // { title: "Service Tickets", href: "/supermarket/service-tickets", icon: <BuildIcon fontSize="small" /> },
       { title: "POS Settings", href: "/supermarket/pos-settings", icon: <SettingsSuggestIcon fontSize="small" /> },
       { title: "Reports", href: "/supermarket/reports", icon: <AssessmentIcon fontSize="small" /> },
     ],

@@ -64,6 +64,9 @@ export default function InventoryAuditsPage() {
           <PageTitle title="Inventory Audits" />
           <Breadcrumb breadcrumbs={[{ title: "Smart Supermarket", href: "/supermarket" }, { title: "Inventory Audits" }]} />
         </Box>
+        {/* Begins a new physical stock count session at a chosen location.
+            Opens the "Start Physical Count" dialog; the count itself doesn't
+            touch loc_stock until the audit is completed further down. */}
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setNewOpen(true)}>Start Count</Button>
       </Box>
 

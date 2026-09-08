@@ -3,8 +3,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, Stack, TextField, Table,
   TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, Typography, Autocomplete, Chip,
+  IconButton, Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import PrintIcon from "@mui/icons-material/Print";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
 import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
@@ -12,6 +14,7 @@ import PageLoader from "../../../components/PageLoader";
 import { getVouchers, createVoucher } from "../../../api/Pos/posOpsApi";
 import { getCustomers } from "../../../api/Customer/AddCustomerApi";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
+import VoucherPrintDialog from "../../../components/VoucherPrintDialog";
 
 const DENOMINATIONS = [1000, 2500, 5000, 10000];
 
@@ -23,16 +26,20 @@ export default function VouchersPage() {
   const [faceValue, setFaceValue] = useState("1000");
   const [expiryDate, setExpiryDate] = useState("");
   const [note, setNote] = useState("");
+  const [printVoucher, setPrintVoucher] = useState<any>(null);
 
   const { data: vouchers, isLoading } = useQuery({ queryKey: ["vouchers"], queryFn: getVouchers });
   const { data: customers } = useQuery({ queryKey: ["customers-all"], queryFn: getCustomers });
 
   const createMutation = useMutation({
     mutationFn: createVoucher,
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["vouchers"] });
       setOpen(false);
       setCustomer(null); setFaceValue("1000"); setExpiryDate(""); setNote("");
+      // Backend returns either the bare voucher (legacy path) or
+      // { voucher, invoice } (when posted to accounting) — handle both.
+      setPrintVoucher(data?.voucher ?? data);
     },
   });
 
@@ -53,6 +60,7 @@ export default function VouchersPage() {
               <TableRow>
                 <TableCell>Code</TableCell><TableCell>Customer</TableCell><TableCell align="right">Face Value</TableCell>
                 <TableCell align="right">Balance</TableCell><TableCell>Issued</TableCell><TableCell>Expiry</TableCell><TableCell align="center">Status</TableCell>
+                <TableCell align="center">Print</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -65,10 +73,15 @@ export default function VouchersPage() {
                   <TableCell>{String(v.issue_date).slice(0, 10)}</TableCell>
                   <TableCell>{v.expiry_date ? String(v.expiry_date).slice(0, 10) : "—"}</TableCell>
                   <TableCell align="center"><Chip label={v.status} size="small" color={v.status === "active" ? "success" : "default"} /></TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="Print Voucher">
+                      <IconButton size="small" onClick={() => setPrintVoucher(v)}><PrintIcon fontSize="small" /></IconButton>
+                    </Tooltip>
+                  </TableCell>
                 </TableRow>
               ))}
               {(!vouchers || vouchers.length === 0) && (
-                <TableRow><TableCell colSpan={7} align="center"><Typography variant="body2">No vouchers issued yet.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} align="center"><Typography variant="body2">No vouchers issued yet.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -106,6 +119,8 @@ export default function VouchersPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <VoucherPrintDialog open={!!printVoucher} onClose={() => setPrintVoucher(null)} voucher={printVoucher} />
     </FormPageLayout>
   );
 }

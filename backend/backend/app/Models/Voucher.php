@@ -8,7 +8,10 @@ class Voucher extends Model
 {
     protected $table = 'vouchers';
 
-    protected $fillable = ['voucher_code', 'debtor_no', 'face_value', 'balance', 'issue_date', 'expiry_date', 'note', 'status'];
+    protected $fillable = [
+        'voucher_code', 'debtor_no', 'face_value', 'balance', 'issue_date', 'expiry_date', 'note', 'status',
+        'issued_debtor_trans_no', 'issued_debtor_trans_type',
+    ];
 
     protected $casts = ['issue_date' => 'date', 'expiry_date' => 'date'];
 
