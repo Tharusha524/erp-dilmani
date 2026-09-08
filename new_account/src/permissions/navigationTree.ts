@@ -360,6 +360,7 @@ export const NAVIGATION_PERMISSION_TREE: NavModule[] = [
           { label: "Category", id: id("Supermarket category"), path: "/supermarket/category" },
           { label: "Purchase", id: id("Supermarket purchase"), path: "/supermarket/purchase" },
           { label: "Stock", id: id("Supermarket stock"), path: "/supermarket/stock" },
+          { label: "Process Return", id: id("Supermarket returns"), path: "/supermarket/returns" },
         ],
       },
     ],

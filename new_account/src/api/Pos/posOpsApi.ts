@@ -61,6 +61,22 @@ export const getVoucherByCode = async (code: string) => (await api.get(`/voucher
 export const redeemVoucher = async (data: { voucher_code: string; amount: number; debtor_trans_no?: number; debtor_trans_type?: number }) =>
   (await api.post("/vouchers-redeem", data)).data;
 
+// ---- Returns / Refunds (wraps the real Sales Credit Note posting) ----
+export const lookupInvoiceForReturn = async (transNo: number | string) =>
+  (await api.get(`/sales/invoice-lookup/${transNo}`)).data;
+export const createSalesReturn = async (data: {
+  debtor_no: number;
+  branch_code: number;
+  tran_date: string;
+  order_type: number;
+  ship_via?: number;
+  from_stk_loc?: string;
+  write_off_account?: string | null;
+  source_invoice_trans_no?: number;
+  comments?: string;
+  lines: Array<{ stock_id: string; quantity: number; unit_price: number; discount_percent?: number; description?: string }>;
+}) => (await api.post("/sales/credit-notes", data)).data;
+
 // ---- Coupons ----
 export const applyCoupon = async (data: { coupon_code: string; debtor_no?: number }) =>
   (await api.post("/offers-apply-coupon", data, { skipErrorDialog: true } as any)).data;

@@ -38,6 +38,7 @@ import LoyaltyCardsPage from "./views/Supermarket/LoyaltyCards/LoyaltyCardsPage"
 import OffersPage from "./views/Supermarket/Offers/OffersPage";
 import WinBackPage from "./views/Supermarket/WinBack/WinBackPage";
 import StockDamagePage from "./views/Supermarket/StockDamage/StockDamagePage";
+import ReturnsPage from "./views/Supermarket/Returns/ReturnsPage";
 import PosShiftPage from "./views/Supermarket/PosShift/PosShiftPage";
 import PosCheckoutPage from "./views/Supermarket/PosCheckout/PosCheckoutPage";
 import StockAdjustmentsPage from "./views/Supermarket/StockAdjustments/StockAdjustmentsPage";
@@ -573,6 +574,7 @@ const AppRoutes = () => {
         <Route path="/supermarket/offers" element={withLayout(MainLayout, OffersPage)} />
         <Route path="/supermarket/win-back" element={withLayout(MainLayout, WinBackPage)} />
         <Route path="/supermarket/stock-damage" element={withLayout(MainLayout, StockDamagePage)} />
+        <Route path="/supermarket/returns" element={withLayout(MainLayout, ReturnsPage)} />
         <Route path="/supermarket/pos-shifts" element={withLayout(MainLayout, PosShiftPage)} />
       </Route>
 

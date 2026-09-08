@@ -33,7 +33,8 @@ const cards = [
   { title: "Loyalty Cards", description: "Issue and manage customer loyalty cards", href: "/supermarket/loyalty-cards", icon: <CardMembershipIcon />, color: "#2e7d32" },
   { title: "Offers & Discounts", description: "Product, category, tier & customer offers", href: "/supermarket/offers", icon: <LocalOfferIcon />, color: "#c62828" },
   { title: "Win-Back Campaigns", description: "Re-engage inactive customers via SMS/WhatsApp", href: "/supermarket/win-back", icon: <CampaignIcon />, color: "#00838f" },
-  { title: "Stock Damage", description: "Record and review damaged stock", href: "/supermarket/stock-damage", icon: <ReportProblemIcon />, color: "#ed6c02" },
+  // Stock Damage — merged into the "Stock" page's "Stock Damage" tab, one button instead of two.
+  // { title: "Stock Damage", description: "Record and review damaged stock", href: "/supermarket/stock-damage", icon: <ReportProblemIcon />, color: "#ed6c02" },
   // POS Shifts — disabled per request, feature/page code kept as-is.
   /* { title: "POS Shifts", description: "Open/close cashier tills & cash-up", href: "/supermarket/pos-shifts", icon: <PointOfSaleIcon />, color: "#1976d2" }, */
   // Stock Adjustments — merged into the "Stock" page's Adjustments tab, one button instead of two.

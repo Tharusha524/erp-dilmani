@@ -4,20 +4,25 @@ import {
   Box, Card, CardContent, Stack, TextField, Autocomplete, Table, TableHead, TableRow,
   TableCell, TableBody, TableContainer, Paper, Typography, Chip, InputAdornment, IconButton,
   Collapse, Button, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel,
-  Select, MenuItem, Grid,
+  Select, MenuItem, Grid, Tabs, Tab, Tooltip,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import TuneIcon from "@mui/icons-material/Tune";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
+import HistoryIcon from "@mui/icons-material/History";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
 import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
 import PageLoader from "../../../components/PageLoader";
 import { getStockList } from "../../../api/Inventory/StockListApi";
 import { getItemCategories } from "../../../api/ItemCategories/ItemCategoriesApi";
-import { createStockAdjustment } from "../../../api/Pos/posOpsApi";
+import { createStockAdjustment, getStockAdjustments } from "../../../api/Pos/posOpsApi";
+import { getStockDamages, recordStockDamage, deleteStockDamage } from "../../../api/Pos/posApi";
 import { getInventoryLocations } from "../../../api/InventoryLocation/InventoryLocationApi";
+import { getItems } from "../../../api/Item/ItemApi";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
 import { notify } from "../../../services/notificationService";
 
@@ -31,6 +36,32 @@ import { notify } from "../../../services/notificationService";
  * inside this same row instead of a separate screen/tab.
  */
 export default function StockPage() {
+  const [tab, setTab] = useState<"products" | "damage">("products");
+
+  return (
+    <FormPageLayout>
+      <Box sx={{ p: 2, boxShadow: 2, borderRadius: 1, mb: 2 }}>
+        <PageTitle title="Stock" />
+        <Breadcrumb breadcrumbs={[{ title: "Smart Supermarket", href: "/supermarket" }, { title: "Stock" }]} />
+        <Typography variant="caption" color="text.secondary">
+          Search inventory — click the arrow on a product to see its full details and adjust stock.
+        </Typography>
+      </Box>
+
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
+        <Tab value="products" label="Products" />
+        <Tab value="damage" label="Stock Damage" />
+      </Tabs>
+
+      {tab === "products" ? <ProductsTab /> : <StockDamageTab />}
+    </FormPageLayout>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// "Products" tab: the existing search/browse/expand/adjust stock browser.
+// ---------------------------------------------------------------------------
+function ProductsTab() {
   const { formatCurrency } = useHomeCurrency();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<any>(null);
@@ -43,15 +74,7 @@ export default function StockPage() {
   });
 
   return (
-    <FormPageLayout>
-      <Box sx={{ p: 2, boxShadow: 2, borderRadius: 1, mb: 2 }}>
-        <PageTitle title="Stock" />
-        <Breadcrumb breadcrumbs={[{ title: "Smart Supermarket", href: "/supermarket" }, { title: "Stock" }]} />
-        <Typography variant="caption" color="text.secondary">
-          Search inventory — click the arrow on a product to see its full details and adjust stock.
-        </Typography>
-      </Box>
-
+    <>
       <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mb: 2 }}>
         <CardContent>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -122,7 +145,116 @@ export default function StockPage() {
           </Table>
         </TableContainer>
       )}
-    </FormPageLayout>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// "Stock Damage" tab — moved as-is from the old standalone StockDamagePage,
+// same genuine recordStockDamage/deleteStockDamage backend calls.
+// ---------------------------------------------------------------------------
+const emptyDamageForm = { stock_id: null as any, quantity: "1", reason: "", damage_date: new Date().toISOString().slice(0, 10) };
+
+function StockDamageTab() {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyDamageForm);
+
+  const { data: damages, isLoading } = useQuery({ queryKey: ["stock-damages"], queryFn: () => getStockDamages() });
+  const { data: items } = useQuery({ queryKey: ["items-all"], queryFn: getItems });
+
+  const createMutation = useMutation({
+    mutationFn: recordStockDamage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stock-damages"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-list"] });
+      setOpen(false);
+      setForm(emptyDamageForm);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteStockDamage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stock-damages"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-list"] });
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!form.stock_id) return;
+    createMutation.mutate({
+      stock_id: form.stock_id.stock_id,
+      quantity: Number(form.quantity) || 0,
+      reason: form.reason,
+      damage_date: form.damage_date,
+    });
+  };
+
+  return (
+    <>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)}>Record Damage</Button>
+      </Box>
+
+      {isLoading ? <PageLoader /> : (
+        <TableContainer component={Paper} elevation={2}>
+          <Table>
+            <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+              <TableRow>
+                <TableCell>Product</TableCell>
+                <TableCell align="right">Quantity</TableCell>
+                <TableCell>Reason</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell align="center">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(damages ?? []).map((d: any) => (
+                <TableRow key={d.id} hover>
+                  <TableCell>{d.stock?.description ?? d.stock_id}</TableCell>
+                  <TableCell align="right">{d.quantity}</TableCell>
+                  <TableCell>{d.reason ?? "—"}</TableCell>
+                  <TableCell>{String(d.damage_date).slice(0, 10)}</TableCell>
+                  <TableCell align="center">
+                    <IconButton size="small" color="error" onClick={() => deleteMutation.mutate(d.id)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {(!damages || damages.length === 0) && (
+                <TableRow><TableCell colSpan={5} align="center"><Typography variant="body2">No damaged stock recorded.</Typography></TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Record Stock Damage</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Autocomplete
+              options={items ?? []}
+              getOptionLabel={(i: any) => i.description ?? i.stock_id ?? ""}
+              value={form.stock_id}
+              onChange={(_, val) => setForm({ ...form, stock_id: val })}
+              renderInput={(params) => <TextField {...params} label="Product" />}
+            />
+            <TextField label="Quantity Damaged" type="number" fullWidth value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+            <TextField label="Reason" fullWidth value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
+            <TextField label="Damage Date" type="date" fullWidth value={form.damage_date} onChange={(e) => setForm({ ...form, damage_date: e.target.value })} InputLabelProps={{ shrink: true }} />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="contained" disabled={!form.stock_id || createMutation.isPending} onClick={handleSubmit}>
+            {createMutation.isPending ? "Saving..." : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
 
@@ -133,12 +265,18 @@ function ProductDetailPanel({ product }: { product: any }) {
   const { formatCurrency } = useHomeCurrency();
   const queryClient = useQueryClient();
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [locCode, setLocCode] = useState("");
   const [movementType, setMovementType] = useState<"add" | "reduce" | "override">("add");
   const [quantity, setQuantity] = useState("0");
   const [reason, setReason] = useState("");
 
   const { data: locations } = useQuery({ queryKey: ["inventory-locations"], queryFn: getInventoryLocations, enabled: adjustOpen });
+  const { data: history, isLoading: historyLoading } = useQuery({
+    queryKey: ["stock-adjustments", product.stock_id],
+    queryFn: () => getStockAdjustments(product.stock_id),
+    enabled: historyOpen,
+  });
 
   const adjustMutation = useMutation({
     mutationFn: () => createStockAdjustment({
@@ -189,9 +327,70 @@ function ProductDetailPanel({ product }: { product: any }) {
         </Grid>
       </Grid>
 
-      <Button size="small" variant="outlined" startIcon={<TuneIcon />} onClick={() => setAdjustOpen(true)}>
-        Adjust Stock
-      </Button>
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Button size="small" variant="outlined" startIcon={<TuneIcon />} onClick={() => setAdjustOpen(true)}>
+          Adjust Stock
+        </Button>
+        <Tooltip title="Adjustment History">
+          <IconButton size="small" onClick={() => setHistoryOpen(true)}>
+            <HistoryIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Stack>
+
+      <Dialog open={historyOpen} onClose={() => setHistoryOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Adjustment History — {product.description}</DialogTitle>
+        <DialogContent dividers>
+          {historyLoading ? (
+            <Typography variant="body2" color="text.secondary">Loading...</Typography>
+          ) : (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell align="right">Before</TableCell>
+                    <TableCell align="right">Moved</TableCell>
+                    <TableCell align="right">After</TableCell>
+                    <TableCell>Reason</TableCell>
+                    <TableCell>By</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(history ?? []).map((h: any) => (
+                    <TableRow key={h.id}>
+                      <TableCell>{String(h.created_at).slice(0, 16).replace("T", " ")}</TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label={h.movement_type}
+                          color={h.movement_type === "add" ? "success" : h.movement_type === "reduce" ? "error" : "default"}
+                        />
+                      </TableCell>
+                      <TableCell align="right">{h.quantity_before}</TableCell>
+                      <TableCell align="right">{Number(h.quantity_moved) > 0 ? `+${h.quantity_moved}` : h.quantity_moved}</TableCell>
+                      <TableCell align="right">{h.quantity_after}</TableCell>
+                      <TableCell>{h.reason ?? "—"}</TableCell>
+                      <TableCell>
+                        {h.recorded_by_user
+                          ? `${h.recorded_by_user.first_name} ${h.recorded_by_user.last_name}`
+                          : "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!history || history.length === 0) && (
+                    <TableRow><TableCell colSpan={7} align="center"><Typography variant="body2">No adjustments recorded for this item.</Typography></TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHistoryOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={adjustOpen} onClose={() => setAdjustOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Adjust Stock — {product.description}</DialogTitle>

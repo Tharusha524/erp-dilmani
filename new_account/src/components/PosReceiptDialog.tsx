@@ -214,14 +214,14 @@ export default function PosReceiptDialog({
             THANK YOU FOR YOUR BUSINESS!
           </Typography>
 
+          <Typography align="center" variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block", fontSize: 10 }}>
+            Developed by DIO Solutions
+          </Typography>
+
           {/* Real scannable barcode of the invoice number */}
           <Box sx={{ textAlign: "center", mt: 2 }}>
             <svg ref={barcodeRef} />
           </Box>
-
-          <Typography align="center" variant="caption" color="text.secondary" sx={{ mt: 2, display: "block", fontSize: 10 }}>
-            Developed by DIO Solutions
-          </Typography>
         </Box>
       </DialogContent>
       <DialogActions className="pos-receipt-no-print">

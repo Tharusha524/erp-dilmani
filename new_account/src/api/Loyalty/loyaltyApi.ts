@@ -35,8 +35,11 @@ export const getApplicableOffers = async (params: { debtor_no?: number; stock_id
 export const getOfferPopularity = async () => (await api.get("/offers-popularity")).data;
 
 // ---- Win-Back Campaigns ----
-export const getInactiveCustomers = async (days = 30) =>
-  (await api.get("/win-back/inactive-customers", { params: { days } })).data;
+export const getInactiveCustomers = async (
+  days = 30,
+  params?: { page?: number; per_page?: number; search?: string }
+) =>
+  (await api.get("/win-back/inactive-customers", { params: { days, ...params } })).data;
 export const sendWinBackOffer = async (data: { debtor_no: number; offer_id?: number; channel: "sms" | "whatsapp"; message?: string }) =>
   (await api.post("/win-back/send", data)).data;
 export const getWinBackHistory = async () => (await api.get("/win-back/history")).data;

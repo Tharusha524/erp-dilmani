@@ -10,26 +10,69 @@ use App\Models\Offer;
 use App\Models\StockMaster;
 use App\Models\WinBackCampaign;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class WinBackCampaignController extends Controller
 {
+    // Don't re-send a win-back offer to the same customer within this many
+    // days — avoids accidentally spamming someone who was already contacted.
+    private const RECONTACT_COOLDOWN_DAYS = 7;
+
     /**
      * Customers who have not purchased in the given number of days.
+     * Paginated (this list has no natural upper bound in a real supermarket
+     * with a large customer base), searchable by name/mobile, and includes
+     * when each customer was last sent a win-back message so the UI can
+     * warn before re-contacting someone too soon.
      */
     public function inactiveCustomers(Request $request)
     {
         $days = (int) $request->query('days', 30);
         $cutoff = now()->subDays($days)->toDateString();
+        $search = trim((string) $request->query('search', ''));
+        $perPage = min(200, max(1, (int) $request->query('per_page', 25)));
 
-        $customers = DebtorsMaster::where('inactive', false)
+        $query = DebtorsMaster::query()
+            ->leftJoin(
+                DB::raw('(select debtor_no, max(sent_at) as last_campaign_at from win_back_campaigns group by debtor_no) as wbc'),
+                'wbc.debtor_no',
+                '=',
+                'debtors_master.debtor_no'
+            )
+            ->where('debtors_master.inactive', false)
             ->where(function ($q) use ($cutoff) {
-                $q->whereNull('last_purchase_date')
-                  ->orWhereDate('last_purchase_date', '<=', $cutoff);
-            })
-            ->orderBy('last_purchase_date')
-            ->get(['debtor_no', 'name', 'mobile', 'email', 'last_purchase_date']);
+                $q->whereNull('debtors_master.last_purchase_date')
+                  ->orWhereDate('debtors_master.last_purchase_date', '<=', $cutoff);
+            });
+
+        if ($search !== '') {
+            $like = "%{$search}%";
+            $query->where(function ($q) use ($like) {
+                $q->where('debtors_master.name', 'like', $like)
+                  ->orWhere('debtors_master.mobile', 'like', $like);
+            });
+        }
+
+        $customers = $query
+            ->orderBy('debtors_master.last_purchase_date')
+            ->select(
+                'debtors_master.debtor_no',
+                'debtors_master.name',
+                'debtors_master.mobile',
+                'debtors_master.email',
+                'debtors_master.last_purchase_date',
+                'wbc.last_campaign_at'
+            )
+            ->paginate($perPage);
+
+        $cooldownCutoff = now()->subDays(self::RECONTACT_COOLDOWN_DAYS);
+        $customers->getCollection()->transform(function ($c) use ($cooldownCutoff) {
+            $c->recently_contacted = $c->last_campaign_at && $c->last_campaign_at >= $cooldownCutoff;
+
+            return $c;
+        });
 
         return response()->json($customers);
     }

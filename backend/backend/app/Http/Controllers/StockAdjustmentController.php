@@ -10,7 +10,10 @@ class StockAdjustmentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = StockAdjustment::with('stock:stock_id,description')->orderByDesc('id');
+        $query = StockAdjustment::with([
+            'stock:stock_id,description',
+            'recordedByUser:id,first_name,last_name',
+        ])->orderByDesc('id');
         if ($request->filled('stock_id')) {
             $query->where('stock_id', $request->query('stock_id'));
         }

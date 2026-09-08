@@ -40,8 +40,8 @@ import { notify } from "../../../services/notificationService";
 import { getFriendlyApiErrorMessage } from "../../../utils/apiErrorMessage";
 import useCurrentUser from "../../../hooks/useCurrentUser";
 import {
-  getHeldSales, holdSale, deleteHeldSale, applyCoupon, confirmCouponUsage, redeemVoucher, getFrequentlyBoughtTogether,
-  getPosSettings,
+  getHeldSales, holdSale, deleteHeldSale, applyCoupon, confirmCouponUsage, redeemVoucher, getVoucherByCode,
+  getFrequentlyBoughtTogether, getPosSettings,
 } from "../../../api/Pos/posOpsApi";
 import { deductVariantStock } from "../../../api/Pos/posAdvancedApi";
 import PosReceiptDialog from "../../../components/PosReceiptDialog";
@@ -94,6 +94,7 @@ export default function PosCheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponChecking, setCouponChecking] = useState(false);
+  const [voucherChecking, setVoucherChecking] = useState(false);
   const [voucherCode, setVoucherCode] = useState("");
   const [voucherAmount, setVoucherAmount] = useState("");
   const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; amount: number } | null>(null);
@@ -551,14 +552,42 @@ export default function PosCheckoutPage() {
     }
   };
 
-  const handleApplyVoucher = () => {
+  const handleApplyVoucher = async () => {
     const amount = Number(voucherAmount) || 0;
-    if (!voucherCode.trim() || amount <= 0) {
+    const code = voucherCode.trim();
+    if (!code || amount <= 0) {
       notify.error("Enter a voucher code and an amount to apply");
       return;
     }
-    setAppliedVoucher({ code: voucherCode.trim(), amount });
-    notify.success(`Voucher ${voucherCode.trim()} applied for ${formatCurrency(amount)} — confirmed on checkout`);
+
+    // Validate the voucher for real — exists, still active, not expired,
+    // has enough balance — BEFORE it ever touches the sale total. Applying
+    // it blind and only checking at redemption time (after the sale posts)
+    // meant a fake/expired/insufficient voucher could discount a completed
+    // sale with nothing backing it.
+    setVoucherChecking(true);
+    try {
+      const voucher = await getVoucherByCode(code);
+      if (!voucher || voucher.status !== "active") {
+        notify.error("This voucher is not active");
+        return;
+      }
+      if (voucher.expiry_date && new Date(voucher.expiry_date) < new Date(new Date().toDateString())) {
+        notify.error("This voucher has expired");
+        return;
+      }
+      if (Number(voucher.balance) < amount) {
+        notify.error(`Insufficient voucher balance — only ${formatCurrency(voucher.balance)} left`);
+        return;
+      }
+
+      setAppliedVoucher({ code, amount });
+      notify.success(`Voucher ${code} applied for ${formatCurrency(amount)}`);
+    } catch {
+      notify.error("Voucher not found");
+    } finally {
+      setVoucherChecking(false);
+    }
   };
 
   const handleHoldSale = async () => {
@@ -909,7 +938,9 @@ export default function PosCheckoutPage() {
                 {appliedVoucher ? (
                   <Button variant="outlined" color="error" onClick={() => { setAppliedVoucher(null); setVoucherCode(""); setVoucherAmount(""); }}>Remove</Button>
                 ) : (
-                  <Button variant="outlined" onClick={handleApplyVoucher}>Apply</Button>
+                  <Button variant="outlined" onClick={handleApplyVoucher} disabled={voucherChecking}>
+                    {voucherChecking ? "Checking..." : "Apply"}
+                  </Button>
                 )}
               </Stack>
 

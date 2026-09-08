@@ -10,8 +10,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import PrintIcon from "@mui/icons-material/Print";
+import DownloadIcon from "@mui/icons-material/Download";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import JsBarcode from "jsbarcode";
+import { jsPDF } from "jspdf";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
 import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
@@ -153,6 +155,95 @@ export default function ProductVariantsPage() {
 
   const handlePrint = () => window.print();
 
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  /**
+   * Builds a real, downloadable PDF of the same labels shown on screen —
+   * each barcode is redrawn onto an off-screen <canvas> (jsBarcode can
+   * target a canvas directly) and dropped into the PDF as an image, so the
+   * exported file is a faithful copy of what "Print Labels" produces.
+   */
+  const handleDownloadPdf = () => {
+    if (expandedLabels.length === 0) return;
+    setDownloadingPdf(true);
+    try {
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 8;
+      const labelW = 60;
+      const labelH = 32;
+      const gapX = 4;
+      const gapY = 4;
+      const cols = Math.max(1, Math.floor((pageWidth - margin * 2 + gapX) / (labelW + gapX)));
+
+      let col = 0;
+      let row = 0;
+
+      expandedLabels.forEach((label) => {
+        const rowsPerPage = Math.max(1, Math.floor((pageHeight - margin * 2 + gapY) / (labelH + gapY)));
+        if (row >= rowsPerPage) {
+          doc.addPage();
+          row = 0;
+          col = 0;
+        }
+
+        const x = margin + col * (labelW + gapX);
+        const y = margin + row * (labelH + gapY);
+
+        doc.setDrawColor(180);
+        doc.setLineDashPattern([1, 1], 0);
+        doc.rect(x, y, labelW, labelH);
+        doc.setLineDashPattern([], 0);
+
+        let textY = y + 5;
+        doc.setFontSize(7);
+        if (showBusinessName && company?.name) {
+          doc.setFont("helvetica", "bold");
+          doc.text(company.name, x + labelW / 2, textY, { align: "center" });
+          textY += 4;
+        }
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.text(label.productName, x + labelW / 2, textY, { align: "center", maxWidth: labelW - 4 });
+        textY += 4;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+        if (showSku) {
+          doc.text(`SKU: ${label.sku}`, x + labelW / 2, textY, { align: "center" });
+          textY += 4;
+        }
+        if (showPrice) {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9);
+          doc.text(formatCurrency(label.price), x + labelW / 2, textY, { align: "center" });
+          textY += 4;
+        }
+
+        try {
+          const canvas = document.createElement("canvas");
+          JsBarcode(canvas, label.barcodeValue, { format: "CODE128", displayValue: false, height: 45, width: 2, margin: 4 });
+          const imgData = canvas.toDataURL("image/png");
+          const barcodeW = labelW - 8;
+          const barcodeH = 10;
+          doc.addImage(imgData, "PNG", x + 4, textY, barcodeW, barcodeH);
+        } catch {
+          // Non-fatal — barcode just won't render on this label if the value can't be encoded.
+        }
+
+        col += 1;
+        if (col >= cols) {
+          col = 0;
+          row += 1;
+        }
+      });
+
+      doc.save(`barcode-labels-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   return (
     <FormPageLayout>
       <Box sx={{ p: 2, boxShadow: 2, borderRadius: 1, mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }} className="pos-receipt-no-print">
@@ -272,9 +363,14 @@ export default function ProductVariantsPage() {
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                 <Typography variant="subtitle1" fontWeight={700}>Print List</Typography>
-                <Button size="small" variant="contained" startIcon={<PrintIcon />} disabled={lines.length === 0} onClick={handlePrint}>
-                  Print {expandedLabels.length} Label{expandedLabels.length === 1 ? "" : "s"}
-                </Button>
+                <Stack direction="row" spacing={1}>
+                  <Button size="small" variant="outlined" startIcon={<DownloadIcon />} disabled={lines.length === 0 || downloadingPdf} onClick={handleDownloadPdf}>
+                    {downloadingPdf ? "Generating..." : "Download PDF"}
+                  </Button>
+                  <Button size="small" variant="contained" startIcon={<PrintIcon />} disabled={lines.length === 0} onClick={handlePrint}>
+                    Print {expandedLabels.length} Label{expandedLabels.length === 1 ? "" : "s"}
+                  </Button>
+                </Stack>
               </Stack>
               {lines.map((line) => (
                 <Stack key={line.key} direction="row" spacing={1} alignItems="center" sx={{ py: 0.5 }}>

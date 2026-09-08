@@ -407,6 +407,7 @@ Route::post('sales/payments/{transNo}/void', [SalesPaymentController::class, 'vo
 Route::post('sales/credit-notes', [SalesCreditNoteController::class, 'store']);
 Route::put('sales/credit-notes/{transNo}', [SalesCreditNoteController::class, 'update']);
 Route::post('sales/credit-notes/{transNo}/void', [SalesCreditNoteController::class, 'void']);
+Route::get('sales/invoice-lookup/{transNo}', [\App\Http\Controllers\InvoiceLookupController::class, 'show']);
 Route::get('sales/inquiries/quotations', [SalesInquiryController::class, 'quotations']);
 Route::get('sales/inquiries/orders', [SalesInquiryController::class, 'orders']);
 Route::get('sales/inquiries/customer-transactions', [SalesInquiryController::class, 'customerTransactions']);

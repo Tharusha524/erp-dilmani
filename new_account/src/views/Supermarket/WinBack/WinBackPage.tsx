@@ -3,11 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Button, TextField, Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
   Paper, Typography, Stack, FormControl, InputLabel, Select, MenuItem, IconButton, Tooltip, Checkbox,
+  TablePagination, InputAdornment, Chip, LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions,
 } from "@mui/material";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import EditIcon from "@mui/icons-material/Edit";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import SearchIcon from "@mui/icons-material/Search";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
 import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
@@ -16,11 +18,16 @@ import { getInactiveCustomers, sendWinBackOffer, getOffers } from "../../../api/
 import { getCustomer, updateCustomer } from "../../../api/Customer/AddCustomerApi";
 import { notify } from "../../../services/notificationService";
 
+const RECONTACT_COOLDOWN_DAYS = 7;
+
 export default function WinBackPage() {
   const queryClient = useQueryClient();
   const [days, setDays] = useState(30);
   const [channel, setChannel] = useState<"sms" | "whatsapp">("sms");
   const [offerId, setOfferId] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [perPage, setPerPage] = useState(25);
 
   // Inline "add mobile" shortcut — fixes the #1 reason Send Offer fails
   // (customer has no phone number) without leaving this screen.
@@ -29,13 +36,24 @@ export default function WinBackPage() {
 
   // Which customers are picked for a bulk send — sending only ever goes to
   // the customer(s) explicitly checked here (or a single row's own button),
-  // never to the whole visible list.
+  // never to the whole (potentially large) list.
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
-  const { data: inactive, isLoading } = useQuery({
-    queryKey: ["inactive-customers", days],
-    queryFn: () => getInactiveCustomers(days),
+  // A pending "already contacted recently" confirmation, so re-sending is a
+  // deliberate choice, not an accident.
+  const [confirmResend, setConfirmResend] = useState<{ debtorNo: number } | null>(null);
+
+  // Bulk send runs one customer at a time (never a burst of parallel
+  // requests against Notify.lk) with one progress summary — not a storm of
+  // per-customer toasts.
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number; failed: number } | null>(null);
+
+  const { data: inactivePage, isLoading } = useQuery({
+    queryKey: ["inactive-customers", days, page, perPage, search],
+    queryFn: () => getInactiveCustomers(days, { page: page + 1, per_page: perPage, search: search || undefined }),
   });
+  const inactive = inactivePage?.data ?? [];
+  const total = inactivePage?.total ?? 0;
 
   const { data: offers } = useQuery({ queryKey: ["offers"], queryFn: getOffers });
 
@@ -89,7 +107,7 @@ export default function WinBackPage() {
     setMobileDraft(currentMobile ?? "");
   };
 
-  const sendableCustomers = (inactive ?? []).filter((c: any) => !!c.mobile);
+  const sendableCustomers = inactive.filter((c: any) => !!c.mobile);
   const allSendableSelected = sendableCustomers.length > 0 && sendableCustomers.every((c: any) => selected.has(c.debtor_no));
 
   const toggleSelected = (debtorNo: number) => {
@@ -104,15 +122,59 @@ export default function WinBackPage() {
     setSelected(allSendableSelected ? new Set() : new Set(sendableCustomers.map((c: any) => c.debtor_no)));
   };
 
-  const sendToSelected = () => {
-    selected.forEach((debtorNo) => {
-      sendMutation.mutate({
-        debtor_no: debtorNo,
-        offer_id: offerId ? Number(offerId) : undefined,
-        channel,
-      });
+  const sendOne = async (debtorNo: number) => {
+    await sendMutation.mutateAsync({
+      debtor_no: debtorNo,
+      offer_id: offerId ? Number(offerId) : undefined,
+      channel,
     });
+  };
+
+  const handleSendClick = (customer: any) => {
+    if (customer.recently_contacted) {
+      setConfirmResend({ debtorNo: customer.debtor_no });
+      return;
+    }
+    sendOne(customer.debtor_no);
+  };
+
+  const confirmAndSend = () => {
+    if (!confirmResend) return;
+    sendOne(confirmResend.debtorNo);
+    setConfirmResend(null);
+  };
+
+  const sendToSelected = async () => {
+    // Same recently-contacted protection as the single "Send Offer" button
+    // — a bulk send shouldn't be a way to bypass it. Anyone flagged is
+    // skipped here; send to them individually (with the confirmation) if
+    // that's genuinely intended.
+    const byId = new Map<number, any>(inactive.map((c: any) => [c.debtor_no, c]));
+    const allIds = Array.from(selected);
+    const skipped = allIds.filter((id) => byId.get(id)?.recently_contacted);
+    const ids = allIds.filter((id) => !byId.get(id)?.recently_contacted);
+
     setSelected(new Set());
+    if (ids.length === 0) {
+      notify.error("All selected customers were contacted recently — skipped. Use \"Send Again?\" individually if intended.");
+      return;
+    }
+
+    setBulkProgress({ done: 0, total: ids.length, failed: 0 });
+
+    let failed = 0;
+    for (let i = 0; i < ids.length; i++) {
+      try {
+        await sendOne(ids[i]);
+      } catch {
+        failed += 1;
+      }
+      setBulkProgress({ done: i + 1, total: ids.length, failed });
+    }
+
+    const skippedNote = skipped.length > 0 ? ` — ${skipped.length} skipped (contacted recently)` : "";
+    notify.success(`Bulk send finished — ${ids.length - failed}/${ids.length} sent successfully${skippedNote}`);
+    setBulkProgress(null);
   };
 
   return (
@@ -122,13 +184,20 @@ export default function WinBackPage() {
         <Breadcrumb breadcrumbs={[{ title: "Smart Supermarket", href: "/supermarket" }, { title: "Win-Back Campaigns" }]} />
       </Box>
 
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center">
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }} alignItems="center" flexWrap="wrap" useFlexGap>
         <TextField
           label="Inactive for (days)"
           type="number"
           size="small"
           value={days}
-          onChange={(e) => setDays(Number(e.target.value) || 30)}
+          onChange={(e) => { setDays(Number(e.target.value) || 30); setPage(0); }}
+        />
+        <TextField
+          size="small"
+          placeholder="Search name or mobile"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
         />
         <FormControl size="small" sx={{ minWidth: 160 }}>
           <InputLabel>Channel</InputLabel>
@@ -152,13 +221,22 @@ export default function WinBackPage() {
         <Button
           variant="contained"
           startIcon={<CampaignIcon />}
-          disabled={selected.size === 0 || sendMutation.isPending}
+          disabled={selected.size === 0 || !!bulkProgress}
           onClick={sendToSelected}
           sx={{ ml: "auto !important" }}
         >
           Send to Selected ({selected.size})
         </Button>
       </Stack>
+
+      {bulkProgress && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="caption" color="text.secondary">
+            Sending {bulkProgress.done}/{bulkProgress.total}{bulkProgress.failed > 0 ? ` — ${bulkProgress.failed} failed` : ""}
+          </Typography>
+          <LinearProgress variant="determinate" value={(bulkProgress.done / bulkProgress.total) * 100} />
+        </Box>
+      )}
 
       {isLoading ? <PageLoader /> : (
         <TableContainer component={Paper} elevation={2}>
@@ -176,11 +254,12 @@ export default function WinBackPage() {
                 <TableCell>Customer</TableCell>
                 <TableCell>Mobile</TableCell>
                 <TableCell>Last Purchase</TableCell>
+                <TableCell>Last Contacted</TableCell>
                 <TableCell align="center">Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {(inactive ?? []).map((c: any) => (
+              {inactive.map((c: any) => (
                 <TableRow key={c.debtor_no} hover selected={selected.has(c.debtor_no)}>
                   <TableCell padding="checkbox">
                     <Checkbox
@@ -225,34 +304,65 @@ export default function WinBackPage() {
                     )}
                   </TableCell>
                   <TableCell>{c.last_purchase_date ? String(c.last_purchase_date).slice(0, 10) : "Never"}</TableCell>
+                  <TableCell>
+                    {c.last_campaign_at ? (
+                      <Chip
+                        size="small"
+                        label={String(c.last_campaign_at).slice(0, 10)}
+                        color={c.recently_contacted ? "warning" : "default"}
+                        title={c.recently_contacted ? `Contacted within the last ${RECONTACT_COOLDOWN_DAYS} days` : undefined}
+                      />
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">Never contacted</Typography>
+                    )}
+                  </TableCell>
                   <TableCell align="center">
                     <Tooltip title={c.mobile ? "" : "Add a mobile number first"}>
                       <span>
                         <Button
                           size="small"
                           variant="outlined"
+                          color={c.recently_contacted ? "warning" : "primary"}
                           startIcon={<CampaignIcon />}
-                          disabled={sendMutation.isPending || !c.mobile}
-                          onClick={() => sendMutation.mutate({
-                            debtor_no: c.debtor_no,
-                            offer_id: offerId ? Number(offerId) : undefined,
-                            channel,
-                          })}
+                          disabled={sendMutation.isPending || !c.mobile || !!bulkProgress}
+                          onClick={() => handleSendClick(c)}
                         >
-                          Send Offer
+                          {c.recently_contacted ? "Send Again?" : "Send Offer"}
                         </Button>
                       </span>
                     </Tooltip>
                   </TableCell>
                 </TableRow>
               ))}
-              {(!inactive || inactive.length === 0) && (
-                <TableRow><TableCell colSpan={5} align="center"><Typography variant="body2">No inactive customers in this window.</Typography></TableCell></TableRow>
+              {inactive.length === 0 && (
+                <TableRow><TableCell colSpan={6} align="center"><Typography variant="body2">No inactive customers in this window.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>
+          <TablePagination
+            component="div"
+            count={total}
+            page={page}
+            onPageChange={(_, p) => setPage(p)}
+            rowsPerPage={perPage}
+            onRowsPerPageChange={(e) => { setPerPage(Number(e.target.value)); setPage(0); }}
+            rowsPerPageOptions={[25, 50, 100]}
+          />
         </TableContainer>
       )}
+
+      <Dialog open={!!confirmResend} onClose={() => setConfirmResend(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Already Contacted Recently</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            This customer was already sent a win-back message within the last {RECONTACT_COOLDOWN_DAYS} days. Send again anyway?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmResend(null)}>Cancel</Button>
+          <Button variant="contained" color="warning" onClick={confirmAndSend}>Send Anyway</Button>
+        </DialogActions>
+      </Dialog>
     </FormPageLayout>
   );
 }

@@ -17,4 +17,14 @@ class StockAdjustment extends Model
     {
         return $this->belongsTo(StockMaster::class, 'stock_id', 'stock_id');
     }
+
+    /**
+     * Named "recordedByUser" (not "recordedBy") so its serialized JSON key
+     * is "recorded_by_user" — avoids clashing with the existing scalar
+     * "recorded_by" column (the raw user id) when this is eager-loaded.
+     */
+    public function recordedByUser()
+    {
+        return $this->belongsTo(UserManagement::class, 'recorded_by');
+    }
 }
