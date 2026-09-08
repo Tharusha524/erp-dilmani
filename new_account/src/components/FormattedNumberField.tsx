@@ -4,6 +4,8 @@ import { TextField, TextFieldProps } from "@mui/material";
 export interface FormattedNumberFieldProps
   extends Omit<TextFieldProps, "type"> {
   value?: number | string | undefined | null;
+  /** Force this many decimal places when not focused (opt-in — default keeps existing behavior). */
+  fixedDecimals?: number;
 }
 
 function formatWithCommas(raw: string): string {
@@ -24,13 +26,22 @@ export default function FormattedNumberField({
   onChange,
   onFocus,
   onBlur,
+  fixedDecimals,
   ...rest
 }: FormattedNumberFieldProps) {
   const [text, setText] = useState("");
 
   useEffect(() => {
-    setText(value === "" || value === null || value === undefined ? "" : formatWithCommas(String(value)));
-  }, [value]);
+    if (value === "" || value === null || value === undefined) {
+      setText("");
+      return;
+    }
+    const num = Number(value);
+    const raw = fixedDecimals !== undefined && Number.isFinite(num)
+      ? num.toFixed(fixedDecimals)
+      : String(value);
+    setText(formatWithCommas(raw));
+  }, [value, fixedDecimals]);
 
   return (
     <TextField
@@ -43,7 +54,10 @@ export default function FormattedNumberField({
       onBlur={(e) => {
         const raw = text.replace(/,/g, "");
         const num = Number(raw);
-        setText(Number.isFinite(num) ? formatWithCommas(String(num)) : "");
+        const formatted = fixedDecimals !== undefined && Number.isFinite(num)
+          ? num.toFixed(fixedDecimals)
+          : String(num);
+        setText(Number.isFinite(num) ? formatWithCommas(formatted) : "");
         onBlur?.(e);
       }}
       onChange={(e) => {

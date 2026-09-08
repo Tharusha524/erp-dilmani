@@ -630,6 +630,7 @@ export default function CustomerPayments() {
                         <FormattedNumberField
                           size="small"
                           value={row.thisAllocation}
+                          fixedDecimals={2}
                           onChange={(e) => handleAllocationChange(index, Number(e.target.value))}
                           sx={{ width: "100px" }}
                         />
