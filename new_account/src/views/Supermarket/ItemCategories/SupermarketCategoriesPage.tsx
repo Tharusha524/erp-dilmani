@@ -43,13 +43,13 @@ export default function SupermarketCategoriesPage() {
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
         <Tab icon={<CategoryIcon fontSize="small" />} iconPosition="start" label="Categories" />
-        <Tab icon={<AccountTreeIcon fontSize="small" />} iconPosition="start" label="Subcategories" />
         <Tab icon={<BrandingWatermarkIcon fontSize="small" />} iconPosition="start" label="Brands" />
+        <Tab icon={<AccountTreeIcon fontSize="small" />} iconPosition="start" label="Subcategories" />
       </Tabs>
 
       {tab === 0 && <CategoriesTab />}
-      {tab === 1 && <SubcategoriesTab />}
-      {tab === 2 && <BrandsTab />}
+      {tab === 1 && <BrandsTab />}
+      {tab === 2 && <SubcategoriesTab />}
     </FormPageLayout>
   );
 }
@@ -146,9 +146,6 @@ function CategoriesTab() {
             <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
               <TableRow>
                 <TableCell>Name</TableCell>
-                <TableCell>Sales Acc.</TableCell>
-                <TableCell>Inventory Acc.</TableCell>
-                <TableCell>COGS Acc.</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -156,9 +153,6 @@ function CategoriesTab() {
               {(categories ?? []).map((c: any) => (
                 <TableRow key={c.category_id} hover>
                   <TableCell>{c.description}</TableCell>
-                  <TableCell>{c.dflt_sales_act ?? "—"}</TableCell>
-                  <TableCell>{c.dflt_inventory_act ?? "—"}</TableCell>
-                  <TableCell>{c.dflt_cogs_act ?? "—"}</TableCell>
                   <TableCell align="center">
                     <Tooltip title="Edit Category">
                       <IconButton size="small" onClick={() => openEditDialog(c)}>
@@ -172,7 +166,7 @@ function CategoriesTab() {
                 </TableRow>
               ))}
               {(!categories || categories.length === 0) && (
-                <TableRow><TableCell colSpan={5} align="center"><Typography variant="body2">No categories yet.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={2} align="center"><Typography variant="body2">No categories yet.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -211,24 +205,21 @@ function SubcategoriesTab() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<any>(null);
+  const [brand, setBrand] = useState<any>(null);
   const [editing, setEditing] = useState<any>(null);
 
-  const { data: categories } = useQuery({ queryKey: ["item-categories"], queryFn: () => getItemCategories() });
+  const { data: brands } = useQuery({ queryKey: ["brands-all"], queryFn: getBrands });
   const { data: subcategories, isLoading } = useQuery({ queryKey: ["subcategories-all"], queryFn: () => getSubcategories() });
-
-  const categoryName = (categoryId: number) =>
-    (categories ?? []).find((c: any) => c.category_id === categoryId)?.description ?? "—";
 
   const closeDialog = () => {
     setOpen(false);
     setEditing(null);
     setName("");
-    setCategory(null);
+    setBrand(null);
   };
 
   const createMutation = useMutation({
-    mutationFn: () => createSubcategory({ category_id: category.category_id, name: name.trim() }),
+    mutationFn: () => createSubcategory({ brand_id: brand.id, name: name.trim() }),
     onSuccess: () => {
       notify.success("Subcategory added");
       queryClient.invalidateQueries({ queryKey: ["subcategories-all"] });
@@ -238,7 +229,7 @@ function SubcategoriesTab() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: () => updateSubcategory(editing.id, { category_id: category.category_id, name: name.trim() }),
+    mutationFn: () => updateSubcategory(editing.id, { brand_id: brand.id, name: name.trim() }),
     onSuccess: () => {
       notify.success("Subcategory updated");
       queryClient.invalidateQueries({ queryKey: ["subcategories-all"] });
@@ -259,14 +250,14 @@ function SubcategoriesTab() {
   const openAddDialog = () => {
     setEditing(null);
     setName("");
-    setCategory(null);
+    setBrand(null);
     setOpen(true);
   };
 
   const openEditDialog = (s: any) => {
     setEditing(s);
     setName(s.name);
-    setCategory((categories ?? []).find((c: any) => c.category_id === s.category_id) ?? null);
+    setBrand((brands ?? []).find((b: any) => b.id === s.brand_id) ?? null);
     setOpen(true);
   };
 
@@ -282,6 +273,7 @@ function SubcategoriesTab() {
             <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
               <TableRow>
                 <TableCell>Name</TableCell>
+                <TableCell>Brand</TableCell>
                 <TableCell>Category</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
@@ -290,7 +282,8 @@ function SubcategoriesTab() {
               {(subcategories ?? []).map((s: any) => (
                 <TableRow key={s.id} hover>
                   <TableCell>{s.name}</TableCell>
-                  <TableCell>{categoryName(s.category_id)}</TableCell>
+                  <TableCell>{s.brand?.name ?? "—"}</TableCell>
+                  <TableCell>{s.category?.description ?? "—"}</TableCell>
                   <TableCell align="center">
                     <Tooltip title="Edit Subcategory">
                       <IconButton size="small" onClick={() => openEditDialog(s)}>
@@ -304,7 +297,7 @@ function SubcategoriesTab() {
                 </TableRow>
               ))}
               {(!subcategories || subcategories.length === 0) && (
-                <TableRow><TableCell colSpan={3} align="center"><Typography variant="body2">No subcategories yet.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={4} align="center"><Typography variant="body2">No subcategories yet.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -316,11 +309,11 @@ function SubcategoriesTab() {
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <Autocomplete
-              options={categories ?? []}
-              getOptionLabel={(c: any) => c.description ?? ""}
-              value={category}
-              onChange={(_, v) => setCategory(v)}
-              renderInput={(p) => <TextField {...p} label="Category" />}
+              options={brands ?? []}
+              getOptionLabel={(b: any) => b.name ? `${b.name} (${b.category?.description ?? "no category"})` : ""}
+              value={brand}
+              onChange={(_, v) => setBrand(v)}
+              renderInput={(p) => <TextField {...p} label="Brand" helperText="Category is implied by the brand you pick" />}
             />
             <TextField
               label="Subcategory Name" fullWidth autoFocus
@@ -332,7 +325,7 @@ function SubcategoriesTab() {
           <Button onClick={closeDialog}>Cancel</Button>
           <Button
             variant="contained"
-            disabled={!name.trim() || !category || createMutation.isPending || updateMutation.isPending}
+            disabled={!name.trim() || !brand || createMutation.isPending || updateMutation.isPending}
             onClick={() => (editing ? updateMutation.mutate() : createMutation.mutate())}
           >
             {(createMutation.isPending || updateMutation.isPending) ? "Saving..." : "Save"}
@@ -350,18 +343,21 @@ function BrandsTab() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [category, setCategory] = useState<any>(null);
   const [editing, setEditing] = useState<any>(null);
 
   const { data: brands, isLoading } = useQuery({ queryKey: ["brands-all"], queryFn: getBrands });
+  const { data: categories } = useQuery({ queryKey: ["item-categories"], queryFn: () => getItemCategories() });
 
   const closeDialog = () => {
     setOpen(false);
     setEditing(null);
     setName("");
+    setCategory(null);
   };
 
   const createMutation = useMutation({
-    mutationFn: () => createBrand({ name: name.trim() }),
+    mutationFn: () => createBrand({ name: name.trim(), category_id: category.category_id }),
     onSuccess: () => {
       notify.success("Brand added");
       queryClient.invalidateQueries({ queryKey: ["brands-all"] });
@@ -371,7 +367,7 @@ function BrandsTab() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: () => updateBrand(editing.id, { name: name.trim() }),
+    mutationFn: () => updateBrand(editing.id, { name: name.trim(), category_id: category.category_id }),
     onSuccess: () => {
       notify.success("Brand updated");
       queryClient.invalidateQueries({ queryKey: ["brands-all"] });
@@ -392,12 +388,14 @@ function BrandsTab() {
   const openAddDialog = () => {
     setEditing(null);
     setName("");
+    setCategory(null);
     setOpen(true);
   };
 
   const openEditDialog = (b: any) => {
     setEditing(b);
     setName(b.name);
+    setCategory((categories ?? []).find((c: any) => c.category_id === b.category_id) ?? null);
     setOpen(true);
   };
 
@@ -413,6 +411,7 @@ function BrandsTab() {
             <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
               <TableRow>
                 <TableCell>Name</TableCell>
+                <TableCell>Category</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -420,6 +419,7 @@ function BrandsTab() {
               {(brands ?? []).map((b: any) => (
                 <TableRow key={b.id} hover>
                   <TableCell>{b.name}</TableCell>
+                  <TableCell>{b.category?.description ?? "—"}</TableCell>
                   <TableCell align="center">
                     <Tooltip title="Edit Brand">
                       <IconButton size="small" onClick={() => openEditDialog(b)}>
@@ -433,7 +433,7 @@ function BrandsTab() {
                 </TableRow>
               ))}
               {(!brands || brands.length === 0) && (
-                <TableRow><TableCell colSpan={2} align="center"><Typography variant="body2">No brands yet.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={3} align="center"><Typography variant="body2">No brands yet.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -443,16 +443,25 @@ function BrandsTab() {
       <Dialog open={open} onClose={closeDialog} maxWidth="xs" fullWidth>
         <DialogTitle>{editing ? "Edit Brand" : "Add Brand"}</DialogTitle>
         <DialogContent>
-          <TextField
-            label="Brand Name" fullWidth autoFocus sx={{ mt: 1 }}
-            value={name} onChange={(e) => setName(e.target.value)}
-          />
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Autocomplete
+              options={categories ?? []}
+              getOptionLabel={(c: any) => c.description ?? ""}
+              value={category}
+              onChange={(_, v) => setCategory(v)}
+              renderInput={(p) => <TextField {...p} label="Category" />}
+            />
+            <TextField
+              label="Brand Name" fullWidth autoFocus
+              value={name} onChange={(e) => setName(e.target.value)}
+            />
+          </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeDialog}>Cancel</Button>
           <Button
             variant="contained"
-            disabled={!name.trim() || createMutation.isPending || updateMutation.isPending}
+            disabled={!name.trim() || !category || createMutation.isPending || updateMutation.isPending}
             onClick={() => (editing ? updateMutation.mutate() : createMutation.mutate())}
           >
             {(createMutation.isPending || updateMutation.isPending) ? "Saving..." : "Save"}

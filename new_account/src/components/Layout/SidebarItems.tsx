@@ -78,9 +78,9 @@ const baseSidebarItems: Array<SidebarItem> = [
     requiredPermission: getModulePermissionIds("Smart Supermarket"),
     nestedItems: [
       { title: "POS Checkout", href: "/supermarket/pos-checkout", icon: <PointOfSaleOutlinedIcon fontSize="small" /> },
-      { title: "Sales Analytics", href: "/supermarket/sales-analytics", icon: <InsightsIcon fontSize="small" /> },
       { title: "Low Stock Alerts", href: "/supermarket/low-stock", icon: <WarningAmberIcon fontSize="small" /> },
-      { title: "Product Variants", href: "/supermarket/product-variants", icon: <StyleIcon fontSize="small" /> },
+      // Product Variants — disabled per request, feature/page code kept as-is.
+      // { title: "Product Variants", href: "/supermarket/product-variants", icon: <StyleIcon fontSize="small" /> },
       { title: "Weigh & Print", href: "/supermarket/weigh-and-print", icon: <ScaleIcon fontSize="small" /> },
       { title: "Set Price", href: "/supermarket/set-price", icon: <PriceChangeIcon fontSize="small" /> },
       { title: "Suppliers", href: "/supermarket/suppliers", icon: <GroupsIcon fontSize="small" /> },
@@ -107,12 +107,14 @@ const baseSidebarItems: Array<SidebarItem> = [
       // { title: "Warranty", href: "/supermarket/warranty", icon: <VerifiedUserIcon fontSize="small" /> },
       { title: "Vouchers", href: "/supermarket/vouchers", icon: <CardGiftcardIcon fontSize="small" /> },
       { title: "Customer Segments", href: "/supermarket/customer-segments", icon: <GroupsIcon fontSize="small" /> },
+      { title: "Sales Analytics", href: "/supermarket/sales-analytics", icon: <InsightsIcon fontSize="small" /> },
       // Service Tickets — disabled per request, feature/page code kept as-is.
       // { title: "Service Tickets", href: "/supermarket/service-tickets", icon: <BuildIcon fontSize="small" /> },
       { title: "POS Settings", href: "/supermarket/pos-settings", icon: <SettingsSuggestIcon fontSize="small" /> },
       { title: "Reports", href: "/supermarket/reports", icon: <AssessmentIcon fontSize="small" /> },
     ],
   },
+  /* Sales — disabled per request, feature/page code kept as-is.
   {
     title: "Sales",
     href: "/sales",
@@ -133,6 +135,8 @@ const baseSidebarItems: Array<SidebarItem> = [
       },
     ],
   },
+  */
+  /* Purchase — disabled per request, feature/page code kept as-is.
   {
     title: "Purchase",
     href: "/purchase",
@@ -153,6 +157,8 @@ const baseSidebarItems: Array<SidebarItem> = [
       },
     ],
   },
+  */
+  /* Item and inventory — disabled per request, feature/page code kept as-is.
   {
     title: "Item and inventory",
     href: "/itemsandinventory",
@@ -177,6 +183,8 @@ const baseSidebarItems: Array<SidebarItem> = [
       },
     ],
   },
+  */
+  /* Manufacturing — disabled per request, feature/page code kept as-is.
   {
     title: "Manufacturing",
     href: "/manufacturing",
@@ -197,6 +205,8 @@ const baseSidebarItems: Array<SidebarItem> = [
       },
     ],
   },
+  */
+  /* Fixed Assets — disabled per request, feature/page code kept as-is.
   {
     title: "Fixed Assets",
     href: "/fixedassets",
@@ -217,6 +227,8 @@ const baseSidebarItems: Array<SidebarItem> = [
       },
     ],
   },
+  */
+  /* CostCenter — disabled per request, feature/page code kept as-is.
   {
     title: "CostCenter",
     href: "/costCenter",
@@ -237,6 +249,7 @@ const baseSidebarItems: Array<SidebarItem> = [
       },
     ],
   },
+  */
   {
     title: "Banking And General ledger",
     href: "/bankingandgeneralledger",

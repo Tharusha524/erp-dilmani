@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography } from "@mui/material";
 import PrintIcon from "@mui/icons-material/Print";
@@ -30,7 +30,7 @@ interface VoucherPrintDialogProps {
  */
 export default function VoucherPrintDialog({ open, onClose, voucher }: VoucherPrintDialogProps) {
   const { formatCurrency } = useHomeCurrency();
-  const barcodeRef = useRef<SVGSVGElement>(null);
+  const [barcodeSrc, setBarcodeSrc] = useState<string | null>(null);
 
   const { data: companies } = useQuery({
     queryKey: ["company-setup-list"],
@@ -41,18 +41,29 @@ export default function VoucherPrintDialog({ open, onClose, voucher }: VoucherPr
   const logoSrc = resolveLogoSrc(company?.company_logo_url);
 
   useEffect(() => {
-    if (open && voucher?.voucher_code && barcodeRef.current) {
+    if (open && voucher?.voucher_code) {
       try {
-        JsBarcode(barcodeRef.current, voucher.voucher_code, {
+        // Rendered onto an off-DOM canvas and embedded as a plain <img>
+        // rather than mutating a live <svg> node — a couple of print
+        // paths (this app's print pipeline included) snapshot the page
+        // before that kind of imperative DOM mutation lands, which left
+        // the barcode blank even though it drew fine on screen. A data
+        // URL image is just page content, so it always prints.
+        const canvas = document.createElement("canvas");
+        JsBarcode(canvas, voucher.voucher_code, {
           format: "CODE128",
           displayValue: false,
           height: 40,
           width: 1.8,
           margin: 6,
         });
+        setBarcodeSrc(canvas.toDataURL("image/png"));
       } catch {
         // Invalid characters for CODE128 (shouldn't happen — codes are our own GV-xxxxx format).
+        setBarcodeSrc(null);
       }
+    } else {
+      setBarcodeSrc(null);
     }
   }, [open, voucher?.voucher_code]);
 
@@ -139,11 +150,11 @@ export default function VoucherPrintDialog({ open, onClose, voucher }: VoucherPr
               </Typography>
 
               <Typography sx={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 800, fontSize: 44, lineHeight: 1.1, mt: 1, textShadow: "0 1px 2px rgba(255,255,255,0.35)" }}>
-                {formatCurrency(voucher.face_value)}
+                {formatCurrency(Number(voucher.face_value))}
               </Typography>
               {isPartlyUsed && (
                 <Typography variant="caption" sx={{ display: "block", fontWeight: 700 }}>
-                  Remaining balance: {formatCurrency(voucher.balance)}
+                  Remaining balance: {formatCurrency(Number(voucher.balance))}
                 </Typography>
               )}
               {voucher.debtor?.name && (
@@ -153,22 +164,28 @@ export default function VoucherPrintDialog({ open, onClose, voucher }: VoucherPr
               )}
             </Box>
 
-            {/* Bottom light panel: code, dates, barcode — kept high-contrast for scanning */}
+            {/* Bottom light panel: barcode on its own row so it renders full-size
+                and stays scannable, then code + dates below it. */}
             <Box
               sx={{
                 bgcolor: "rgba(255,252,240,0.92)", borderRadius: 1.5, px: 1.5, py: 1,
-                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5,
                 boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
               }}
             >
-              <Box>
-                <Typography sx={{ fontFamily: "monospace", fontWeight: 700, fontSize: 13, letterSpacing: 0.5 }}>{voucher.voucher_code}</Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontSize: 10 }}>
+              <Box sx={{ textAlign: "center", minHeight: 40 }}>
+                {barcodeSrc && (
+                  <img src={barcodeSrc} alt={`Barcode ${voucher.voucher_code}`} style={{ maxWidth: "100%", height: 40 }} />
+                )}
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 1, mt: 0.5 }}>
+                <Typography sx={{ fontFamily: "monospace", fontWeight: 700, fontSize: 12, letterSpacing: 0.5, whiteSpace: "nowrap" }}>
+                  {voucher.voucher_code}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: 9.5, whiteSpace: "nowrap" }}>
                   Issued {String(voucher.issue_date).slice(0, 10)}
                   {voucher.expiry_date ? ` · Expires ${String(voucher.expiry_date).slice(0, 10)}` : " · No expiry"}
                 </Typography>
               </Box>
-              <svg ref={barcodeRef} style={{ flexShrink: 0 }} />
             </Box>
           </Box>
         </Box>

@@ -90,7 +90,7 @@ export default function WeighAndPrintPage() {
           format: "CODE128",
           displayValue: false,
           height: 45,
-          width: 1.8,
+          width: 1,
           margin: 10,
         });
       } catch {
@@ -195,7 +195,7 @@ export default function WeighAndPrintPage() {
                   <Typography fontSize={11} color="text.secondary">{weightKg.toFixed(3)} kg @ {formatCurrency(unitPrice)}/kg</Typography>
                   <Typography fontSize={16} fontWeight={800} sx={{ mt: 0.5 }}>{formatCurrency(price)}</Typography>
                   <Box sx={{ mt: 1 }}>
-                    <svg ref={barcodeRef} />
+                    <svg ref={barcodeRef} style={{ maxWidth: "100%", height: "auto" }} />
                   </Box>
                 </Box>
               ) : (
