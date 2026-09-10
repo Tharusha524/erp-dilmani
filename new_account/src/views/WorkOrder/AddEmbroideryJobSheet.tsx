@@ -16,6 +16,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router";
 import { enqueueSnackbar } from "notistack";
@@ -490,7 +491,15 @@ const AddEmbroideryJobSheet = () => {
             )}
           </Paper>
 
-          <Box mt={4} display="flex" justifyContent="flex-end">
+          <Box mt={4} display="flex" justifyContent="space-between">
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate("/workorder/create/embroidery")}
+            >
+              Back
+            </Button>
             <Button
               variant="contained"
               color="primary"

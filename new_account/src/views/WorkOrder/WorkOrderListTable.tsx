@@ -17,7 +17,9 @@ import {
   Typography,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
+import PrintIcon from "@mui/icons-material/Print";
 import { useNavigate } from "react-router";
+import { APP_ROUTER_BASENAME } from "../../config/appConfig";
 import { useQuery } from "@tanstack/react-query";
 import { getWorkOrders, WorkOrderListItem } from "../../api/WorkOrder/workOrderApi";
 import WorkOrderDetailsDialog from "./WorkOrderDetailsDialog";
@@ -33,7 +35,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   embroidery_job: "Embroidery Job",
 };
 
-const COLUMN_COUNT = 16;
+const COLUMN_COUNT = 17;
+
+/** Opens the full printable order sheet for a work order in a new tab. */
+const openPrintSheet = (id: number) => {
+  window.open(`${APP_ROUTER_BASENAME}workorder/print/${id}`, "_blank", "noopener");
+};
 
 /** Which order-sheet/job-sheet route to edit a given order in, based on
  * which department it was created under. */
@@ -183,6 +190,7 @@ export default function WorkOrderListTable({ department }: WorkOrderListTablePro
                 "Due Date",
                 "Balance(Rs.)",
                 "ReOpen",
+                "Print",
                 "Edit",
               ].map((label) => (
                 <TableCell
@@ -254,6 +262,13 @@ export default function WorkOrderListTable({ department }: WorkOrderListTablePro
                   <TableCell sx={cellSx}>{daysUntilDue(wo) ?? "-"}</TableCell>
                   <TableCell sx={cellSx}>{formatWoAmount(wo.balance)}</TableCell>
                   <TableCell sx={cellSx}>{wo.reopen_datetime ? "Yes" : "-"}</TableCell>
+                  <TableCell sx={cellSx} align="center">
+                    <Tooltip title="Print full order sheet">
+                      <IconButton size="small" onClick={() => openPrintSheet(wo.id)}>
+                        <PrintIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
                   <TableCell sx={{ ...cellSx, borderRight: "none" }} align="center">
                     <Tooltip title="Edit this work order">
                       <IconButton size="small" onClick={() => navigate(editPathFor(wo))}>

@@ -1394,6 +1394,19 @@ class ReportPdfBuilder
             $query->where('t.tran_date', '<=', $request->input('endDate'));
         }
 
+        // "From" / "To" are sales-invoice transaction numbers (debtor_trans.trans_no).
+        $isRangeBound = static fn ($v) => $v !== null && $v !== ''
+            && !in_array(strtolower((string) $v), ['nofilter', 'no'], true);
+
+        $fromNo = $request->input('from');
+        if ($isRangeBound($fromNo)) {
+            $query->where('t.trans_no', '>=', (int) $fromNo);
+        }
+        $toNo = $request->input('to');
+        if ($isRangeBound($toNo)) {
+            $query->where('t.trans_no', '<=', (int) $toNo);
+        }
+
         $customerFilter = $request->input('customer');
         if ($customerFilter && !in_array(strtolower((string) $customerFilter), ['nofilter', 'no', ''], true)) {
             $query->where('t.debtor_no', $customerFilter);

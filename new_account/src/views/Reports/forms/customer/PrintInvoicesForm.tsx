@@ -1,5 +1,5 @@
 import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
     Box,
     Stack,
@@ -12,13 +12,20 @@ import {
     useMediaQuery,
 } from "@mui/material";
 import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
+import { getCustomerTransactionInquiry } from "../../../../api/SalesInquiry/SalesInquiryApi";
 import { useReportGenerate } from "../../../../hooks/useReportGenerate";
 import { getCurrencies, Currency } from "../../../../api/Currency/currencyApi";
 
 interface Customer {
     debtor_no: number;
     name: string;
-    // Add other fields as needed
+}
+
+interface InvoiceOption {
+    trans_no: number;
+    reference: string;
+    customer_name: string;
+    tran_date?: string;
 }
 
 interface PrintInvoicesFormData {
@@ -26,11 +33,14 @@ interface PrintInvoicesFormData {
     to: string;
     currencyFilter: string;
     email: string;
-    customer: string;
     paymentLink: string;
+    customer: string;
     comments: string;
     orientation: string;
 }
+
+// Sales invoice transactions in debtor_trans use trans_type 10.
+const SALES_INVOICE_TRANS_TYPE = 10;
 
 export default function PrintInvoicesForm() {
     const muiTheme = useTheme();
@@ -39,10 +49,10 @@ export default function PrintInvoicesForm() {
     const [formData, setFormData] = useState<PrintInvoicesFormData>({
         from: "",
         to: "",
-        customer: "NoFilter",
+        currencyFilter: "NoFilter",
         email: "No",
         paymentLink: "noPaymentLink",
-        currencyFilter: "NoFilter",
+        customer: "NoFilter",
         comments: "",
         orientation: "Portrait",
     });
@@ -50,17 +60,39 @@ export default function PrintInvoicesForm() {
     const [errors, setErrors] = useState<Partial<PrintInvoicesFormData>>({});
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [currencies, setCurrencies] = useState<Currency[]>([]);
+    const [invoices, setInvoices] = useState<InvoiceOption[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [customersData, currenciesData] = await Promise.all([
+                const [customersData, currenciesData, invoiceRows] = await Promise.all([
                     getCustomers(),
                     getCurrencies(),
+                    getCustomerTransactionInquiry({
+                        trans_type: SALES_INVOICE_TRANS_TYPE,
+                        limit: 500,
+                    }),
                 ]);
+
                 setCustomers(customersData);
                 setCurrencies(currenciesData);
+
+                const mapped: InvoiceOption[] = (Array.isArray(invoiceRows) ? invoiceRows : [])
+                    .filter(
+                        (row: Record<string, unknown>) =>
+                            Number(row.trans_type) === SALES_INVOICE_TRANS_TYPE
+                    )
+                    .map((row: Record<string, unknown>) => ({
+                        trans_no: Number(row.trans_no),
+                        reference: String(row.reference ?? row.trans_no ?? ""),
+                        customer_name: String(row.customer_name ?? ""),
+                        tran_date: row.tran_date ? String(row.tran_date) : undefined,
+                    }))
+                    // Ascending by transaction number so "From" -> "To" reads as a range.
+                    .sort((a, b) => a.trans_no - b.trans_no);
+
+                setInvoices(mapped);
             } catch (error) {
                 console.error("Failed to fetch data:", error);
             } finally {
@@ -70,25 +102,42 @@ export default function PrintInvoicesForm() {
         fetchData();
     }, []);
 
+    const invoiceLabel = (inv: InvoiceOption) =>
+        inv.customer_name
+            ? `SI ${inv.reference} ${inv.customer_name}`
+            : `SI ${inv.reference}`;
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
 
-    // Simple validation
     const validate = () => {
-        let newErrors: Partial<PrintInvoicesFormData> = {};
+        const newErrors: Partial<PrintInvoicesFormData> = {};
 
-        if (!formData.customer) newErrors.customer = "Customer is required";
+        if (
+            formData.from &&
+            formData.to &&
+            Number(formData.from) > Number(formData.to)
+        ) {
+            newErrors.to = '"To" invoice must not be before "From" invoice';
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const runReportPdf = useReportGenerate({ validate });
-  const handleGenerate = () => {
-    void runReportPdf(formData);
-  };
+    const handleGenerate = () => {
+        void runReportPdf(formData);
+    };
+
+    // "To" list only shows invoices at or after the chosen "From".
+    const toOptions = useMemo(() => {
+        if (!formData.from) return invoices;
+        const fromNo = Number(formData.from);
+        return invoices.filter((inv) => inv.trans_no >= fromNo);
+    }, [invoices, formData.from]);
 
     if (loading) {
         return <Typography>Loading...</Typography>;
@@ -109,11 +158,11 @@ export default function PrintInvoicesForm() {
                     variant="h6"
                     sx={{ mb: 3, textAlign: isMobile ? "center" : "left" }}
                 >
-                    Customer Balances Report
+                    Print Invoices
                 </Typography>
 
                 <Stack spacing={2}>
-
+                    {/* From invoice */}
                     <TextField
                         label="From"
                         name="from"
@@ -123,14 +172,15 @@ export default function PrintInvoicesForm() {
                         value={formData.from}
                         onChange={handleChange}
                     >
-                        <MenuItem value="">No filter</MenuItem>
-                        {customers.map((customer) => (
-                            <MenuItem key={customer.debtor_no} value={customer.debtor_no.toString()}>
-                                {customer.name}
+                        <MenuItem value="">Earliest invoice</MenuItem>
+                        {invoices.map((inv) => (
+                            <MenuItem key={inv.trans_no} value={inv.trans_no.toString()}>
+                                {invoiceLabel(inv)}
                             </MenuItem>
                         ))}
                     </TextField>
 
+                    {/* To invoice */}
                     <TextField
                         label="To"
                         name="to"
@@ -139,11 +189,13 @@ export default function PrintInvoicesForm() {
                         select
                         value={formData.to}
                         onChange={handleChange}
+                        error={!!errors.to}
+                        helperText={errors.to}
                     >
-                        <MenuItem value="">No filter</MenuItem>
-                        {customers.map((customer) => (
-                            <MenuItem key={customer.debtor_no} value={customer.debtor_no.toString()}>
-                                {customer.name}
+                        <MenuItem value="">Latest invoice</MenuItem>
+                        {toOptions.map((inv) => (
+                            <MenuItem key={inv.trans_no} value={inv.trans_no.toString()}>
+                                {invoiceLabel(inv)}
                             </MenuItem>
                         ))}
                     </TextField>
@@ -160,7 +212,10 @@ export default function PrintInvoicesForm() {
                     >
                         <MenuItem value="NoFilter">No currency filter</MenuItem>
                         {currencies.map((currency) => (
-                            <MenuItem key={currency.id} value={currency.currency_abbreviation}>
+                            <MenuItem
+                                key={currency.id}
+                                value={currency.currency_abbreviation}
+                            >
                                 {currency.currency_abbreviation} - {currency.currency_name}
                             </MenuItem>
                         ))}
@@ -191,7 +246,27 @@ export default function PrintInvoicesForm() {
                         onChange={handleChange}
                     >
                         <MenuItem value="noPaymentLink">No Payment Link</MenuItem>
-                        <MenuItem value=""></MenuItem>
+                    </TextField>
+
+                    {/* Customer filter */}
+                    <TextField
+                        label="Customer"
+                        name="customer"
+                        size="small"
+                        fullWidth
+                        select
+                        value={formData.customer}
+                        onChange={handleChange}
+                    >
+                        <MenuItem value="NoFilter">No customer filter</MenuItem>
+                        {customers.map((customer) => (
+                            <MenuItem
+                                key={customer.debtor_no}
+                                value={customer.debtor_no.toString()}
+                            >
+                                {customer.name}
+                            </MenuItem>
+                        ))}
                     </TextField>
 
                     {/* Comments */}
@@ -206,26 +281,6 @@ export default function PrintInvoicesForm() {
                         onChange={handleChange}
                     />
 
-                    {/* Customer dropdown */}
-                    <TextField
-                        label="Customer"
-                        name="customer"
-                        size="small"
-                        fullWidth
-                        select
-                        value={formData.customer}
-                        onChange={handleChange}
-                        error={!!errors.customer}
-                        helperText={errors.customer}
-                    >
-                        <MenuItem value="NoFilter">No customer filter</MenuItem>
-                        {customers.map((customer) => (
-                            <MenuItem key={customer.debtor_no} value={customer.debtor_no.toString()}>
-                                {customer.name}
-                            </MenuItem>
-                        ))}
-                    </TextField>
-
                     {/* Orientation */}
                     <TextField
                         label="Orientation"
@@ -239,7 +294,6 @@ export default function PrintInvoicesForm() {
                         <MenuItem value="Portrait">Portrait</MenuItem>
                         <MenuItem value="Landscape">Landscape</MenuItem>
                     </TextField>
-
                 </Stack>
 
                 {/* Buttons */}

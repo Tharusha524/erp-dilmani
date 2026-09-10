@@ -42,6 +42,7 @@ import WorkOrderButtonSettings from "./views/WorkOrder/WorkOrderButtonSettings";
 import WorkOrderBranchSettings from "./views/WorkOrder/WorkOrderBranchSettings";
 import WorkOrderFabricTypeSettings from "./views/WorkOrder/WorkOrderFabricTypeSettings";
 import WorkOrderDueDateColorSettings from "./views/WorkOrder/WorkOrderDueDateColorSettings";
+import WorkOrderPrintSheet from "./views/WorkOrder/WorkOrderPrintSheet";
 import CompanySetup from "./views/Setup/CompanySetup/CompanySetup";
 import Miscellaneous from "./views/Setup/Miscellaneous/Miscellaneous";
 import FixedAssestsMaintenance from "./views/FixedAssets/Maintenance/FixedAssestsMaintenance";
@@ -597,6 +598,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page']}>
               {withLayout(MainLayout, AddWorkOrder)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/print/:id"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page']}>
+              <WorkOrderPrintSheet />
             </ProtectedRoute>
           }
         />
