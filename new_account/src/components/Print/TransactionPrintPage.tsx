@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Button, CircularProgress, Paper, Stack } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -62,6 +62,34 @@ export default function TransactionPrintPage({
   const navigate = useNavigate();
   const { logoReady } = useCompanyHeader({ forPrint: true });
   useAutoPrint(Boolean(autoPrint && ready && logoReady));
+
+  // The logo loads asynchronously (an authenticated blob: fetch) — clicking
+  // Print before it lands used to open the print dialog with a blank logo.
+  // Wait for it here (with a timeout so a failed logo load can't hang the
+  // button forever), the same guard auto-print already gets via logoReady.
+  const logoReadyRef = useRef(logoReady);
+  useEffect(() => {
+    logoReadyRef.current = logoReady;
+  }, [logoReady]);
+  const [waitingForLogo, setWaitingForLogo] = useState(false);
+
+  const handlePrint = useCallback(() => {
+    if (logoReadyRef.current) {
+      window.print();
+      return;
+    }
+    setWaitingForLogo(true);
+    const deadline = Date.now() + 5000;
+    const check = () => {
+      if (logoReadyRef.current || Date.now() >= deadline) {
+        setWaitingForLogo(false);
+        window.print();
+        return;
+      }
+      setTimeout(check, 100);
+    };
+    check();
+  }, []);
 
   const shareAvailable = canSharePdfFiles();
   const resolvedPdfBaseName = sanitizePdfFilename(pdfFileName ?? pageTitle);
@@ -247,11 +275,13 @@ export default function TransactionPrintPage({
             <Button
               variant="contained"
               color="primary"
-              startIcon={<PrintIcon />}
-              onClick={() => window.print()}
-              disabled={!ready || busy}
+              startIcon={
+                waitingForLogo ? <CircularProgress size={18} color="inherit" /> : <PrintIcon />
+              }
+              onClick={handlePrint}
+              disabled={!ready || busy || waitingForLogo}
             >
-              Print
+              {waitingForLogo ? "Preparing…" : "Print"}
             </Button>
           </Stack>
         </Box>

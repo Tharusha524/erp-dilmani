@@ -2,6 +2,47 @@ import api from "../apiClient";
 
 const API_URL = "/crm-persons";
 
+/**
+ * Bulk debtor_no → phone lookup, for filtering long customer lists by phone
+ * (e.g. the Direct Invoice customer picker) without an N+1 call per
+ * customer. Fetches every contact/person/category once and joins them
+ * client-side — matches the per-customer logic in getCustomerContacts.
+ */
+export const getCustomerPhoneMap = async (): Promise<Record<string, string>> => {
+  try {
+    const [contactsRes, personsRes, categoriesRes] = await Promise.all([
+      api.get("/crm-contacts"),
+      api.get(API_URL),
+      api.get("/crm-categories", { params: { type: "customer" } }),
+    ]);
+
+    const contacts = contactsRes.data || [];
+    const persons = personsRes.data || [];
+    const categories = categoriesRes.data || [];
+
+    const customerCategoryIds = new Set(
+      categories.filter((cat: any) => cat.type === "customer").map((cat: any) => cat.id)
+    );
+    const personById = new Map(persons.map((p: any) => [p.id, p]));
+
+    const map: Record<string, string> = {};
+    contacts
+      .filter((c: any) => customerCategoryIds.has(c.type))
+      .forEach((c: any) => {
+        const person: any = personById.get(c.person_id);
+        const key = String(c.entity_id);
+        if (person?.phone && !map[key]) {
+          map[key] = person.phone;
+        }
+      });
+
+    return map;
+  } catch (error) {
+    console.error("Failed to build customer phone map:", error);
+    return {};
+  }
+};
+
 // ✅ Create a new contact for a customer
 export const createCustomerContact = async (contactData: any) => {
   try {

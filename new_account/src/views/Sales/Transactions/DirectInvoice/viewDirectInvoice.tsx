@@ -25,7 +25,7 @@ import { getTaxTypes } from "../../../../api/Tax/taxServices";
 import { useCustomerCredit } from "../../../../hooks/useCustomerCredit";
 import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSummaryFields";
 import { TransactionPrintPage, TransactionPrintTemplate } from "../../../../components/Print";
-import { formatPrintDate } from "../../../../utils/formatPrintDocument";
+import { formatPrintDate, formatPrintMoney } from "../../../../utils/formatPrintDocument";
 import { STANDARD_ITEM_PRINT_COLUMNS } from "../../../../utils/transactionPrintColumns";
 import { useQuery } from "@tanstack/react-query";
 
@@ -68,7 +68,7 @@ export default function ViewDirectInvoice() {
     queryFn: getShippingCompanies,
   });
 
-  const { data: debtorTrans = [] } = useQuery({
+  const { data: debtorTrans = [], isLoading: debtorTransLoading } = useQuery({
     queryKey: ["debtorTrans"],
     queryFn: getDebtorTrans,
   });
@@ -112,17 +112,17 @@ export default function ViewDirectInvoice() {
     queryFn: getSalesTypes,
   });
 
-  const { data: debtorTransDetails = [] } = useQuery({
+  const { data: debtorTransDetails = [], isLoading: debtorTransDetailsLoading } = useQuery({
     queryKey: ["debtorTransDetails"],
     queryFn: getDebtorTransDetails,
   });
 
-  const { data: stockMasters = [] } = useQuery({
+  const { data: stockMasters = [], isLoading: stockMastersLoading } = useQuery({
     queryKey: ["stockMasters"],
     queryFn: getItems,
   });
 
-  const { data: itemUnits = [] } = useQuery({
+  const { data: itemUnits = [], isLoading: itemUnitsLoading } = useQuery({
     queryKey: ["itemUnits"],
     queryFn: getItemUnits,
   });
@@ -333,7 +333,17 @@ export default function ViewDirectInvoice() {
         quantity: it.quantity ?? "—",
         unit: it.unitAbbr ?? "—",
         price: Number(it.unit_price ?? 0).toFixed(2),
-        discount: it.discount_percent != null ? `${it.discount_percent}%` : "—",
+        // Show it back exactly the way it was entered on the invoice —
+        // a % if typed as a %, a flat amount if typed as an amount.
+        discount: (() => {
+          const pct = Number(it.discount_percent ?? 0);
+          if (!pct) return "—";
+          if (it.discount_mode === "amount") {
+            const amount = (Number(it.quantity ?? 0) * Number(it.unit_price ?? 0) * pct) / 100;
+            return formatPrintMoney(amount);
+          }
+          return `${pct}%`;
+        })(),
         total: it.total ?? "—",
       })),
     [resolvedItemDetails]
@@ -353,7 +363,17 @@ export default function ViewDirectInvoice() {
       breadcrumbs={breadcrumbItems}
       onBack={() => navigate(-1)}
       autoPrint={autoPrint}
-      ready={Boolean(debtorTransEntry || resolvedItemDetails.length > 0)}
+      // "Ready" must wait for every query the printout's items/totals
+      // actually depend on — not just the invoice header — otherwise
+      // Print can fire while line items/prices are still loading and the
+      // printout comes out with everything at zero.
+      ready={
+        Boolean(debtorTransEntry || resolvedItemDetails.length > 0) &&
+        !debtorTransLoading &&
+        !debtorTransDetailsLoading &&
+        !stockMastersLoading &&
+        !itemUnitsLoading
+      }
       printContent={
         <TransactionPrintTemplate
           documentType="Tax Invoice"

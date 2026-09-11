@@ -1,6 +1,7 @@
 import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
+    Autocomplete,
     Box,
     Button,
     Checkbox,
@@ -83,7 +84,7 @@ import { resolveSalesItemLinePrices } from "../../../../utils/resolveSalesItemPr
 import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
-import { getCustomerContacts } from "../../../../api/Customer/CustomerContactApi";
+import { getCustomerContacts, getCustomerPhoneMap } from "../../../../api/Customer/CustomerContactApi";
 
 function sanitizeEmail(value: string | null | undefined): string | null {
     if (!value || typeof value !== "string") return null;
@@ -180,6 +181,13 @@ export default function DirectInvoice() {
 
     // ===== Fetch master data =====
     const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: getCustomers });
+    // Bulk debtor_no → phone lookup so the Customer picker can search by
+    // phone number too (the customer list itself has no phone column).
+    const { data: customerPhoneMap = {} } = useQuery({
+        queryKey: ["customerPhoneMap"],
+        queryFn: getCustomerPhoneMap,
+        staleTime: 5 * 60 * 1000,
+    });
     const selectedCustomer = useMemo(
         () => customers.find((c: any) => String(c.debtor_no) === String(customer)),
         [customers, customer]
@@ -595,9 +603,13 @@ export default function DirectInvoice() {
         setReference(`SI/${formattedNumber}/${month}/${yearShort}`);
     }, [customer, invoiceDate, debtorTrans]);
 
-    // Auto-select first customer on load (match DirectDelivery behaviour)
+    // Auto-select first customer on load (match DirectDelivery behaviour) —
+    // but only until the user actually touches the field, otherwise this
+    // effect fights the Autocomplete's clear (X) button and instantly
+    // re-fills it right back with the first customer.
+    const customerTouchedRef = useRef(false);
     useEffect(() => {
-        if (customers.length > 0 && !customer) {
+        if (customers.length > 0 && !customer && !customerTouchedRef.current) {
             setCustomer(customers[0].debtor_no);
         }
     }, [customers, customer]);
@@ -960,6 +972,7 @@ export default function DirectInvoice() {
                     quantity: Number(row.quantity),
                     unit_price: Number(unitPriceFor(row)),
                     discount_percent: Number(row.discount) || 0,
+                    discount_mode: row.discountMode,
                     description: row.description,
                 })),
             });
@@ -1141,20 +1154,34 @@ export default function DirectInvoice() {
                 <Grid container spacing={2}>
                     <Grid item xs={12} sm={3}>
                         <Stack spacing={2}>
-                            <TextField
-                                select
+                            <Autocomplete
                                 fullWidth
-                                label="Customer"
-                                value={String(customer || "")}
-                                onChange={(e) => setCustomer(e.target.value)}
                                 size="small"
-                            >
-                                {customers.map((c: any) => (
-                                    <MenuItem key={c.debtor_no} value={String(c.debtor_no)}>
-                                        {c.name}
-                                    </MenuItem>
-                                ))}
-                            </TextField>
+                                options={customers}
+                                getOptionLabel={(c: any) => c?.name || ""}
+                                isOptionEqualToValue={(opt: any, val: any) => String(opt.debtor_no) === String(val?.debtor_no)}
+                                value={customers.find((c: any) => String(c.debtor_no) === String(customer)) || null}
+                                onChange={(_e, val: any) => {
+                                    customerTouchedRef.current = true;
+                                    setCustomer(val ? String(val.debtor_no) : "");
+                                }}
+                                // Type-to-search by customer name OR phone number,
+                                // without changing the field itself or its options.
+                                filterOptions={(options, state) => {
+                                    const q = state.inputValue.trim().toLowerCase();
+                                    if (!q) return options;
+                                    return options.filter((c: any) => {
+                                        const name = String(c.name || "").toLowerCase();
+                                        const phone = String(
+                                            c.phone || c.contact_phone || customerPhoneMap[String(c.debtor_no)] || ""
+                                        ).toLowerCase();
+                                        return name.includes(q) || phone.includes(q);
+                                    });
+                                }}
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Customer" placeholder="Search by name or phone" />
+                                )}
+                            />
                             <TextField
                                 select
                                 fullWidth

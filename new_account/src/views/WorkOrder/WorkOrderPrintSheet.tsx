@@ -161,7 +161,7 @@ const DesignImages = ({
  * FACTORY                                                             *
  * ================================================================== */
 
-function FactorySheet({ order }: { order: WorkOrderDetail }) {
+function FactorySheet({ order, orgName }: { order: WorkOrderDetail; orgName: string }) {
   const sizeQty: Record<string, number> = {};
   order.sizes.forEach((s) => {
     sizeQty[`${s.category}-${s.size_label}`] = Number(s.quantity || 0);
@@ -179,7 +179,7 @@ function FactorySheet({ order }: { order: WorkOrderDetail }) {
   return (
     <>
       <div style={{ textAlign: "center" }}>
-        <h1 style={{ margin: 0, fontSize: 26, letterSpacing: 2 }}>ORDER SHEET</h1>
+        <h1 style={{ margin: 0, fontSize: 22, letterSpacing: 1 }}>{orgName.toUpperCase()} ORDER SHEET</h1>
         <div style={{ color: "#555" }}>{order.department || "Factory"} Work Order</div>
       </div>
 
@@ -334,7 +334,7 @@ function FactorySheet({ order }: { order: WorkOrderDetail }) {
  * PRINTING                                                            *
  * ================================================================== */
 
-function PrintingSheet({ order }: { order: WorkOrderDetail }) {
+function PrintingSheet({ order, orgName }: { order: WorkOrderDetail; orgName: string }) {
   const { remark, operator, dataEntry, boysPrice } = parsePrintingRemark(order.remark);
   const sides = order.sub_category || "";
   const has = (name: string) => sides.includes(name);
@@ -349,7 +349,7 @@ function PrintingSheet({ order }: { order: WorkOrderDetail }) {
   return (
     <>
       <div style={{ textAlign: "center" }}>
-        <h1 style={{ margin: 0, fontSize: 24, letterSpacing: 2 }}>SUBLIMATION PRINTING</h1>
+        <h1 style={{ margin: 0, fontSize: 20, letterSpacing: 1 }}>{orgName.toUpperCase()} SUBLIMATION PRINTING</h1>
         <div style={{ fontWeight: 700 }}>JOB SHEET</div>
       </div>
 
@@ -690,11 +690,11 @@ export default function WorkOrderPrintSheet() {
 
       <div ref={sheetRef} style={{ width: 800, maxWidth: "100%", background: "#fff" }}>
         {dept === "Printing" ? (
-          <PrintingSheet order={order} />
+          <PrintingSheet order={order} orgName={orgName} />
         ) : dept === "Embroidery" ? (
           <EmbroiderySheet order={order} orgName={orgName} />
         ) : (
-          <FactorySheet order={order} />
+          <FactorySheet order={order} orgName={orgName} />
         )}
 
         {order.remark && dept === "Embroidery" && (

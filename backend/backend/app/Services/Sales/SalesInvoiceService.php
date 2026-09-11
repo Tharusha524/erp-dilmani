@@ -385,6 +385,31 @@ class SalesInvoiceService
             ]);
 
             $transNo = (int) ($invoiceResult['trans_no'] ?? 0);
+
+            // discount_mode isn't carried through the auto SO → delivery →
+            // invoice chain (sales_order_details/delivery details have no
+            // such column), so patch it onto the finished invoice lines
+            // directly from the original request, keyed by stock_id.
+            if ($transNo > 0) {
+                $discountModeByStock = [];
+                foreach ($payload['lines'] ?? [] as $line) {
+                    $stockId = (string) ($line['stock_id'] ?? '');
+                    if ($stockId === '') {
+                        continue;
+                    }
+                    $discountModeByStock[$stockId] = ($line['discount_mode'] ?? 'percent') === 'amount'
+                        ? 'amount'
+                        : 'percent';
+                }
+                foreach ($discountModeByStock as $stockId => $mode) {
+                    DB::table('debtor_trans_details')
+                        ->where('debtor_trans_type', self::TYPE_INVOICE)
+                        ->where('debtor_trans_no', $transNo)
+                        ->where('stock_id', $stockId)
+                        ->update(['discount_mode' => $mode]);
+                }
+            }
+
             $paymentTransNo = null;
             if ($isCashSale && $documentTotal > 0.001 && $transNo > 0) {
                 $paymentTransNo = $this->createCashSalePayment(

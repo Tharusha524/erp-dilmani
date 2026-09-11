@@ -47,6 +47,7 @@ class PostDirectSalesInvoiceRequest extends FormRequest
             'lines.*.quantity' => 'required|numeric|min:0.0001',
             'lines.*.unit_price' => 'required|numeric|min:0',
             'lines.*.discount_percent' => 'nullable|numeric|min:0|max:100',
+            'lines.*.discount_mode' => 'nullable|string|in:percent,amount',
             'lines.*.description' => 'nullable|string|max:200',
         ];
     }

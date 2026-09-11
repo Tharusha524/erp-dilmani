@@ -22,6 +22,7 @@ export interface DirectSalesInvoiceLine {
   quantity: number;
   unit_price: number;
   discount_percent?: number;
+  discount_mode?: "percent" | "amount";
   description?: string;
 }
 
