@@ -13,6 +13,28 @@ export function sanitizePdfFilename(name: string): string {
   return (cleaned || "document").slice(0, 120);
 }
 
+/**
+ * Draws an already-loaded <img> onto a canvas and returns it as a data: URI —
+ * no network re-fetch, so it works for the company logo (loaded as an
+ * authenticated blob: URL the browser already has pixels for) without
+ * hitting the auth/CORS/blob-scoping issues a fresh fetch() would.
+ */
+function loadedImageToDataUrl(img: HTMLImageElement): string | null {
+  if (!img.complete || img.naturalWidth === 0) return null;
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL("image/png");
+  } catch {
+    // Tainted canvas (cross-origin image without CORS headers) — leave as-is.
+    return null;
+  }
+}
+
 /** Build PDF bytes from a print DOM node (A4, multi-page when needed). */
 export async function generateElementAsPdfBlob(element: HTMLElement): Promise<Blob> {
   const canvas = await html2canvas(element, {
@@ -20,6 +42,21 @@ export async function generateElementAsPdfBlob(element: HTMLElement): Promise<Bl
     useCORS: true,
     backgroundColor: "#ffffff",
     logging: false,
+    // html2canvas re-fetches every <img> itself when snapshotting — that
+    // re-fetch silently fails for blob: URLs (e.g. the company logo, loaded
+    // as an authenticated blob), leaving them blank in the export even
+    // though they render fine on screen. Swap the CLONED <img>s for data:
+    // URIs baked from the ORIGINAL, already-loaded elements first.
+    onclone: (clonedDoc) => {
+      const originalImages = element.querySelectorAll("img");
+      const clonedImages = clonedDoc.querySelectorAll("img");
+      clonedImages.forEach((clonedImg, i) => {
+        const original = originalImages[i];
+        if (!original) return;
+        const dataUrl = loadedImageToDataUrl(original);
+        if (dataUrl) clonedImg.src = dataUrl;
+      });
+    },
   });
 
   const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });

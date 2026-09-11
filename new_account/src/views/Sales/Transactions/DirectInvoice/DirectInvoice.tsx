@@ -83,6 +83,7 @@ import { resolveSalesItemLinePrices } from "../../../../utils/resolveSalesItemPr
 import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
+import { getCustomerContacts } from "../../../../api/Customer/CustomerContactApi";
 
 function sanitizeEmail(value: string | null | undefined): string | null {
     if (!value || typeof value !== "string") return null;
@@ -456,6 +457,7 @@ export default function DirectInvoice() {
             priceAfterTax: 0,
             priceBeforeTax: 0,
             discount: 0,
+            discountMode: "percent" as "percent" | "amount",
             total: 0,
             selectedItemId: null as string | number | null,
             materialCost: 0,
@@ -475,12 +477,27 @@ export default function DirectInvoice() {
                 priceAfterTax: 0,
                 priceBeforeTax: 0,
                 discount: 0,
+                discountMode: "percent" as "percent" | "amount",
                 total: 0,
                 selectedItemId: null,
                 materialCost: 0,
                 availableQuantity: 0,
             },
         ]);
+    };
+
+    // Discount can be entered either as a % or as a flat amount — the row
+    // always stores the effective PERCENT (what save/print/total already
+    // use), so switching modes or typing an amount just converts it.
+    const setDiscountMode = (id: number, mode: "percent" | "amount") => {
+        setRows((prev) => prev.map((r) => (r.id === id ? { ...r, discountMode: mode } : r)));
+    };
+
+    const handleDiscountAmountChange = (row: (typeof rows)[number], amount: number) => {
+        const unitPrice = priceColumnLabel === "Price before Tax" ? row.priceBeforeTax : row.priceAfterTax;
+        const base = row.quantity * unitPrice;
+        const pct = base > 0 ? Math.min(100, Math.max(0, (amount / base) * 100)) : 0;
+        handleChange(row.id, "discount", pct);
     };
 
     const handleRemoveRow = (id: number) => {
@@ -954,10 +971,22 @@ export default function DirectInvoice() {
             const invoiceReferenceForLink = result.reference ?? reference;
             if (workOrderChoice === "create") {
                 try {
+                    // Phone lives on the customer's Contact record, not the
+                    // customer or branch record — look it up for the Contact
+                    // No auto-fill.
+                    let contactPhone = customerPhone || "";
+                    try {
+                        const contacts = await getCustomerContacts(customer);
+                        contactPhone = contacts?.[0]?.phone || contactPhone;
+                    } catch (contactErr) {
+                        console.error("Failed to look up customer contact phone", contactErr);
+                    }
+
                     const woFormData = new FormData();
                     woFormData.append("category", "sublimation_tshirt");
                     woFormData.append("department", "Factory");
                     woFormData.append("customer", customerName || "");
+                    woFormData.append("contact_no", contactPhone);
                     woFormData.append("order_date", invoiceDate);
                     woFormData.append("delivery_date", validUntil || invoiceDate);
                     woFormData.append("invoice_reference", invoiceReferenceForLink || "");
@@ -1274,7 +1303,7 @@ export default function DirectInvoice() {
                             <TableCell>Quantity</TableCell>
                             <TableCell>Unit</TableCell>
                             <TableCell>{priceColumnLabel}</TableCell>
-                            <TableCell>Discount (%)</TableCell>
+                            <TableCell>Discount</TableCell>
                             <TableCell>Total</TableCell>
                             <TableCell>Action</TableCell>
                         </TableRow>
@@ -1341,11 +1370,41 @@ export default function DirectInvoice() {
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <FormattedNumberField
-                                        size="small"
-                                        value={row.discount}
-                                        InputProps={{ readOnly: true }}
-                                    />
+                                    <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
+                                        {row.discountMode === "amount" ? (
+                                            <CurrencyAmountInput
+                                                value={Math.round(
+                                                    (row.quantity *
+                                                        (priceColumnLabel === "Price before Tax" ? row.priceBeforeTax : row.priceAfterTax) *
+                                                        row.discount) /
+                                                        100 *
+                                                        100
+                                                ) / 100}
+                                                currencyCode={customerCurrency}
+                                                onChange={(v) => handleDiscountAmountChange(row, Number(v) || 0)}
+                                            />
+                                        ) : (
+                                            <FormattedNumberField
+                                                size="small"
+                                                value={row.discount}
+                                                onChange={(e) => {
+                                                    const inputValue = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+                                                    handleChange(row.id, "discount", inputValue);
+                                                }}
+                                                inputProps={{ min: 0, max: 100 }}
+                                            />
+                                        )}
+                                        <TextField
+                                            select
+                                            size="small"
+                                            value={row.discountMode}
+                                            onChange={(e) => setDiscountMode(row.id, e.target.value as "percent" | "amount")}
+                                            sx={{ minWidth: 56 }}
+                                        >
+                                            <MenuItem value="percent">%</MenuItem>
+                                            <MenuItem value="amount">Amt</MenuItem>
+                                        </TextField>
+                                    </Box>
                                 </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
                                 <TableCell>

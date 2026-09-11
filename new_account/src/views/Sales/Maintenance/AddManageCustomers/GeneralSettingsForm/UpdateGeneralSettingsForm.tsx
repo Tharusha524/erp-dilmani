@@ -16,6 +16,13 @@ import {
 } from "@mui/material";
 import theme from "../../../../../theme";
 import { getCustomer, getCustomers, updateCustomer, deleteCustomer } from "../../../../../api/Customer/AddCustomerApi";
+import {
+    getCustomerContacts,
+    createCustomerContact,
+    updateCustomerContact,
+} from "../../../../../api/Customer/CustomerContactApi";
+import { createCrmContact } from "../../../../../api/CrmContact/CrmContact";
+import { getContactCategory } from "../../../../../api/ContactCategory/ContactCategoryApi";
 import { useNavigate, useParams } from "react-router";
 import { getCurrencies } from "../../../../../api/Currency/currencyApi";
 import { getSalesTypes } from "../../../../../api/SalesMaintenance/salesService";
@@ -68,6 +75,10 @@ export default function UpdateGeneralSettingsForm({ customerId, onCustomerDelete
     const { id } = useParams(); // get id from route if not passed as prop
     const customerIdToUse = customerId || id;
     const deletedRef = useRef(false);
+    // Phone/secondary phone actually live on the customer's Contact record
+    // (crm_contacts + crm_persons), not on debtors_master — keep the
+    // matching contact's id so an edit here updates that same record.
+    const contactIdRef = useRef<string | number | null>(null);
 
     const [formData, setFormData] = useState({
         customerName: "",
@@ -213,6 +224,24 @@ export default function UpdateGeneralSettingsForm({ customerId, onCustomerDelete
                             taxGroup: customerRes.tax_group || "",
                             status: customerRes.inactive ? "Inactive" : "Active",
                         });
+
+                        // Phone/secondary phone live on the customer's Contact
+                        // record — load the real saved value from there.
+                        try {
+                            const contacts = await getCustomerContacts(customerIdToUse);
+                            if (cancelled || deletedRef.current) return;
+                            const primaryContact = contacts?.[0] ?? null;
+                            contactIdRef.current = primaryContact?.id ?? null;
+                            if (primaryContact) {
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    phone: primaryContact.phone || prev.phone,
+                                    secondaryPhone: primaryContact.phone2 || prev.secondaryPhone,
+                                }));
+                            }
+                        } catch (contactError) {
+                            console.error("Failed to load customer contact:", contactError);
+                        }
                     }
                 }
             } catch (error) {
@@ -256,10 +285,10 @@ export default function UpdateGeneralSettingsForm({ customerId, onCustomerDelete
         if (!formData.currency) newErrors.currency = "Currency is required";
         if (!formData.salesType) newErrors.salesType = "Sales Type is required";
 
-        // Contact (optional)
-        // if (!formData.phone.trim()) newErrors.phone = "Phone is required";
-        // else if (!/^\d{10,15}$/.test(formData.phone))
-        //     newErrors.phone = "Phone must be 10–15 digits";
+        // Contact
+        if (!formData.phone.trim()) newErrors.phone = "Phone is required";
+        else if (!/^\d{10,15}$/.test(formData.phone))
+            newErrors.phone = "Phone must be 10–15 digits";
 
         // if (formData.secondaryPhone && !/^\d{10,15}$/.test(formData.secondaryPhone))
         //     newErrors.secondaryPhone = "Secondary Phone must be 10–15 digits";
@@ -346,6 +375,46 @@ export default function UpdateGeneralSettingsForm({ customerId, onCustomerDelete
             };
 
             await updateCustomer(customerIdToUse, payload);
+
+            // Phone/secondary phone live on the Contact record, not the
+            // customer — update the existing one, or create it if this
+            // customer never had one.
+            try {
+                if (contactIdRef.current) {
+                    await updateCustomerContact(contactIdRef.current, {
+                        name: formData.customerName,
+                        phone: formData.phone,
+                        phone2: formData.secondaryPhone,
+                        email: formData.email,
+                    });
+                } else if (formData.phone.trim()) {
+                    // No contact exists for this customer yet — create one,
+                    // then link it to this customer via crm_contacts (the
+                    // step getCustomerContacts actually reads from). Missing
+                    // this link is what left phone unfindable before.
+                    const createdContact = await createCustomerContact({
+                        ref: formData.customerShortName,
+                        name: formData.customerName,
+                        address: formData.address,
+                        phone: formData.phone,
+                        phone2: formData.secondaryPhone,
+                        email: formData.email,
+                        notes: formData.generalNotes,
+                        inactive: 0,
+                    });
+                    const typeId = 5; // "Customer Contact" category
+                    const category = await getContactCategory(typeId);
+                    await createCrmContact({
+                        person_id: createdContact.id,
+                        type: typeId,
+                        action: category?.subtype || "",
+                        entity_id: String(customerIdToUse),
+                    });
+                }
+            } catch (contactError) {
+                console.error("Failed to save customer contact:", contactError);
+            }
+
             setOpen(true);
             navigate("/sales/maintenance/add-and-manage-customers");
         } catch (error) {
@@ -480,6 +549,16 @@ export default function UpdateGeneralSettingsForm({ customerId, onCustomerDelete
                                 </Select>
                                 <FormHelperText>{errors.salesType || " "}</FormHelperText>
                             </FormControl>
+                            <TextField
+                                label="Phone"
+                                required
+                                value={formData.phone}
+                                onChange={(e) => handleChange("phone", e.target.value)}
+                                fullWidth
+                                size="small"
+                                error={!!errors.phone}
+                                helperText={errors.phone || " "}
+                            />
                             <FormControl fullWidth size="small" error={!!errors.status}>
                                 <InputLabel>Customer Status</InputLabel>
                                 <Select

@@ -7,6 +7,7 @@ export interface WorkOrderLookupItem {
 
 const BRANCH_URL = "/wo-sheet-branches";
 const FABRIC_TYPE_URL = "/wo-sheet-fabric-types";
+const FACTORY_CATEGORY_URL = "/wo-sheet-factory-categories";
 
 export const getWoSheetBranches = async (): Promise<WorkOrderLookupItem[]> => {
   const response = await api.get(BRANCH_URL);
@@ -45,5 +46,25 @@ export const updateWoSheetFabricType = async (id: number, name: string) => {
 
 export const deleteWoSheetFabricType = async (id: number) => {
   const response = await api.delete(`${FABRIC_TYPE_URL}/${id}`);
+  return response.data;
+};
+
+export const getWoSheetFactoryCategories = async (): Promise<WorkOrderLookupItem[]> => {
+  const response = await api.get(FACTORY_CATEGORY_URL);
+  return response.data;
+};
+
+export const createWoSheetFactoryCategory = async (name: string) => {
+  const response = await api.post(FACTORY_CATEGORY_URL, { name });
+  return response.data;
+};
+
+export const updateWoSheetFactoryCategory = async (id: number, name: string) => {
+  const response = await api.put(`${FACTORY_CATEGORY_URL}/${id}`, { name });
+  return response.data;
+};
+
+export const deleteWoSheetFactoryCategory = async (id: number) => {
+  const response = await api.delete(`${FACTORY_CATEGORY_URL}/${id}`);
   return response.data;
 };

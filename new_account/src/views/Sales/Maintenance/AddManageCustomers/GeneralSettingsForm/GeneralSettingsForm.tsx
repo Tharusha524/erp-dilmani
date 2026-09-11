@@ -171,9 +171,12 @@ export default function GeneralSettingsForm({ customerId, onCustomerAdded }: Gen
     if (!formData.currency) newErrors.currency = "Currency is required";
     if (!formData.salesType) newErrors.salesType = "Sales Type is required";
 
-    // Contact (optional)
-    if (formData.phone.trim() && !/^\d{10,15}$/.test(formData.phone))
+    // Contact
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone is required";
+    } else if (!/^\d{10,15}$/.test(formData.phone)) {
       newErrors.phone = "Phone must be 10–15 digits";
+    }
 
     if (formData.secondaryPhone.trim() && !/^\d{10,15}$/.test(formData.secondaryPhone))
       newErrors.secondaryPhone = "Secondary Phone must be 10–15 digits";
@@ -450,6 +453,7 @@ export default function GeneralSettingsForm({ customerId, onCustomerAdded }: Gen
               <Divider />
               <TextField
                 label="Phone"
+                required
                 value={formData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
                 fullWidth

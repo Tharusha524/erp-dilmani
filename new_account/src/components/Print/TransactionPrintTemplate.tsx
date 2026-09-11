@@ -126,7 +126,7 @@ export default function TransactionPrintTemplate({
 
         <Box
           className="transaction-print-doc-details"
-          sx={{ flex: 1, maxWidth: { md: 210 }, minWidth: { md: 160 } }}
+          sx={{ flex: 1, maxWidth: { md: 290 }, minWidth: { md: 210 } }}
         >
           <Typography
             variant="caption"
@@ -134,14 +134,14 @@ export default function TransactionPrintTemplate({
               color: "#024271",
               fontWeight: 700,
               letterSpacing: "0.06em",
-              fontSize: "0.58rem",
+              fontSize: "0.85rem",
               display: "block",
-              mb: 0.15,
+              mb: 0.3,
             }}
           >
             Document Details
           </Typography>
-          <Stack spacing={0.1} sx={{ mt: 0 }}>
+          <Stack spacing={0.15} sx={{ mt: 0 }}>
             {documentDate && (
               <MetaRow compact label="Date" value={formatPrintDate(documentDate)} />
             )}
@@ -301,7 +301,7 @@ function MetaRow({
   value: React.ReactNode;
   compact?: boolean;
 }) {
-  const fontSize = compact ? "0.58rem" : "0.8125rem";
+  const fontSize = compact ? "0.85rem" : "0.8125rem";
 
   return (
     <Stack
@@ -309,7 +309,7 @@ function MetaRow({
       justifyContent="space-between"
       spacing={compact ? 0.75 : 2}
       className={compact ? "transaction-print-meta-row" : undefined}
-      sx={{ lineHeight: compact ? 1.15 : 1.43, py: compact ? 0.05 : 0 }}
+      sx={{ lineHeight: compact ? 1.35 : 1.43, py: compact ? 0.15 : 0 }}
     >
       <Typography
         component="span"

@@ -4,6 +4,7 @@ import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import TouchAppIcon from "@mui/icons-material/TouchApp";
 import StoreIcon from "@mui/icons-material/Store";
 import CheckroomIcon from "@mui/icons-material/Checkroom";
+import CategoryIcon from "@mui/icons-material/Category";
 import PaletteIcon from "@mui/icons-material/Palette";
 import { useNavigate } from "react-router";
 import { FormPageLayout } from "../../components/Layout/FormPageLayout";
@@ -33,6 +34,12 @@ const CARDS = [
     description: "Manage the Kind of Fabric options on the sheet.",
     icon: <CheckroomIcon />,
     path: "/workorder/settings/fabric-types",
+  },
+  {
+    text: "ADD FACTORY CATEGORY",
+    description: "Manage the Category options on the Factory order sheet.",
+    icon: <CategoryIcon />,
+    path: "/workorder/settings/factory-categories",
   },
   {
     text: "CHANGE COLOR",

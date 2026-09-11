@@ -41,6 +41,7 @@ import WorkOrderStatusSettings from "./views/WorkOrder/WorkOrderStatusSettings";
 import WorkOrderButtonSettings from "./views/WorkOrder/WorkOrderButtonSettings";
 import WorkOrderBranchSettings from "./views/WorkOrder/WorkOrderBranchSettings";
 import WorkOrderFabricTypeSettings from "./views/WorkOrder/WorkOrderFabricTypeSettings";
+import WorkOrderFactoryCategorySettings from "./views/WorkOrder/WorkOrderFactoryCategorySettings";
 import WorkOrderDueDateColorSettings from "./views/WorkOrder/WorkOrderDueDateColorSettings";
 import WorkOrderPrintSheet from "./views/WorkOrder/WorkOrderPrintSheet";
 import CompanySetup from "./views/Setup/CompanySetup/CompanySetup";
@@ -654,6 +655,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['Work order settings page']}>
               {withLayout(MainLayout, WorkOrderFabricTypeSettings)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workorder/settings/factory-categories"
+          element={
+            <ProtectedRoute required={PERMISSION_ID_MAP['Work order settings page']}>
+              {withLayout(MainLayout, WorkOrderFactoryCategorySettings)}
             </ProtectedRoute>
           }
         />

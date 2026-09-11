@@ -570,4 +570,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('wo-sheet-fabric-types', [\App\Http\Controllers\WoSheetFabricTypeController::class, 'store']);
     Route::put('wo-sheet-fabric-types/{id}', [\App\Http\Controllers\WoSheetFabricTypeController::class, 'update']);
     Route::delete('wo-sheet-fabric-types/{id}', [\App\Http\Controllers\WoSheetFabricTypeController::class, 'destroy']);
+
+    Route::get('wo-sheet-factory-categories', [\App\Http\Controllers\WoSheetFactoryCategoryController::class, 'index']);
+    Route::post('wo-sheet-factory-categories', [\App\Http\Controllers\WoSheetFactoryCategoryController::class, 'store']);
+    Route::put('wo-sheet-factory-categories/{id}', [\App\Http\Controllers\WoSheetFactoryCategoryController::class, 'update']);
+    Route::delete('wo-sheet-factory-categories/{id}', [\App\Http\Controllers\WoSheetFactoryCategoryController::class, 'destroy']);
 });

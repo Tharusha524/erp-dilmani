@@ -16,7 +16,9 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
+import CloseIcon from "@mui/icons-material/Close";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import { FormPageLayout } from "../../components/Layout/FormPageLayout";
@@ -47,6 +49,7 @@ export default function WoSheetLookupSettings({
 
   const [newName, setNewName] = useState("");
   const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: [queryKey] });
 
@@ -62,12 +65,23 @@ export default function WoSheetLookupSettings({
 
   const { mutate: save } = useMutation({
     mutationFn: ({ id, name }: { id: number; name: string }) => updateItem(id, name),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       invalidate();
+      setEditingId((current) => (current === variables.id ? null : current));
       enqueueSnackbar(`${title} updated`, { variant: "success" });
     },
     onError: (error) => enqueueSnackbar(getFriendlyApiErrorMessage(error), { variant: "error" }),
   });
+
+  const startEdit = (item: WorkOrderLookupItem) => {
+    setDrafts((prev) => ({ ...prev, [item.id]: item.name }));
+    setEditingId(item.id);
+  };
+
+  const cancelEdit = (item: WorkOrderLookupItem) => {
+    setDrafts((prev) => ({ ...prev, [item.id]: item.name }));
+    setEditingId(null);
+  };
 
   const { mutate: remove } = useMutation({
     mutationFn: (id: number) => deleteItem(id),
@@ -128,6 +142,7 @@ export default function WoSheetLookupSettings({
               ) : (
                 items.map((item) => {
                   const draft = draftFor(item);
+                  const isEditing = editingId === item.id;
                   const isDirty = draft !== item.name;
                   return (
                     <TableRow key={item.id}>
@@ -136,19 +151,31 @@ export default function WoSheetLookupSettings({
                           size="small"
                           fullWidth
                           value={draft}
+                          disabled={!isEditing}
                           onChange={(e) => setDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
                         />
                       </TableCell>
                       <TableCell align="center">
                         <Stack direction="row" spacing={0.5} justifyContent="center">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            disabled={!isDirty || !draft.trim()}
-                            onClick={() => save({ id: item.id, name: draft.trim() })}
-                          >
-                            <SaveIcon fontSize="small" />
-                          </IconButton>
+                          {isEditing ? (
+                            <>
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                disabled={!isDirty || !draft.trim()}
+                                onClick={() => save({ id: item.id, name: draft.trim() })}
+                              >
+                                <SaveIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton size="small" onClick={() => cancelEdit(item)}>
+                                <CloseIcon fontSize="small" />
+                              </IconButton>
+                            </>
+                          ) : (
+                            <IconButton size="small" color="primary" onClick={() => startEdit(item)}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          )}
                           <IconButton size="small" color="error" onClick={() => remove(item.id)}>
                             <DeleteIcon fontSize="small" />
                           </IconButton>

@@ -24,14 +24,9 @@ import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import { useNavigate, useSearchParams } from "react-router";
 import { enqueueSnackbar } from "notistack";
 import { createWorkOrder, getWorkOrder, updateWorkOrder } from "../../api/WorkOrder/workOrderApi";
-import { getWoSheetBranches, getWoSheetFabricTypes } from "../../api/WorkOrder/workOrderLookupsApi";
+import { getWoSheetBranches, getWoSheetFabricTypes, getWoSheetFactoryCategories } from "../../api/WorkOrder/workOrderLookupsApi";
 import { cleanWoNumberInput, formatWoNumberInputDisplay, formatWoQuantity } from "../../utils/workOrderNumberFormat";
 import { getApiBaseUrl } from "../../config/backendConfig";
-
-const CATEGORY_OPTIONS = [
-  { value: "sublimation_tshirt", label: "Sublimation T-Shirt" },
-  { value: "polo_tshirt", label: "Polo T-Shirt" },
-];
 
 const SIZE_GROUPS: { title: string; category: string; sizes: string[] }[] = [
   { title: "GENTS SIZE", category: "GENTS", sizes: ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] },
@@ -78,6 +73,10 @@ const AddWorkOrder = () => {
   const { data: fabricTypes = [] } = useQuery({
     queryKey: ["wo-sheet-fabric-types"],
     queryFn: getWoSheetFabricTypes,
+  });
+  const { data: factoryCategories = [] } = useQuery({
+    queryKey: ["wo-sheet-factory-categories"],
+    queryFn: getWoSheetFactoryCategories,
   });
 
   const [frontImageFile, setFrontImageFile] = useState<File | null>(null);
@@ -320,9 +319,9 @@ const AddWorkOrder = () => {
                 onChange={(e) => setCategory(e.target.value)}
                 required
               >
-                {CATEGORY_OPTIONS.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>
-                    {opt.label}
+                {factoryCategories.map((opt) => (
+                  <MenuItem key={opt.id} value={opt.name}>
+                    {opt.name}
                   </MenuItem>
                 ))}
               </TextField>
@@ -391,7 +390,7 @@ const AddWorkOrder = () => {
               <TextField
                 fullWidth
                 select
-                label="Branch"
+                label="Received Branch"
                 size="small"
                 margin="normal"
                 value={branch}

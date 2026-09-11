@@ -7,14 +7,21 @@ type CompanyDocumentHeaderProps = {
 };
 
 function compactAddressLines(address: string, domicile?: string): string {
+  // Split on both stored line-breaks AND commas within a single line
+  // (e.g. "Pinnawala, Rambukkana" is one stored line but two parts) so
+  // every part lands on its own line.
   const parts = address
-    .split(/\r?\n/)
+    .split(/\r?\n|,/)
     .map((l) => l.trim())
     .filter(Boolean);
   if (domicile && !parts.some((p) => p.toLowerCase() === domicile.toLowerCase())) {
     parts.push(domicile.trim());
   }
-  return parts.join(", ");
+  // Trailing comma on every line except the last, which gets a period —
+  // e.g. "Pinnawala," / "Rambukkana," / "Sri Lanka."
+  return parts
+    .map((p, i) => (i === parts.length - 1 ? `${p}.` : `${p},`))
+    .join("\n");
 }
 
 /** Company branding for on-screen print / document views. */
@@ -56,8 +63,8 @@ export default function CompanyDocumentHeader({ compact = false }: CompanyDocume
             src={logoUrl}
             alt=""
             sx={{
-              maxHeight: 36,
-              maxWidth: 88,
+              maxHeight: 46,
+              maxWidth: 110,
               width: "auto",
               height: "auto",
               objectFit: "contain",
@@ -66,13 +73,13 @@ export default function CompanyDocumentHeader({ compact = false }: CompanyDocume
             }}
           />
         )}
-        <Stack spacing={0} sx={{ minWidth: 0, lineHeight: 1.2 }}>
+        <Stack spacing={0} sx={{ minWidth: 0, lineHeight: 1.25 }}>
           <Typography
             component="div"
             sx={{
               fontWeight: 700,
-              fontSize: "0.7rem",
-              lineHeight: 1.2,
+              fontSize: "0.9rem",
+              lineHeight: 1.25,
               color: "#1a1a2e",
             }}
           >
@@ -81,7 +88,8 @@ export default function CompanyDocumentHeader({ compact = false }: CompanyDocume
           {addressLine && (
             <Typography
               component="div"
-              sx={{ fontSize: "0.58rem", lineHeight: 1.25, color: "#444", mt: 0.2 }}
+              whiteSpace="pre-line"
+              sx={{ fontSize: "0.72rem", lineHeight: 1.3, color: "#444", mt: 0.25 }}
             >
               {addressLine}
             </Typography>
@@ -89,7 +97,7 @@ export default function CompanyDocumentHeader({ compact = false }: CompanyDocume
           {contactLine && (
             <Typography
               component="div"
-              sx={{ fontSize: "0.58rem", lineHeight: 1.25, color: "#444", mt: 0.15 }}
+              sx={{ fontSize: "0.72rem", lineHeight: 1.3, color: "#444", mt: 0.2 }}
             >
               {contactLine}
             </Typography>
@@ -97,7 +105,7 @@ export default function CompanyDocumentHeader({ compact = false }: CompanyDocume
           {regLine && (
             <Typography
               component="div"
-              sx={{ fontSize: "0.58rem", lineHeight: 1.25, color: "#666", mt: 0.1 }}
+              sx={{ fontSize: "0.72rem", lineHeight: 1.3, color: "#666", mt: 0.15 }}
             >
               {regLine}
             </Typography>

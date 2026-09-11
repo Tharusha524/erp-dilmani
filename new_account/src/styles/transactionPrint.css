@@ -50,45 +50,45 @@
   }
 
   .company-document-header--compact img {
-    max-height: 34px !important;
-    max-width: 86px !important;
+    max-height: 44px !important;
+    max-width: 108px !important;
     display: block !important;
     visibility: visible !important;
   }
 
   .company-document-header--compact {
-    font-size: 7.5pt !important;
-    line-height: 1.2 !important;
+    font-size: 9pt !important;
+    line-height: 1.25 !important;
   }
 
   .company-document-header--compact .MuiTypography-root {
-    font-size: 7.5pt !important;
-    line-height: 1.2 !important;
+    font-size: 9pt !important;
+    line-height: 1.25 !important;
   }
 
   .company-document-header--compact .MuiTypography-root:first-of-type {
-    font-size: 8pt !important;
+    font-size: 11pt !important;
     font-weight: 700 !important;
   }
 
   .transaction-print-doc-details {
-    max-width: 52mm !important;
+    max-width: 72mm !important;
   }
 
   .transaction-print-doc-details > .MuiTypography-root {
-    font-size: 6.5pt !important;
-    margin-bottom: 1px !important;
+    font-size: 10pt !important;
+    margin-bottom: 2px !important;
   }
 
   .transaction-print-meta-row {
-    font-size: 6.5pt !important;
-    line-height: 1.12 !important;
+    font-size: 10pt !important;
+    line-height: 1.35 !important;
   }
 
   .transaction-print-meta-row .MuiTypography-root,
   .transaction-print-meta-row span {
-    font-size: 6.5pt !important;
-    line-height: 1.12 !important;
+    font-size: 10pt !important;
+    line-height: 1.35 !important;
   }
 }
 
@@ -99,17 +99,17 @@
   }
 
   .company-document-header--compact img {
-    max-height: 36px;
-    max-width: 88px;
+    max-height: 46px;
+    max-width: 110px;
     display: block;
   }
 
   .transaction-print-doc-details {
-    max-width: 210px;
+    max-width: 290px;
   }
 
   .transaction-print-meta-row {
-    font-size: 0.58rem;
-    line-height: 1.15;
+    font-size: 0.85rem;
+    line-height: 1.35;
   }
 }
