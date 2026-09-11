@@ -1374,6 +1374,7 @@ class ReportPdfBuilder
                 't.ov_gst',
                 't.ov_freight',
                 't.ov_discount',
+                't.alloc',
                 'd.debtor_no',
                 'd.name as customer_name',
                 'd.address as customer_address',
@@ -1452,6 +1453,12 @@ class ReportPdfBuilder
                 ];
             })->values()->all();
 
+            $total = (float) $h->ov_amount;
+            $advance = (float) ($h->alloc ?? 0);
+            // Only surface Advance/Balance when it's a genuine partial payment —
+            // fully paid or untouched invoices don't need the extra lines.
+            $isPartialPayment = $advance > 0.001 && $advance < $total - 0.001;
+
             return [
                 'invoice_no' => $h->reference,
                 'date' => $h->tran_date,
@@ -1470,7 +1477,9 @@ class ReportPdfBuilder
                 'freight' => (float) $h->ov_freight,
                 'tax' => (float) $h->ov_gst,
                 'discount' => (float) $h->ov_discount,
-                'total' => (float) $h->ov_amount,
+                'total' => $total,
+                'advance_received' => $isPartialPayment ? $advance : null,
+                'balance_due' => $isPartialPayment ? round($total - $advance, 2) : null,
             ];
         })->values()->all();
 

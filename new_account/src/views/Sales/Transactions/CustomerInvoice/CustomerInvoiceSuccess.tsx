@@ -9,7 +9,12 @@ import Breadcrumb from "../../../../components/BreadCrumb";
 export default function CustomerInvoiceSuccess() {
     const navigate = useNavigate();
     const { state } = useLocation();
-    const { location: loc, reference, date } = state || {};
+    const { location: loc, reference, date, transNo } = state || {};
+    // The invoice's own id — always resolves to the correct invoice, unlike
+    // matching by reference (which isn't guaranteed unique).
+    const viewPath = transNo
+        ? `/sales/transactions/direct-invoice/view-direct-invoice/${transNo}`
+        : "/sales/transactions/direct-invoice/view-direct-invoice";
 
     const breadcrumbItems = [
         { title: "Home", href: "/dashboard" },
@@ -52,7 +57,7 @@ export default function CustomerInvoiceSuccess() {
                     <Button
                         variant="outlined"
                         sx={{ width: '300px' }}
-                        onClick={() => navigate("/sales/transactions/direct-invoice/view-direct-invoice", { state })}
+                        onClick={() => navigate(viewPath, { state })}
                     >
                         View This Invoice
                     </Button>
@@ -61,7 +66,7 @@ export default function CustomerInvoiceSuccess() {
                         variant="outlined"
                         sx={{ width: '300px' }}
                         onClick={() =>
-                            navigate("/sales/transactions/direct-invoice/view-direct-invoice", {
+                            navigate(viewPath, {
                                 state: { ...state, autoPrint: true },
                             })
                         }

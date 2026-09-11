@@ -302,6 +302,16 @@
                         <td colspan="6" class="inv-totals-label">TOTAL INVOICE</td>
                         <td class="inv-totals-value">{{ number_format($inv['total'], 2) }}</td>
                     </tr>
+                    @if(!is_null($inv['advance_received'] ?? null))
+                        <tr class="inv-totals-row">
+                            <td colspan="6" class="inv-totals-label">Advance Received</td>
+                            <td class="inv-totals-value">{{ number_format($inv['advance_received'], 2) }}</td>
+                        </tr>
+                        <tr class="inv-totals-row inv-grand">
+                            <td colspan="6" class="inv-totals-label">Balance Due</td>
+                            <td class="inv-totals-value">{{ number_format($inv['balance_due'], 2) }}</td>
+                        </tr>
+                    @endif
                 </tbody>
             </table>
 

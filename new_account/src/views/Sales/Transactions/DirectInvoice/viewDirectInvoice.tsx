@@ -10,7 +10,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
 import { getShippingCompanies } from "../../../../api/ShippingCompany/ShippingCompanyApi";
 import { getDebtorTrans } from "../../../../api/DebtorTrans/DebtorTransApi";
@@ -32,6 +32,10 @@ import { useQuery } from "@tanstack/react-query";
 export default function ViewDirectInvoice() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  // The invoice's own trans_no in the URL is the source of truth — reference
+  // numbers aren't guaranteed unique (several invoices can share one), so
+  // matching by reference alone can show the wrong invoice.
+  const { transNo: transNoParam } = useParams<{ transNo?: string }>();
 
   const {
     chargeTo,
@@ -69,13 +73,25 @@ export default function ViewDirectInvoice() {
     queryFn: getDebtorTrans,
   });
 
-  // === Resolve Names ===
+  // === Resolve invoice row ===
+  // Prefer the trans_no from the URL — it's unique. Reference is only a
+  // fallback for old links that don't carry an id yet, and can match the
+  // wrong invoice if several invoices happen to share the same reference.
   const debtorTransEntry = useMemo(() => {
+    if (transNoParam) {
+      return (debtorTrans || []).find(
+        (dt: any) => dt.trans_type === 10 && String(dt.trans_no) === String(transNoParam)
+      );
+    }
     if (!reference) return null;
     return (debtorTrans || []).find(
       (dt: any) => dt.trans_type === 10 && String(dt.reference) === String(reference)
     );
-  }, [debtorTrans, reference]);
+  }, [debtorTrans, reference, transNoParam]);
+
+  // Display reference: prefer the loaded invoice row's own reference (always
+  // correct) over whatever was passed through navigation state.
+  const resolvedReference = debtorTransEntry?.reference ?? reference;
 
   const debtorNo = useMemo(() => debtorTransEntry ? debtorTransEntry.debtor_no : chargeTo || "-", [debtorTransEntry, chargeTo]);
   const chargeBranchValue = useMemo(() => debtorTransEntry ? debtorTransEntry.branch_code : chargeBranch || "-", [debtorTransEntry, chargeBranch]);
@@ -333,7 +349,7 @@ export default function ViewDirectInvoice() {
 
   return (
     <TransactionPrintPage
-      pageTitle={`Tax Invoice - ${reference || "—"}`}
+      pageTitle={`Tax Invoice - ${resolvedReference || "—"}`}
       breadcrumbs={breadcrumbItems}
       onBack={() => navigate(-1)}
       autoPrint={autoPrint}
@@ -342,7 +358,7 @@ export default function ViewDirectInvoice() {
         <TransactionPrintTemplate
           documentType="Tax Invoice"
           documentNumber={invoiceTransNo ?? ourOrderNo}
-          reference={reference}
+          reference={resolvedReference}
           documentDate={debtorTransEntry?.tran_date ?? invoiceDate}
           dueDate={dueDate ?? debtorTransEntry?.due_date}
           currency={currencyValue !== "-" ? currencyValue : undefined}

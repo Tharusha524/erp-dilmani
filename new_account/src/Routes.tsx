@@ -1498,7 +1498,7 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/sales/transactions/direct-invoice/view-direct-invoice"
+          path="/sales/transactions/direct-invoice/view-direct-invoice/:transNo?"
           element={
             <ProtectedRoute required={PERMISSION_ID_MAP['Direct sales invoice entry']}>
               {withLayout(MainLayout, ViewDirectInvoice)}

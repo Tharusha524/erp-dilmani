@@ -50,6 +50,7 @@ export default function CreateInvoice() {
   const [errorOpen, setErrorOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [generatedReference, setGeneratedReference] = useState<string | null>(null);
+  const [generatedTransNo, setGeneratedTransNo] = useState<number | null>(null);
   const [formData, setFormData, clearFormData] = useFormPersist<InvoiceFormData>(
     `invoice-form-${id || 'new'}`,  // unique key for this form based on invoice ID
     { 
@@ -106,6 +107,7 @@ export default function CreateInvoice() {
       queryClient.invalidateQueries({ queryKey: ["debtorTrans"] });
       clearFormData();
       setGeneratedReference(result?.reference ?? null);
+      setGeneratedTransNo(result?.trans_no ?? null);
       setOpen(true);
     } catch (error: unknown) {
       console.error(error);
@@ -227,7 +229,12 @@ export default function CreateInvoice() {
         handleClose={() => setOpen(false)}
         onSuccess={() => {
           if (generatedReference) {
-            navigate("/sales/transactions/direct-invoice/view-direct-invoice", {
+            // The invoice's own id — always resolves to the correct invoice,
+            // unlike matching by reference (which isn't guaranteed unique).
+            const viewPath = generatedTransNo
+              ? `/sales/transactions/direct-invoice/view-direct-invoice/${generatedTransNo}`
+              : "/sales/transactions/direct-invoice/view-direct-invoice";
+            navigate(viewPath, {
               state: { reference: generatedReference, autoPrint: true },
             });
           } else {

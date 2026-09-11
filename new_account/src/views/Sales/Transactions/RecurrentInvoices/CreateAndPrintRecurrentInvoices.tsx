@@ -106,10 +106,16 @@ export default function CreateAndPrintRecurrentInvoices() {
       );
       return;
     }
-    navigate("/sales/transactions/direct-invoice/view-direct-invoice", {
+    // The invoice's own id — always resolves to the correct invoice, unlike
+    // matching by reference (which isn't guaranteed unique).
+    const transNo = invoice.last_invoice_trans_no;
+    const viewPath = transNo
+      ? `/sales/transactions/direct-invoice/view-direct-invoice/${transNo}`
+      : "/sales/transactions/direct-invoice/view-direct-invoice";
+    navigate(viewPath, {
       state: {
         reference,
-        transNo: invoice.last_invoice_trans_no,
+        transNo,
         autoPrint: true,
       },
     });

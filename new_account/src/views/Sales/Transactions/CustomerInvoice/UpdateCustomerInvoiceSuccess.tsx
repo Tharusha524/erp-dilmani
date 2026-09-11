@@ -10,6 +10,11 @@ export default function UpdateCustomerInvoiceSuccess() {
     const navigate = useNavigate();
     const { state } = useLocation();
     const { trans_no, reference, date } = state || {};
+    // The invoice's own id — always resolves to the correct invoice, unlike
+    // matching by reference (which isn't guaranteed unique).
+    const viewPath = trans_no
+        ? `/sales/transactions/direct-invoice/view-direct-invoice/${trans_no}`
+        : "/sales/transactions/direct-invoice/view-direct-invoice";
 
     const breadcrumbItems = [
         { title: "Home", href: "/dashboard" },
@@ -51,7 +56,7 @@ export default function UpdateCustomerInvoiceSuccess() {
                     <Button
                         variant="outlined"
                         sx={{ width: '300px' }}
-                        onClick={() => navigate("/sales/transactions/direct-invoice/view-direct-invoice", { state })}
+                        onClick={() => navigate(viewPath, { state })}
                     >
                         View This Invoice
                     </Button>
@@ -60,7 +65,7 @@ export default function UpdateCustomerInvoiceSuccess() {
                         variant="outlined"
                         sx={{ width: '300px' }}
                         onClick={() =>
-                            navigate("/sales/transactions/direct-invoice/view-direct-invoice", {
+                            navigate(viewPath, {
                                 state: { ...state, autoPrint: true },
                             })
                         }

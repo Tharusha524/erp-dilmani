@@ -3,23 +3,18 @@ import React from "react";
 import { Box, Button, Stack, Typography, Paper } from "@mui/material";
 import CloseIcon from '@mui/icons-material/Close';
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import PageTitle from "../../../../components/PageTitle";
 import Breadcrumb from "../../../../components/BreadCrumb";
-import { getDebtorTrans } from "../../../../api/DebtorTrans/DebtorTransApi";
 
 export default function DirectInvoiceSuccess() {
     const navigate = useNavigate();
     const { state } = useLocation();
-    const { location: loc, reference, date } = state || {};
-
-    const { data: debtorTrans } = useQuery({
-        queryKey: ['debtorTrans'],
-        queryFn: getDebtorTrans,
-    });
-
-    const currentTrans = debtorTrans?.find((trans: any) => trans.trans_type === 10 && trans.reference === reference);
-    const trans_no = currentTrans?.trans_no;
+    const { location: loc, reference, date, trans_no } = state || {};
+    // The invoice's own id — always resolves to the correct invoice, unlike
+    // matching by reference (which isn't guaranteed unique).
+    const viewPath = trans_no
+        ? `/sales/transactions/direct-invoice/view-direct-invoice/${trans_no}`
+        : "/sales/transactions/direct-invoice/view-direct-invoice";
 
     const breadcrumbItems = [
         { title: "Home", href: "/dashboard" },
@@ -61,7 +56,7 @@ export default function DirectInvoiceSuccess() {
                     <Button
                         variant="outlined"
                         sx={{ width: '300px' }}
-                        onClick={() => navigate("/sales/transactions/direct-invoice/view-direct-invoice", { state })}
+                        onClick={() => navigate(viewPath, { state })}
                     >
                         View This Invoice
                     </Button>
@@ -70,7 +65,7 @@ export default function DirectInvoiceSuccess() {
                         variant="outlined"
                         sx={{ width: '300px' }}
                         onClick={() =>
-                            navigate("/sales/transactions/direct-invoice/view-direct-invoice", {
+                            navigate(viewPath, {
                                 state: { ...state, autoPrint: true },
                             })
                         }
