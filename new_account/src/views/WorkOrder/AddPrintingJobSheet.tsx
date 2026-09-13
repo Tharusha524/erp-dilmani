@@ -17,6 +17,7 @@ import {
   FormControlLabel,
   CircularProgress,
   Autocomplete,
+  MenuItem,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -27,7 +28,7 @@ import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import { createWorkOrder, getWorkOrder, updateWorkOrder } from "../../api/WorkOrder/workOrderApi";
 import { getOrganization } from "../../api/OrganizationSettings/organizationSettingsApi";
 import { getCustomers } from "../../api/Customer/AddCustomerApi";
-import { cleanWoNumberInput, formatWoNumberInputDisplay, formatWoQuantity } from "../../utils/workOrderNumberFormat";
+import { cleanWoNumberInput, formatWoAmount, formatWoNumberInputDisplay, formatWoQuantity } from "../../utils/workOrderNumberFormat";
 import { getApiBaseUrl } from "../../config/backendConfig";
 
 const storageUrl = (path: string | null | undefined): string | null => {
@@ -43,6 +44,12 @@ const storageUrl = (path: string | null | undefined): string | null => {
 
 const SIZE_COLUMNS = ["XXS", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
 const SIZE_ROWS = ["GENTS", "LADIES", "BOYS"] as const;
+
+// DTF Printing (stickers) uses a completely different item grid — sub_category
+// "DTF" marks an order as this job type instead of the T-Shirt job above.
+// Quantities/prices reuse the same generic sizes/price_items tables (category
+// "DTF", size_label/item_name = the item below), so no schema change is needed.
+const DTF_ITEMS = ["Pocket", "A5", "A4", "A3", "A2", "Meter", "Large Press", "Mini Press"];
 
 // On the paper form, the Boys row only uses XXS/XS/S as real quantity boxes —
 // M onward is repurposed there for Total/Price/Operator/Data Entry instead.
@@ -104,6 +111,12 @@ const AddPrintingJobSheet = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  const [jobType, setJobType] = useState<"tshirt" | "dtf">("tshirt");
+  const [dtfQty, setDtfQty] = useState<Record<string, string>>({});
+  const [dtfPrice, setDtfPrice] = useState<Record<string, string>>({});
+  const [accChecked, setAccChecked] = useState(false);
+  const [cashChecked, setCashChecked] = useState(false);
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -119,6 +132,27 @@ const AddPrintingJobSheet = () => {
     setJobName(existingOrder.description || "");
     setPrice(existingOrder.total_price != null ? String(existingOrder.total_price) : "");
     setImagePreview(storageUrl(existingOrder.front_image_path));
+
+    const isDtf = existingOrder.sub_category === "DTF";
+    setJobType(isDtf ? "dtf" : "tshirt");
+
+    if (isDtf) {
+      const nextDtfQty: Record<string, string> = {};
+      existingOrder.sizes?.forEach((s) => {
+        if (s.category === "DTF") nextDtfQty[s.size_label] = String(s.quantity);
+      });
+      setDtfQty(nextDtfQty);
+
+      const nextDtfPrice: Record<string, string> = {};
+      existingOrder.price_items?.forEach((p) => {
+        if (p.item_name === "Acc") setAccChecked(true);
+        else if (p.item_name === "Cash") setCashChecked(true);
+        else nextDtfPrice[p.item_name] = String(p.price);
+      });
+      setDtfPrice(nextDtfPrice);
+      return;
+    }
+
     const sides = existingOrder.sub_category || "";
     setFront(sides.includes("Front"));
     setBack(sides.includes("Back"));
@@ -149,6 +183,11 @@ const AddPrintingJobSheet = () => {
 
   const totalOrderQuantity = SIZE_ROWS.reduce((sum, row) => sum + rowTotal(row), 0);
 
+  const dtfColumnTotal = (item: string) =>
+    (parseFloat(dtfQty[item] || "0") || 0) * (parseFloat(dtfPrice[item] || "0") || 0);
+  const dtfTotalQuantity = DTF_ITEMS.reduce((sum, item) => sum + (parseInt(dtfQty[item] || "0", 10) || 0), 0);
+  const dtfTotalPrice = DTF_ITEMS.reduce((sum, item) => sum + dtfColumnTotal(item), 0);
+
   const { mutate: submitJobSheet, isPending } = useMutation({
     mutationFn: (formData: FormData) =>
       isEditing ? updateWorkOrder(editId as string, formData) : createWorkOrder(formData),
@@ -172,6 +211,52 @@ const AddPrintingJobSheet = () => {
       return;
     }
 
+    const formData = new FormData();
+    formData.append("category", "printing_job");
+    formData.append("department", "Printing");
+    formData.append("order_date", date);
+    formData.append("customer", customer);
+    formData.append("description", jobName);
+    if (imageFile) formData.append("front_image", imageFile);
+
+    if (jobType === "dtf") {
+      formData.append("sub_category", "DTF");
+      formData.append("order_quantity", String(dtfTotalQuantity));
+      formData.append("total_price", String(dtfTotalPrice));
+      formData.append("balance", String(dtfTotalPrice));
+
+      let sizeIndex = 0;
+      let priceIndex = 0;
+      DTF_ITEMS.forEach((item) => {
+        const qty = dtfQty[item];
+        if (qty && parseInt(qty, 10) > 0) {
+          formData.append(`sizes[${sizeIndex}][category]`, "DTF");
+          formData.append(`sizes[${sizeIndex}][size_label]`, item);
+          formData.append(`sizes[${sizeIndex}][quantity]`, qty);
+          sizeIndex += 1;
+        }
+        const itemPrice = dtfPrice[item];
+        if (itemPrice) {
+          formData.append(`price_items[${priceIndex}][item_name]`, item);
+          formData.append(`price_items[${priceIndex}][price]`, itemPrice);
+          priceIndex += 1;
+        }
+      });
+      if (accChecked) {
+        formData.append(`price_items[${priceIndex}][item_name]`, "Acc");
+        formData.append(`price_items[${priceIndex}][price]`, "0");
+        priceIndex += 1;
+      }
+      if (cashChecked) {
+        formData.append(`price_items[${priceIndex}][item_name]`, "Cash");
+        formData.append(`price_items[${priceIndex}][price]`, "0");
+        priceIndex += 1;
+      }
+
+      submitJobSheet(formData);
+      return;
+    }
+
     const sides = [front && "Front", back && "Back", longSleeve && "Long Sleeve", shortSleeve && "Short Sleeve"]
       .filter(Boolean)
       .join(", ");
@@ -185,12 +270,6 @@ const AddPrintingJobSheet = () => {
       .filter(Boolean)
       .join("\n");
 
-    const formData = new FormData();
-    formData.append("category", "printing_job");
-    formData.append("department", "Printing");
-    formData.append("order_date", date);
-    formData.append("customer", customer);
-    formData.append("description", jobName);
     formData.append("sub_category", sides);
     formData.append("order_quantity", String(totalOrderQuantity));
     if (price) {
@@ -198,7 +277,6 @@ const AddPrintingJobSheet = () => {
       formData.append("balance", price);
     }
     if (remarkLines) formData.append("remark", remarkLines);
-    if (imageFile) formData.append("front_image", imageFile);
 
     let sizeIndex = 0;
     SIZE_ROWS.forEach((row) => {
@@ -220,8 +298,20 @@ const AddPrintingJobSheet = () => {
     <FormPageLayout>
       <Box p={3}>
         <Paper elevation={3} sx={{ p: 4, maxWidth: "1000px", margin: "0 auto" }}>
+          <TextField
+            select
+            label="Job Type"
+            size="small"
+            value={jobType}
+            onChange={(e) => setJobType(e.target.value as "tshirt" | "dtf")}
+            sx={{ maxWidth: 260, mb: 2 }}
+          >
+            <MenuItem value="tshirt">T-Shirt Printing</MenuItem>
+            <MenuItem value="dtf">DTF Printing</MenuItem>
+          </TextField>
+
           <Typography variant="h5" align="center" gutterBottom fontWeight="bold">
-            SUBLIMATION PRINTING
+            {jobType === "dtf" ? "DTF PRINTING" : "SUBLIMATION PRINTING"}
           </Typography>
           <Typography variant="subtitle1" align="center" gutterBottom fontWeight="bold">
             JOB SHEET
@@ -269,147 +359,257 @@ const AddPrintingJobSheet = () => {
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <Grid container spacing={1}>
-                <Grid item xs={6}>
-                  <FormControlLabel
-                    control={<Checkbox checked={front} onChange={(e) => setFront(e.target.checked)} />}
-                    label="Front"
+              {jobType === "tshirt" ? (
+                <>
+                  <Grid container spacing={1}>
+                    <Grid item xs={6}>
+                      <FormControlLabel
+                        control={<Checkbox checked={front} onChange={(e) => setFront(e.target.checked)} />}
+                        label="Front"
+                      />
+                    </Grid>
+                    <Grid item xs={6}>
+                      <FormControlLabel
+                        control={<Checkbox checked={back} onChange={(e) => setBack(e.target.checked)} />}
+                        label="Back"
+                      />
+                    </Grid>
+                    <Grid item xs={6}>
+                      <FormControlLabel
+                        control={<Checkbox checked={longSleeve} onChange={(e) => setLongSleeve(e.target.checked)} />}
+                        label="Long Sleeve"
+                      />
+                    </Grid>
+                    <Grid item xs={6}>
+                      <FormControlLabel
+                        control={<Checkbox checked={shortSleeve} onChange={(e) => setShortSleeve(e.target.checked)} />}
+                        label="Short Sleeve"
+                      />
+                    </Grid>
+                  </Grid>
+                  <TextField
+                    fullWidth
+                    label="Price"
+                    type="text"
+                    inputMode="decimal"
+                    size="small"
+                    margin="normal"
+                    value={formatWoNumberInputDisplay(price)}
+                    onChange={(e) => setPrice(cleanWoNumberInput(e.target.value))}
                   />
-                </Grid>
-                <Grid item xs={6}>
-                  <FormControlLabel
-                    control={<Checkbox checked={back} onChange={(e) => setBack(e.target.checked)} />}
-                    label="Back"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <FormControlLabel
-                    control={<Checkbox checked={longSleeve} onChange={(e) => setLongSleeve(e.target.checked)} />}
-                    label="Long Sleeve"
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <FormControlLabel
-                    control={<Checkbox checked={shortSleeve} onChange={(e) => setShortSleeve(e.target.checked)} />}
-                    label="Short Sleeve"
-                  />
-                </Grid>
-              </Grid>
-              <TextField
-                fullWidth
-                label="Price"
-                type="text"
-                inputMode="decimal"
-                size="small"
-                margin="normal"
-                value={formatWoNumberInputDisplay(price)}
-                onChange={(e) => setPrice(cleanWoNumberInput(e.target.value))}
-              />
+                </>
+              ) : (
+                <TextField
+                  fullWidth
+                  label="Total Price"
+                  size="small"
+                  margin="normal"
+                  value={formatWoAmount(dtfTotalPrice)}
+                  InputProps={{ readOnly: true }}
+                  helperText="Calculated from Qty × Price below"
+                />
+              )}
             </Grid>
           </Grid>
 
           <Divider sx={{ my: 4 }} />
 
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: "bold" }} />
-                  {SIZE_COLUMNS.map((size) => (
-                    <TableCell key={size} align="center" sx={{ fontWeight: "bold" }}>
-                      {size}
-                    </TableCell>
-                  ))}
-                  <TableCell align="center" sx={{ fontWeight: "bold" }}>Total</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: "bold" }}>Price</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {SIZE_ROWS.map((row) => (
-                  <TableRow key={row}>
-                    <TableCell sx={{ fontWeight: "bold" }}>{row.charAt(0) + row.slice(1).toLowerCase()}</TableCell>
+          {jobType === "tshirt" ? (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }} />
                     {SIZE_COLUMNS.map((size) => (
-                      <TableCell key={size} align="center" padding="none">
-                        {isSizeInputVisible(row, size) && (
+                      <TableCell key={size} align="center" sx={{ fontWeight: "bold" }}>
+                        {size}
+                      </TableCell>
+                    ))}
+                    <TableCell align="center" sx={{ fontWeight: "bold" }}>Total</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: "bold" }}>Price</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {SIZE_ROWS.map((row) => (
+                    <TableRow key={row}>
+                      <TableCell sx={{ fontWeight: "bold" }}>{row.charAt(0) + row.slice(1).toLowerCase()}</TableCell>
+                      {SIZE_COLUMNS.map((size) => (
+                        <TableCell key={size} align="center" padding="none">
+                          {isSizeInputVisible(row, size) && (
+                            <TextField
+                              variant="outlined"
+                              size="small"
+                              type="text"
+                              inputMode="numeric"
+                              fullWidth
+                              value={formatWoNumberInputDisplay(sizeQty[sizeKey(row, size)] || "")}
+                              onChange={(e) =>
+                                setSizeQty((prev) => ({
+                                  ...prev,
+                                  [sizeKey(row, size)]: cleanWoNumberInput(e.target.value),
+                                }))
+                              }
+                              inputProps={{ style: { textAlign: "center" } }}
+                            />
+                          )}
+                        </TableCell>
+                      ))}
+                      <TableCell align="center">
+                        <Typography fontWeight="bold">{formatWoQuantity(rowTotal(row))}</Typography>
+                      </TableCell>
+                      <TableCell align="center" padding="none">
+                        {row === "BOYS" && (
+                          <TextField
+                            variant="outlined"
+                            size="small"
+                            type="text"
+                            inputMode="decimal"
+                            fullWidth
+                            value={formatWoNumberInputDisplay(boysPrice)}
+                            onChange={(e) => setBoysPrice(cleanWoNumberInput(e.target.value))}
+                            inputProps={{ style: { textAlign: "center" } }}
+                          />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: "bold" }} />
+                      {DTF_ITEMS.map((item) => (
+                        <TableCell key={item} align="center" sx={{ fontWeight: "bold" }}>
+                          {item}
+                        </TableCell>
+                      ))}
+                      <TableCell align="center" sx={{ fontWeight: "bold" }}>Total</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: "bold" }}>Price</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: "bold" }}>Qty</TableCell>
+                      {DTF_ITEMS.map((item) => (
+                        <TableCell key={item} align="center" padding="none">
                           <TextField
                             variant="outlined"
                             size="small"
                             type="text"
                             inputMode="numeric"
                             fullWidth
-                            value={formatWoNumberInputDisplay(sizeQty[sizeKey(row, size)] || "")}
-                            onChange={(e) =>
-                              setSizeQty((prev) => ({
-                                ...prev,
-                                [sizeKey(row, size)]: cleanWoNumberInput(e.target.value),
-                              }))
-                            }
+                            value={formatWoNumberInputDisplay(dtfQty[item] || "")}
+                            onChange={(e) => setDtfQty((prev) => ({ ...prev, [item]: cleanWoNumberInput(e.target.value) }))}
                             inputProps={{ style: { textAlign: "center" } }}
                           />
-                        )}
+                        </TableCell>
+                      ))}
+                      <TableCell align="center">
+                        <Typography fontWeight="bold">{formatWoQuantity(dtfTotalQuantity)}</Typography>
                       </TableCell>
-                    ))}
-                    <TableCell align="center">
-                      <Typography fontWeight="bold">{formatWoQuantity(rowTotal(row))}</Typography>
-                    </TableCell>
-                    <TableCell align="center" padding="none">
-                      {row === "BOYS" && (
-                        <TextField
-                          variant="outlined"
-                          size="small"
-                          type="text"
-                          inputMode="decimal"
-                          fullWidth
-                          value={formatWoNumberInputDisplay(boysPrice)}
-                          onChange={(e) => setBoysPrice(cleanWoNumberInput(e.target.value))}
-                          inputProps={{ style: { textAlign: "center" } }}
-                        />
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                      <TableCell />
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: "bold" }}>Price</TableCell>
+                      {DTF_ITEMS.map((item) => (
+                        <TableCell key={item} align="center" padding="none">
+                          <TextField
+                            variant="outlined"
+                            size="small"
+                            type="text"
+                            inputMode="decimal"
+                            fullWidth
+                            value={formatWoNumberInputDisplay(dtfPrice[item] || "")}
+                            onChange={(e) => setDtfPrice((prev) => ({ ...prev, [item]: cleanWoNumberInput(e.target.value) }))}
+                            inputProps={{ style: { textAlign: "center" } }}
+                          />
+                        </TableCell>
+                      ))}
+                      <TableCell />
+                      <TableCell />
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: "bold" }}>Total</TableCell>
+                      {DTF_ITEMS.map((item) => (
+                        <TableCell key={item} align="center">
+                          <Typography fontWeight="bold">{formatWoAmount(dtfColumnTotal(item))}</Typography>
+                        </TableCell>
+                      ))}
+                      <TableCell align="center">
+                        <Typography fontWeight="bold">{formatWoQuantity(dtfTotalQuantity)}</Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Typography fontWeight="bold">{formatWoAmount(dtfTotalPrice)}</Typography>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              <Grid container spacing={3} sx={{ mt: 1 }} justifyContent="flex-end">
+                <Grid item xs="auto">
+                  <FormControlLabel
+                    control={<Checkbox checked={accChecked} onChange={(e) => setAccChecked(e.target.checked)} />}
+                    label="Acc"
+                  />
+                </Grid>
+                <Grid item xs="auto">
+                  <FormControlLabel
+                    control={<Checkbox checked={cashChecked} onChange={(e) => setCashChecked(e.target.checked)} />}
+                    label="Cash"
+                  />
+                </Grid>
+              </Grid>
+            </>
+          )}
 
           <Divider sx={{ my: 4 }} />
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>REMARK</Typography>
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                variant="outlined"
-                placeholder="Enter any additional remarks here..."
-                value={remark}
-                onChange={(e) => setRemark(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={6} md={2}>
-              <TextField
-                fullWidth
-                label="Operator"
-                size="small"
-                margin="normal"
-                value={operator}
-                onChange={(e) => setOperator(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={6} md={2}>
-              <TextField
-                fullWidth
-                label="Data Entry"
-                size="small"
-                margin="normal"
-                value={dataEntry}
-                onChange={(e) => setDataEntry(e.target.value)}
-              />
-            </Grid>
-          </Grid>
+          {jobType === "tshirt" && (
+            <>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={8}>
+                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>REMARK</Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    variant="outlined"
+                    placeholder="Enter any additional remarks here..."
+                    value={remark}
+                    onChange={(e) => setRemark(e.target.value)}
+                  />
+                </Grid>
+                <Grid item xs={6} md={2}>
+                  <TextField
+                    fullWidth
+                    label="Operator"
+                    size="small"
+                    margin="normal"
+                    value={operator}
+                    onChange={(e) => setOperator(e.target.value)}
+                  />
+                </Grid>
+                <Grid item xs={6} md={2}>
+                  <TextField
+                    fullWidth
+                    label="Data Entry"
+                    size="small"
+                    margin="normal"
+                    value={dataEntry}
+                    onChange={(e) => setDataEntry(e.target.value)}
+                  />
+                </Grid>
+              </Grid>
 
-          <Divider sx={{ my: 4 }} />
+              <Divider sx={{ my: 4 }} />
+            </>
+          )}
 
           <Typography variant="subtitle2" fontWeight="bold" gutterBottom>IMAGE</Typography>
           <Paper

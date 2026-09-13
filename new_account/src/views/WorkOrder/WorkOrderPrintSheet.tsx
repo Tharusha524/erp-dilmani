@@ -40,8 +40,8 @@ const departmentOf = (order: WorkOrderDetail): "Factory" | "Printing" | "Embroid
 
 // --- Factory ------------------------------------------------------------------
 const FACTORY_SIZE_GROUPS: { title: string; category: string; sizes: string[] }[] = [
-  { title: "GENTS SIZE", category: "GENTS", sizes: ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] },
-  { title: "LADIES SIZE", category: "LADIES", sizes: ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] },
+  { title: "GENTS SIZE", category: "GENTS", sizes: ["2XS", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] },
+  { title: "LADIES SIZE", category: "LADIES", sizes: ["2XS", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] },
   { title: "BOYS SIZE", category: "BOYS", sizes: ["4", "5", "6", "7"] },
   { title: "PRESCHOOL SIZE", category: "PRESCHOOL", sizes: ["S", "M", "L", "XL"] },
 ];
@@ -50,6 +50,10 @@ const FACTORY_PRICE_ITEMS = ["ELDERS", "PRESCHOOL", "BOYS", "SHORTS", "BOTTOM", 
 // --- Printing ---------------------------------------------------------------
 const PRINT_SIZE_COLUMNS = ["XXS", "XS", "S", "M", "L", "XL", "2XL", "3XL"];
 const PRINT_SIZE_ROWS = ["GENTS", "LADIES", "BOYS"] as const;
+
+// DTF Printing (stickers) — a separate job type under Printing, marked by
+// sub_category === "DTF". Mirrors AddPrintingJobSheet's DTF_ITEMS.
+const DTF_ITEMS = ["Pocket", "A5", "A4", "A3", "A2", "Meter", "Large Press", "Mini Press"];
 
 /** Inverse of the printing screen's remark packing. */
 const parsePrintingRemark = (remarkText?: string | null) => {
@@ -333,7 +337,106 @@ function FactorySheet({ order, orgName }: { order: WorkOrderDetail; orgName: str
  * PRINTING                                                            *
  * ================================================================== */
 
+function DtfPrintingSheet({ order, orgName }: { order: WorkOrderDetail; orgName: string }) {
+  const qtyByItem: Record<string, number> = {};
+  order.sizes.forEach((s) => {
+    if (s.category === "DTF") qtyByItem[s.size_label] = Number(s.quantity || 0);
+  });
+  const priceByItem: Record<string, number> = {};
+  let accChecked = false;
+  let cashChecked = false;
+  order.price_items.forEach((p) => {
+    if (p.item_name === "Acc") accChecked = true;
+    else if (p.item_name === "Cash") cashChecked = true;
+    else priceByItem[p.item_name] = Number(p.price || 0);
+  });
+  const columnTotal = (item: string) => (qtyByItem[item] || 0) * (priceByItem[item] || 0);
+  const totalQty = DTF_ITEMS.reduce((sum, item) => sum + (qtyByItem[item] || 0), 0);
+  const totalPrice = DTF_ITEMS.reduce((sum, item) => sum + columnTotal(item), 0);
+
+  return (
+    <>
+      <div style={{ textAlign: "center" }}>
+        <h1 style={{ margin: 0, fontSize: 20, letterSpacing: 1 }}>{orgName.toUpperCase()} DTF PRINTING</h1>
+        <div style={{ fontWeight: 700 }}>JOB SHEET</div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, marginTop: 14 }}>
+        <span>WO No: {order.work_order_no}</span>
+        <span>Status: {order.current_status?.name || "-"}</span>
+      </div>
+
+      <Section>Details</Section>
+      <div className="wo-block" style={{ display: "flex", gap: 48, flexWrap: "wrap", alignItems: "flex-start" }}>
+        <FieldTable
+          rows={[
+            ["Date", formatWoDate(order.order_date)],
+            ["Customer", order.customer],
+            ["Job Name", order.description],
+          ]}
+        />
+        <FieldTable rows={[["Total Price", formatWoAmount(totalPrice)]]} />
+      </div>
+
+      <Section>Items</Section>
+      <div className="wo-block">
+        <table style={{ borderCollapse: "collapse", width: "100%" }}>
+          <thead>
+            <tr>
+              <th style={th} />
+              {DTF_ITEMS.map((item) => (
+                <th key={item} style={th}>{item}</th>
+              ))}
+              <th style={th}>Total</th>
+              <th style={th}>Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{ ...td, fontWeight: 700 }}>Qty</td>
+              {DTF_ITEMS.map((item) => (
+                <td key={item} style={{ ...td, textAlign: "center" }}>{qtyByItem[item] || ""}</td>
+              ))}
+              <td style={{ ...td, textAlign: "center", fontWeight: 700 }}>{formatWoQuantity(totalQty)}</td>
+              <td style={td} />
+            </tr>
+            <tr>
+              <td style={{ ...td, fontWeight: 700 }}>Price</td>
+              {DTF_ITEMS.map((item) => (
+                <td key={item} style={{ ...td, textAlign: "center" }}>
+                  {priceByItem[item] ? formatWoAmount(priceByItem[item]) : ""}
+                </td>
+              ))}
+              <td style={td} />
+              <td style={td} />
+            </tr>
+            <tr>
+              <td style={{ ...td, fontWeight: 700 }}>Total</td>
+              {DTF_ITEMS.map((item) => (
+                <td key={item} style={{ ...td, textAlign: "center" }}>{formatWoAmount(columnTotal(item))}</td>
+              ))}
+              <td style={{ ...td, textAlign: "center", fontWeight: 700 }}>{formatWoQuantity(totalQty)}</td>
+              <td style={{ ...td, textAlign: "center", fontWeight: 700 }}>{formatWoAmount(totalPrice)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="wo-block" style={{ marginTop: 16, display: "flex", gap: 24, justifyContent: "flex-end" }}>
+        <span>{accChecked ? "☑" : "☐"} Acc</span>
+        <span>{cashChecked ? "☑" : "☐"} Cash</span>
+      </div>
+
+      <DesignImages front={storageUrl(order.front_image_path)} back={null} />
+    </>
+  );
+}
+
 function PrintingSheet({ order, orgName }: { order: WorkOrderDetail; orgName: string }) {
+  if (order.sub_category === "DTF") {
+    return <DtfPrintingSheet order={order} orgName={orgName} />;
+  }
+
   const { remark, operator, dataEntry, boysPrice } = parsePrintingRemark(order.remark);
   const sides = order.sub_category || "";
   const has = (name: string) => sides.includes(name);

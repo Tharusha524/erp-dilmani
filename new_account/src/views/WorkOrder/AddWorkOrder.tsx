@@ -31,8 +31,8 @@ import { cleanWoNumberInput, formatWoNumberInputDisplay, formatWoQuantity } from
 import { getApiBaseUrl } from "../../config/backendConfig";
 
 const SIZE_GROUPS: { title: string; category: string; sizes: string[] }[] = [
-  { title: "GENTS SIZE", category: "GENTS", sizes: ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] },
-  { title: "LADIES SIZE", category: "LADIES", sizes: ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] },
+  { title: "GENTS SIZE", category: "GENTS", sizes: ["2XS", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] },
+  { title: "LADIES SIZE", category: "LADIES", sizes: ["2XS", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"] },
   { title: "BOYS SIZE", category: "BOYS", sizes: ["4", "5", "6", "7"] },
   { title: "PRESCHOOL SIZE", category: "PRESCHOOL", sizes: ["S", "M", "L", "XL"] },
 ];
@@ -193,6 +193,10 @@ const AddWorkOrder = () => {
       enqueueSnackbar("Please enter or select a customer", { variant: "warning" });
       return;
     }
+    if (!invoiceReference.trim()) {
+      enqueueSnackbar("Please enter a reference number", { variant: "warning" });
+      return;
+    }
 
     const formData = new FormData();
     formData.append("category", category);
@@ -202,7 +206,7 @@ const AddWorkOrder = () => {
     formData.append("delivery_date", deliveryDate);
     formData.append("customer", customer);
     formData.append("contact_no", contactNo);
-    if (invoiceReference) formData.append("invoice_reference", invoiceReference);
+    formData.append("invoice_reference", invoiceReference);
     formData.append("kind_of_fabric", kindOfFabric);
     formData.append("remark", remark);
     formData.append("order_quantity", String(totalOrderQuantity));
@@ -396,6 +400,7 @@ const AddWorkOrder = () => {
               />
               <TextField
                 fullWidth
+                required
                 label="Reference Number"
                 size="small"
                 margin="normal"
