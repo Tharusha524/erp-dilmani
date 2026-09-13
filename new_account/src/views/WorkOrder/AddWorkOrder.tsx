@@ -16,6 +16,7 @@ import {
   MenuItem,
   CircularProgress,
   Checkbox,
+  Autocomplete,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -24,6 +25,7 @@ import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import { useNavigate, useSearchParams } from "react-router";
 import { enqueueSnackbar } from "notistack";
 import { createWorkOrder, getWorkOrder, updateWorkOrder } from "../../api/WorkOrder/workOrderApi";
+import { getCustomers } from "../../api/Customer/AddCustomerApi";
 import { getWoSheetBranches, getWoSheetFabricTypes, getWoSheetFactoryCategories } from "../../api/WorkOrder/workOrderLookupsApi";
 import { cleanWoNumberInput, formatWoNumberInputDisplay, formatWoQuantity } from "../../utils/workOrderNumberFormat";
 import { getApiBaseUrl } from "../../config/backendConfig";
@@ -78,6 +80,7 @@ const AddWorkOrder = () => {
     queryKey: ["wo-sheet-factory-categories"],
     queryFn: getWoSheetFactoryCategories,
   });
+  const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: getCustomers });
 
   const [frontImageFile, setFrontImageFile] = useState<File | null>(null);
   const [frontImagePreview, setFrontImagePreview] = useState<string | null>(null);
@@ -184,6 +187,10 @@ const AddWorkOrder = () => {
   const handleSubmit = () => {
     if (!category) {
       enqueueSnackbar("Please select a garment category", { variant: "warning" });
+      return;
+    }
+    if (!customer.trim()) {
+      enqueueSnackbar("Please enter or select a customer", { variant: "warning" });
       return;
     }
 
@@ -335,13 +342,22 @@ const AddWorkOrder = () => {
                 value={deliveryDate}
                 onChange={(e) => setDeliveryDate(e.target.value)}
               />
-              <TextField
+              <Autocomplete
+                freeSolo
                 fullWidth
-                label="Customer"
                 size="small"
-                margin="normal"
-                value={customer}
-                onChange={(e) => setCustomer(e.target.value)}
+                options={customers.map((c: any) => c.name || "")}
+                inputValue={customer}
+                onInputChange={(_e, newValue) => setCustomer(newValue)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Customer"
+                    required
+                    margin="normal"
+                    placeholder="Search or type a customer name"
+                  />
+                )}
               />
               <TextField
                 fullWidth

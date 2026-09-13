@@ -21,6 +21,19 @@ const BUTTONS: { key: WorkOrderButtonKey; label: string; description: string }[]
   { key: "reopen", label: "Re-Open", description: "Who can click Re-Open to reopen a finished work order." },
 ];
 
+const DEPARTMENTS: { suffix: "factory" | "printing" | "embroidery"; label: string }[] = [
+  { suffix: "factory", label: "Factory" },
+  { suffix: "printing", label: "Printing" },
+  { suffix: "embroidery", label: "Embroidery" },
+];
+
+const SHEET_ACTIONS: { prefix: "create" | "edit" | "print" | "delete"; label: string; description: string }[] = [
+  { prefix: "create", label: "Create Work Order", description: "Who can create a new order sheet." },
+  { prefix: "edit", label: "Edit / Update Work Order", description: "Who can edit and update an existing order sheet." },
+  { prefix: "print", label: "Print Work Order", description: "Who can print an order sheet." },
+  { prefix: "delete", label: "Delete Work Order", description: "Who can delete an order sheet." },
+];
+
 export default function WorkOrderButtonSettings() {
   const queryClient = useQueryClient();
 
@@ -92,6 +105,47 @@ export default function WorkOrderButtonSettings() {
                   onRemove={(userId) => removeAssignedUser({ buttonKey: b.key, userId })}
                 />
               </Box>
+            </Paper>
+          ))}
+        </Stack>
+
+        <Typography variant="h5" fontWeight={700} sx={{ mt: 4 }} gutterBottom>
+          Work Order Sheet
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Restrict who can create, edit, print, and delete order sheets — separately for Factory, Printing, and
+          Embroidery (leave unassigned to keep it open to everyone).
+        </Typography>
+
+        <Stack spacing={3}>
+          {DEPARTMENTS.map((dept) => (
+            <Paper key={dept.suffix} variant="outlined" sx={{ p: 2 }}>
+              <Typography fontWeight={700} sx={{ mb: 1.5 }}>
+                {dept.label}
+              </Typography>
+              <Stack spacing={2}>
+                {SHEET_ACTIONS.map((action) => {
+                  const key = `${action.prefix}_${dept.suffix}` as WorkOrderButtonKey;
+                  return (
+                    <Box key={key}>
+                      <Typography variant="body2" fontWeight={600}>
+                        {action.label}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                        {action.description}
+                      </Typography>
+                      <Box sx={{ maxWidth: 420 }}>
+                        <AssignedUsersEditor
+                          assigned={assignedUsersByButton[key] || []}
+                          users={users}
+                          onAdd={(userId) => addAssignedUser({ buttonKey: key, userId })}
+                          onRemove={(userId) => removeAssignedUser({ buttonKey: key, userId })}
+                        />
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Stack>
             </Paper>
           ))}
         </Stack>

@@ -5,6 +5,7 @@ const API_URL = "/wo-sheet-orders";
 export interface WorkOrderListItem {
   id: number;
   work_order_no: string;
+  invoice_reference: string | null;
   created_at: string;
   updated_at: string;
   order_date: string | null;
@@ -155,5 +156,10 @@ export const handOverWorkOrder = async (id: number): Promise<WorkOrderDetail> =>
 
 export const reopenWorkOrder = async (id: number): Promise<WorkOrderDetail> => {
   const response = await api.post(`${API_URL}/${id}/reopen`);
+  return response.data;
+};
+
+export const deleteWorkOrder = async (id: number): Promise<{ message: string }> => {
+  const response = await api.delete(`${API_URL}/${id}`);
   return response.data;
 };

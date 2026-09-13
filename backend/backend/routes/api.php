@@ -547,6 +547,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('wo-sheet-orders/{id}/verify', [\App\Http\Controllers\WoSheetOrderController::class, 'verify']);
     Route::post('wo-sheet-orders/{id}/hand-over', [\App\Http\Controllers\WoSheetOrderController::class, 'handOver']);
     Route::post('wo-sheet-orders/{id}/reopen', [\App\Http\Controllers\WoSheetOrderController::class, 'reopen']);
+    Route::delete('wo-sheet-orders/{id}', [\App\Http\Controllers\WoSheetOrderController::class, 'destroy']);
 
     Route::get('wo-sheet-statuses', [\App\Http\Controllers\WoSheetStatusController::class, 'index']);
     Route::post('wo-sheet-statuses', [\App\Http\Controllers\WoSheetStatusController::class, 'store']);

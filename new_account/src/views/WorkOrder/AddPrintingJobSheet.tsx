@@ -16,6 +16,7 @@ import {
   Checkbox,
   FormControlLabel,
   CircularProgress,
+  Autocomplete,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -25,6 +26,7 @@ import { enqueueSnackbar } from "notistack";
 import { FormPageLayout } from "../../components/Layout/FormPageLayout";
 import { createWorkOrder, getWorkOrder, updateWorkOrder } from "../../api/WorkOrder/workOrderApi";
 import { getOrganization } from "../../api/OrganizationSettings/organizationSettingsApi";
+import { getCustomers } from "../../api/Customer/AddCustomerApi";
 import { cleanWoNumberInput, formatWoNumberInputDisplay, formatWoQuantity } from "../../utils/workOrderNumberFormat";
 import { getApiBaseUrl } from "../../config/backendConfig";
 
@@ -84,6 +86,7 @@ const AddPrintingJobSheet = () => {
     queryFn: getOrganization,
   });
   const orgName = organizationData?.organizationName?.trim() || "Company";
+  const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: getCustomers });
 
   const [date, setDate] = useState("");
   const [customer, setCustomer] = useState("");
@@ -238,14 +241,22 @@ const AddPrintingJobSheet = () => {
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
-              <TextField
+              <Autocomplete
+                freeSolo
                 fullWidth
-                label="Customer"
                 size="small"
-                margin="normal"
-                required
-                value={customer}
-                onChange={(e) => setCustomer(e.target.value)}
+                options={customers.map((c: any) => c.name || "")}
+                inputValue={customer}
+                onInputChange={(_e, newValue) => setCustomer(newValue)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Customer"
+                    required
+                    margin="normal"
+                    placeholder="Search or type a customer name"
+                  />
+                )}
               />
               <TextField
                 fullWidth

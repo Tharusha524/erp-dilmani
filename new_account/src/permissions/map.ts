@@ -211,6 +211,8 @@ export const PERMISSION_ID_MAP: Record<string, number> = {
   "Class Types (GL)": 5039,
   "Stock page": 5040,
   "Manage Stock page": 5041,
+  "Create work order page - printing": 5042,
+  "Create work order page - embroidery": 5043,
 };
 
 export const PERMISSION_NAME_BY_ID: Record<number, string> = Object.fromEntries(

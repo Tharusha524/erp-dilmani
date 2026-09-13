@@ -1,7 +1,13 @@
 import React, { useMemo, useState } from "react";
 import {
   Box,
+  Button,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   Link,
   Paper,
@@ -18,15 +24,23 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import PrintIcon from "@mui/icons-material/Print";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router";
 import { APP_ROUTER_BASENAME } from "../../config/appConfig";
-import { useQuery } from "@tanstack/react-query";
-import { getWorkOrders, WorkOrderListItem } from "../../api/WorkOrder/workOrderApi";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { deleteWorkOrder, getWorkOrders, WorkOrderListItem } from "../../api/WorkOrder/workOrderApi";
 import WorkOrderDetailsDialog from "./WorkOrderDetailsDialog";
 import { formatWoDate, formatWoDateTime } from "../../utils/workOrderDateFormat";
 import { formatWoAmount, formatWoQuantity } from "../../utils/workOrderNumberFormat";
 import { getSysPrefs } from "../../api/OrganizationSettings/SysPrefsApi";
 import { WO_DUE_COLOR_DEFAULTS } from "./WorkOrderDueDateColorSettings";
+import { getFriendlyApiErrorMessage } from "../../utils/apiErrorMessage";
+import { enqueueSnackbar } from "notistack";
+import { useAuth } from "../../context/AuthContext";
+import {
+  getWorkOrderButtonAssignments,
+  WorkOrderButtonKey,
+} from "../../api/WorkOrder/workOrderButtonAssignmentsApi";
 
 const CATEGORY_LABELS: Record<string, string> = {
   sublimation_tshirt: "Sublimation T-Shirt",
@@ -35,7 +49,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   embroidery_job: "Embroidery Job",
 };
 
-const COLUMN_COUNT = 17;
+const COLUMN_COUNT = 18;
 
 /** Opens the full printable order sheet for a work order in a new tab. */
 const openPrintSheet = (id: number) => {
@@ -48,6 +62,14 @@ const editPathFor = (wo: WorkOrderListItem): string => {
   if (wo.department === "Printing") return `/workorder/create/printing/add-work-order?editId=${wo.id}`;
   if (wo.department === "Embroidery") return `/workorder/create/embroidery/add-work-order?editId=${wo.id}`;
   return `/workorder/create/add-work-order?department=Factory&editId=${wo.id}`;
+};
+
+/** Which department suffix (matching the backend's edit_/print_/delete_
+ * button keys) a work order's department maps to. */
+const departmentSuffix = (department?: string | null): "factory" | "printing" | "embroidery" => {
+  if (department === "Printing") return "printing";
+  if (department === "Embroidery") return "embroidery";
+  return "factory";
 };
 
 const cellSx = {
@@ -84,10 +106,26 @@ interface WorkOrderListTableProps {
 
 export default function WorkOrderListTable({ department }: WorkOrderListTableProps = {}) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: allWorkOrders = [], isLoading } = useQuery({
     queryKey: ["wo-sheet-orders"],
     queryFn: getWorkOrders,
   });
+  const { data: buttonAssignments = [] } = useQuery({
+    queryKey: ["wo-sheet-button-assignments"],
+    queryFn: getWorkOrderButtonAssignments,
+  });
+
+  /** Mirrors the backend's authorizeButtonAction: Admins may always act;
+   * otherwise a button with no assignments is open to everyone, and a
+   * button with assignments is restricted to those assigned users. */
+  const canUseButton = (action: "edit" | "print" | "delete", wo: WorkOrderListItem): boolean => {
+    if (user && (user.role || "").toLowerCase() === "admin") return true;
+    const key = `${action}_${departmentSuffix(wo.department)}` as WorkOrderButtonKey;
+    const assignedIds = buttonAssignments.filter((a) => a.button_key === key).map((a) => a.user_id);
+    if (assignedIds.length === 0) return true;
+    return !!user && assignedIds.includes(user.id);
+  };
   const { data: sysPrefs = [] } = useQuery({
     queryKey: ["sys-prefs"],
     queryFn: getSysPrefs,
@@ -96,6 +134,21 @@ export default function WorkOrderListTable({ department }: WorkOrderListTablePro
   const [searchWoNo, setSearchWoNo] = useState("");
   const [searchCustomer, setSearchCustomer] = useState("");
   const [searchDate, setSearchDate] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<WorkOrderListItem | null>(null);
+  const queryClient = useQueryClient();
+
+  const { mutate: removeWorkOrder, isPending: isDeleting } = useMutation({
+    mutationFn: (id: number) => deleteWorkOrder(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["wo-sheet-orders"] });
+      enqueueSnackbar("Work order deleted", { variant: "success" });
+      setPendingDelete(null);
+    },
+    onError: (error) => {
+      enqueueSnackbar(getFriendlyApiErrorMessage(error), { variant: "error" });
+      setPendingDelete(null);
+    },
+  });
 
   const dueColors = useMemo(() => {
     const colors = { ...WO_DUE_COLOR_DEFAULTS };
@@ -192,6 +245,7 @@ export default function WorkOrderListTable({ department }: WorkOrderListTablePro
                 "ReOpen",
                 "Print",
                 "Edit",
+                "Delete",
               ].map((label) => (
                 <TableCell
                   key={label}
@@ -263,17 +317,30 @@ export default function WorkOrderListTable({ department }: WorkOrderListTablePro
                   <TableCell sx={cellSx}>{formatWoAmount(wo.balance)}</TableCell>
                   <TableCell sx={cellSx}>{wo.reopen_datetime ? "Yes" : "-"}</TableCell>
                   <TableCell sx={cellSx} align="center">
-                    <Tooltip title="Print full order sheet">
-                      <IconButton size="small" onClick={() => openPrintSheet(wo.id)}>
-                        <PrintIcon fontSize="small" />
-                      </IconButton>
+                    <Tooltip title={canUseButton("print", wo) ? "Print full order sheet" : "You're not authorized to print this order"}>
+                      <span>
+                        <IconButton size="small" onClick={() => openPrintSheet(wo.id)} disabled={!canUseButton("print", wo)}>
+                          <PrintIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell sx={cellSx} align="center">
+                    <Tooltip title={canUseButton("edit", wo) ? "Edit this work order" : "You're not authorized to edit this order"}>
+                      <span>
+                        <IconButton size="small" onClick={() => navigate(editPathFor(wo))} disabled={!canUseButton("edit", wo)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </TableCell>
                   <TableCell sx={{ ...cellSx, borderRight: "none" }} align="center">
-                    <Tooltip title="Edit this work order">
-                      <IconButton size="small" onClick={() => navigate(editPathFor(wo))}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
+                    <Tooltip title={canUseButton("delete", wo) ? "Delete this work order" : "You're not authorized to delete this order"}>
+                      <span>
+                        <IconButton size="small" color="error" onClick={() => setPendingDelete(wo)} disabled={!canUseButton("delete", wo)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </TableCell>
                 </TableRow>
@@ -285,6 +352,39 @@ export default function WorkOrderListTable({ department }: WorkOrderListTablePro
       </TableContainer>
 
       <WorkOrderDetailsDialog orderId={selectedOrderId} onClose={() => setSelectedOrderId(null)} />
+
+      <Dialog open={pendingDelete !== null} onClose={() => setPendingDelete(null)}>
+        <DialogTitle>Delete work order?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {pendingDelete?.invoice_reference ? (
+              <>
+                <strong>{pendingDelete.work_order_no}</strong> is linked to invoice{" "}
+                <strong>{pendingDelete.invoice_reference}</strong>. Deleting it removes that link
+                permanently — the invoice itself will keep working, but this won't be traceable
+                to it anymore. Only an Admin can do this. Continue?
+              </>
+            ) : (
+              <>
+                Delete <strong>{pendingDelete?.work_order_no}</strong>? This can't be undone.
+              </>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingDelete(null)} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={isDeleting}
+            onClick={() => pendingDelete && removeWorkOrder(pendingDelete.id)}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

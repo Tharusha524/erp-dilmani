@@ -40,7 +40,11 @@ class WoSheetButtonAssignmentController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'button_key' => 'required|string|in:finish,verify,reopen,hand_over',
+            'button_key' => 'required|string|in:finish,verify,reopen,hand_over,'
+                . 'create_factory,create_printing,create_embroidery,'
+                . 'edit_factory,edit_printing,edit_embroidery,'
+                . 'delete_factory,delete_printing,delete_embroidery,'
+                . 'print_factory,print_printing,print_embroidery',
             'user_id' => 'required|integer|exists:user_managements,id',
         ]);
 

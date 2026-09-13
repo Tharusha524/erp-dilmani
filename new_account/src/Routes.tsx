@@ -565,7 +565,7 @@ const AppRoutes = () => {
         <Route
           path="/workorder/create/printing"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page - printing']}>
               {withLayout(MainLayout, CreateWorkOrder)}
             </ProtectedRoute>
           }
@@ -573,7 +573,7 @@ const AppRoutes = () => {
         <Route
           path="/workorder/create/embroidery"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page - embroidery']}>
               {withLayout(MainLayout, CreateWorkOrder)}
             </ProtectedRoute>
           }
@@ -581,7 +581,7 @@ const AppRoutes = () => {
         <Route
           path="/workorder/create/printing/add-work-order"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page - printing']}>
               {withLayout(MainLayout, AddPrintingJobSheet)}
             </ProtectedRoute>
           }
@@ -589,7 +589,7 @@ const AppRoutes = () => {
         <Route
           path="/workorder/create/embroidery/add-work-order"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page']}>
+            <ProtectedRoute required={PERMISSION_ID_MAP['Create work order page - embroidery']}>
               {withLayout(MainLayout, AddEmbroideryJobSheet)}
             </ProtectedRoute>
           }

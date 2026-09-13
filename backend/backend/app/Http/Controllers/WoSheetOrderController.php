@@ -132,6 +132,22 @@ class WoSheetOrderController extends Controller
     }
 
     /**
+     * Maps a work order's department (Factory/Printing/Embroidery, as stored
+     * on wo_sheet_orders.department) to the suffix used by the per-department
+     * create_/edit_/delete_/print_ button keys. Unrecognised/legacy values
+     * fall back to "factory", matching the department-code fallback used for
+     * work order numbering.
+     */
+    private function departmentButtonKey(?string $department): string
+    {
+        return match ($department) {
+            'Printing' => 'printing',
+            'Embroidery' => 'embroidery',
+            default => 'factory',
+        };
+    }
+
+    /**
      * List all work orders for the Work Order Dashboard / Create Work Order tables.
      */
     public function index(): JsonResponse
@@ -152,6 +168,7 @@ class WoSheetOrderController extends Controller
             ->select([
                 'wo_sheet_orders.id',
                 'wo_sheet_orders.work_order_no',
+                'wo_sheet_orders.invoice_reference',
                 'wo_sheet_orders.created_at',
                 'wo_sheet_orders.updated_at',
                 'wo_sheet_orders.order_date',
@@ -212,6 +229,34 @@ class WoSheetOrderController extends Controller
     }
 
     /**
+     * Delete a work order created by mistake. Who may do this — including
+     * for orders already linked to an invoice or past their first status —
+     * is controlled entirely by the per-department Delete button assignment
+     * (Work Order Settings -> Buttons -> Work Order Sheet), same as
+     * create/edit/print. Admins may always delete.
+     */
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $order = WoSheetOrder::find($id);
+        if (! $order) {
+            return response()->json(['message' => 'Work order not found'], 404);
+        }
+
+        if ($deny = $this->authorizeButtonAction($request, 'delete_' . $this->departmentButtonKey($order->department))) {
+            return $deny;
+        }
+
+        DB::transaction(function () use ($order) {
+            $order->sizes()->delete();
+            $order->priceItems()->delete();
+            $order->events()->delete();
+            $order->delete();
+        });
+
+        return response()->json(['message' => 'Work order deleted successfully']);
+    }
+
+    /**
      * Create a new work order (the "Add Work Order" order sheet), together with
      * its size grid and price line items, in one atomic save.
      */
@@ -221,7 +266,7 @@ class WoSheetOrderController extends Controller
             'branch' => 'nullable|string|max:100',
             'order_date' => 'nullable|date',
             'delivery_date' => 'nullable|date',
-            'customer' => 'nullable|string|max:150',
+            'customer' => 'required|string|max:150',
             'contact_no' => 'nullable|string|max:30',
             'kind_of_fabric' => 'nullable|string|max:100',
             'description' => 'nullable|string',
@@ -270,20 +315,66 @@ class WoSheetOrderController extends Controller
         $department = $data['department'] ?? $request->user()?->department;
         $departmentCode = $departmentCodes[$department] ?? 'FA';
 
-        $departmentCountQuery = WoSheetOrder::query();
-        if ($departmentCode === 'FA') {
-            $departmentCountQuery->where(function ($q) {
-                $q->whereNull('department')->orWhereNotIn('department', ['Printing', 'Embroidery']);
-            });
-        } else {
-            $departmentCountQuery->where('department', $department);
+        if ($deny = $this->authorizeButtonAction($request, 'create_' . $this->departmentButtonKey($department))) {
+            return $deny;
         }
-        $sequence = $departmentCountQuery->count() + 1;
-        $paddedSequence = str_pad((string) $sequence, 8, '0', STR_PAD_LEFT);
-        $groupedSequence = substr($paddedSequence, 0, 4) . ' ' . substr($paddedSequence, 4);
-        $workOrderNo = "WO-{$departmentCode}-{$groupedSequence}";
 
-        $order = DB::transaction(function () use ($request, $data, $department, $processType, $firstStatus, $workOrderNo) {
+        $prefix = "WO-{$departmentCode}-";
+
+        // Retries in case two requests still land on the same number despite
+        // the lock below (e.g. the very first order for a brand-new
+        // department, where there's no existing row yet to lock on).
+        $order = null;
+        $attempts = 0;
+        while ($order === null) {
+            $attempts++;
+            try {
+                $order = DB::transaction(function () use ($request, $data, $department, $processType, $firstStatus, $prefix) {
+                    // Next number = the highest existing sequence for this
+                    // department + 1 (not a row count, which drifts out of
+                    // sync the moment any order is ever deleted), locked so
+                    // two concurrent requests can't compute the same "next"
+                    // number and collide on the unique work_order_no index.
+                    $maxSequence = DB::table('wo_sheet_orders')
+                        ->where('work_order_no', 'like', $prefix . '%')
+                        ->lockForUpdate()
+                        ->pluck('work_order_no')
+                        ->reduce(function (int $max, string $workOrderNo) use ($prefix) {
+                            $digits = str_replace(' ', '', substr($workOrderNo, strlen($prefix)));
+                            return is_numeric($digits) ? max($max, (int) $digits) : $max;
+                        }, 0);
+
+                    $paddedSequence = str_pad((string) ($maxSequence + 1), 8, '0', STR_PAD_LEFT);
+                    $groupedSequence = substr($paddedSequence, 0, 4) . ' ' . substr($paddedSequence, 4);
+                    $workOrderNo = $prefix . $groupedSequence;
+
+                    return $this->createWoSheetOrder($request, $data, $department, $processType, $firstStatus, $workOrderNo);
+                });
+            } catch (\Illuminate\Database\QueryException $e) {
+                if ($attempts >= 5 || !str_contains($e->getMessage(), 'work_order_no_unique')) {
+                    throw $e;
+                }
+                // Duplicate number — loop around and recompute.
+            }
+        }
+
+        return response()->json(
+            $order->fresh(['sizes', 'priceItems', 'events.user', 'currentStatus']),
+            201
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function createWoSheetOrder(
+        Request $request,
+        array $data,
+        ?string $department,
+        string $processType,
+        ?WoSheetStatus $firstStatus,
+        string $workOrderNo
+    ): WoSheetOrder {
             $order = WoSheetOrder::create([
                 'work_order_no' => $workOrderNo,
                 'invoice_reference' => $data['invoice_reference'] ?? null,
@@ -360,12 +451,6 @@ class WoSheetOrderController extends Controller
             ]);
 
             return $order;
-        });
-
-        return response()->json(
-            $order->fresh(['sizes', 'priceItems', 'events.user', 'currentStatus']),
-            201
-        );
     }
 
     /**
@@ -381,7 +466,12 @@ class WoSheetOrderController extends Controller
             return response()->json(['message' => 'Work order not found'], 404);
         }
 
-        if ($deny = $this->authorizeStatusAction($request, $order)) {
+        // Editing the order sheet's own fields (this form) is gated by the
+        // per-department Edit button assignment (Work Order Settings ->
+        // Buttons), NOT by who's responsible for the current status — that
+        // check only applies to actually changing the status itself (Next
+        // Status/Finish/Verify/Hand Over/Re-Open).
+        if ($deny = $this->authorizeButtonAction($request, 'edit_' . $this->departmentButtonKey($order->department))) {
             return $deny;
         }
 
@@ -389,7 +479,7 @@ class WoSheetOrderController extends Controller
             'branch' => 'nullable|string|max:100',
             'order_date' => 'nullable|date',
             'delivery_date' => 'nullable|date',
-            'customer' => 'nullable|string|max:150',
+            'customer' => 'required|string|max:150',
             'contact_no' => 'nullable|string|max:30',
             'kind_of_fabric' => 'nullable|string|max:100',
             'description' => 'nullable|string',

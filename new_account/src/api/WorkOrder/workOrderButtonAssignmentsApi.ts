@@ -1,6 +1,22 @@
 import api from "../apiClient";
 
-export type WorkOrderButtonKey = "finish" | "verify" | "reopen" | "hand_over";
+export type WorkOrderButtonKey =
+  | "finish"
+  | "verify"
+  | "reopen"
+  | "hand_over"
+  | "create_factory"
+  | "create_printing"
+  | "create_embroidery"
+  | "edit_factory"
+  | "edit_printing"
+  | "edit_embroidery"
+  | "delete_factory"
+  | "delete_printing"
+  | "delete_embroidery"
+  | "print_factory"
+  | "print_printing"
+  | "print_embroidery";
 
 export interface WorkOrderButtonAssignment {
   id: number;

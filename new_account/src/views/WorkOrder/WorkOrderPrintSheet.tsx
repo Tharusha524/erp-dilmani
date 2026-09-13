@@ -188,8 +188,7 @@ function FactorySheet({ order, orgName }: { order: WorkOrderDetail; orgName: str
         <span>Status: {order.current_status?.name || "-"}</span>
       </div>
 
-      <Section>Header</Section>
-      <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 48, flexWrap: "wrap", marginTop: 14 }}>
         <FieldTable
           rows={[
             ["Category", CATEGORY_LABELS[order.category] || order.category],

@@ -304,7 +304,9 @@ export const NAVIGATION_PERMISSION_TREE: NavModule[] = [
         label: "Work Order",
         pages: [
           { label: "Work Order Dashboard", id: id("Work order dashboard page"), path: "/workorder/dashboard" },
-          { label: "Create Work Order", id: id("Create work order page"), path: "/workorder/create/factory" },
+          { label: "Create Work Order - Factory", id: id("Create work order page"), path: "/workorder/create/factory" },
+          { label: "Create Work Order - Printing", id: id("Create work order page - printing"), path: "/workorder/create/printing" },
+          { label: "Create Work Order - Embroidery", id: id("Create work order page - embroidery"), path: "/workorder/create/embroidery" },
           { label: "Work Order Report", id: id("Work order report page"), path: "/workorder/report" },
           { label: "Work Order Settings", id: id("Work order settings page"), path: "/workorder/settings" },
         ],
