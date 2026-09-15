@@ -28,6 +28,7 @@ import { getCompanies } from "../../../../api/CompanySetup/CompanySetupApi";
 import { getBomsByParent } from "../../../../api/Bom/BomApi";
 import { postWorkOrderEntry } from "../../../../api/Manufacturing/ManufacturingApi";
 import { runTransactionSave, assertPersistedResponse } from "../../../../utils/transactionSave";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 import ItemSearchSelect from "../../../../components/ItemSearchSelect";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
 import { useAuth } from "../../../../context/AuthContext";
@@ -92,6 +93,11 @@ export default function WorkOrderEntry() {
   const [destinationLocation, setDestinationLocation] = useState("");
   const [quantity, setQuantity] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+
+  // trans_type 26 = Work Order
+  const { reference: nextWorkOrderReference } = useNextFiscalYearReference(26, {
+    asOfDate: date,
+  });
   const [dateRequiredBy, setDateRequiredBy] = useState("");
   const [labourCost, setLabourCost] = useState("0.00");
   const [creditLabourAccount, setCreditLabourAccount] = useState("");
@@ -150,86 +156,19 @@ export default function WorkOrderEntry() {
     }
   }, [locations, destinationLocation]);
 
-  // Fiscal years used to build fiscal-year-aware reference like PurchaseOrderEntry
+  // Fiscal years still used elsewhere on this page (e.g. date validation)
   const { data: fiscalYears = [] } = useQuery({ queryKey: ["fiscalYears"], queryFn: getFiscalYears });
   const { data: companies = [] } = useQuery({ queryKey: ["companies"], queryFn: getCompanies });
 
+  // Auto-generate reference based on fiscal year — uses the shared
+  // TransactionReferenceService (via useNextFiscalYearReference) so this follows
+  // the Work Order type's configured Prefix/Pattern under Setup > Transaction
+  // References, instead of a hardcoded "NNN/year" format.
   useEffect(() => {
-    (async () => {
-      // prefer company setup fiscal year if available
-      try {
-        let yearLabel: string | null = null;
-
-        const company = Array.isArray(companies) && companies.length > 0 ? companies[0] : null;
-        const companyFiscalId = company?.fiscal_year_id ?? company?.fiscal_year ?? null;
-
-        if (companyFiscalId && fiscalYears && fiscalYears.length > 0) {
-          const chosenFy = fiscalYears.find((fy: any) => String(fy.id ?? fy.fiscal_year_id ?? fy.fiscal_year) === String(companyFiscalId));
-          if (chosenFy) {
-            const fromYear = chosenFy.fiscal_year_from ? new Date(chosenFy.fiscal_year_from).getFullYear() : null;
-            const toYear = chosenFy.fiscal_year_to ? new Date(chosenFy.fiscal_year_to).getFullYear() : fromYear;
-            yearLabel = chosenFy.fiscal_year || (fromYear && toYear ? (fromYear === toYear ? String(fromYear) : `${fromYear}-${toYear}`) : String(new Date().getFullYear()));
-          }
-        }
-
-        // fallback: use date to determine fiscal year if we don't have company-configured fiscal year
-        if (!yearLabel) {
-          if (!date) return;
-          const dateObj = new Date(date);
-          if (isNaN(dateObj.getTime())) return;
-
-          yearLabel = String(dateObj.getFullYear());
-          if (fiscalYears && fiscalYears.length > 0) {
-            const matching = fiscalYears.find((fy: any) => {
-              if (!fy.fiscal_year_from || !fy.fiscal_year_to) return false;
-              const from = new Date(fy.fiscal_year_from);
-              const to = new Date(fy.fiscal_year_to);
-              if (isNaN(from.getTime()) || isNaN(to.getTime())) return false;
-              return dateObj >= from && dateObj <= to;
-            });
-
-            const chosen = matching || [...fiscalYears]
-              .filter((fy: any) => fy.fiscal_year_from && !isNaN(new Date(fy.fiscal_year_from).getTime()))
-              .sort((a: any, b: any) => new Date(b.fiscal_year_from).getTime() - new Date(a.fiscal_year_from).getTime())
-              .find((fy: any) => new Date(fy.fiscal_year_from) <= dateObj) || fiscalYears[0];
-
-            if (chosen) {
-              const fromYear = chosen.fiscal_year_from ? new Date(chosen.fiscal_year_from).getFullYear() : dateObj.getFullYear();
-              const toYear = chosen.fiscal_year_to ? new Date(chosen.fiscal_year_to).getFullYear() : fromYear;
-              yearLabel = chosen.fiscal_year || (fromYear === toYear ? String(fromYear) : `${fromYear}-${toYear}`);
-            }
-          }
-        }
-
-        // find next sequential number for work orders in that fiscal year
-        const allWOs = await getWorkOrders();
-        let nextNum = 1;
-        if (Array.isArray(allWOs) && allWOs.length > 0 && yearLabel) {
-          const yearPattern = `/${yearLabel}`;
-          const matchingRefs = allWOs
-            .map((w: any) => w.wo_ref ?? w.reference ?? "")
-            .filter((ref: string) => String(ref).endsWith(yearPattern))
-            .map((ref: string) => {
-              const parts = String(ref).split('/');
-              if (parts.length >= 2) {
-                const numPart = parts[0];
-                const parsed = parseInt(numPart, 10);
-                return isNaN(parsed) ? 0 : parsed;
-              }
-              return 0;
-            })
-            .filter((n: number) => n > 0);
-          if (matchingRefs.length > 0) {
-            const maxRef = Math.max(...matchingRefs);
-            nextNum = maxRef + 1;
-          }
-        }
-        if (yearLabel) setReference(`${nextNum.toString().padStart(3, '0')}/${yearLabel}`);
-      } catch (err) {
-        console.warn('Failed to fetch work orders for reference generation', err);
-      }
-    })();
-  }, [date, fiscalYears, companies]);
+    if (nextWorkOrderReference) {
+      setReference(nextWorkOrderReference);
+    }
+  }, [nextWorkOrderReference]);
 
   useEffect(() => {
     // pick the first available account from groupedChartMasters for both labour and overhead

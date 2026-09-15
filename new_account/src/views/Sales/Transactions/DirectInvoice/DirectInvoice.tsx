@@ -547,32 +547,14 @@ export default function DirectInvoice() {
     };
 
     // ===== Auto-generate reference based on fiscal year =====
+    // Uses the shared TransactionReferenceService (via useNextFiscalYearReference) so
+    // this follows each transaction type's configured Prefix/Pattern under
+    // Setup > Transaction References, instead of a hardcoded "NNN/year" format.
     useEffect(() => {
-        // Determine year: prefer fiscal year start if available, otherwise use current calendar year
-        const year = selectedFiscalYear
-            ? new Date(selectedFiscalYear.fiscal_year_from).getFullYear()
-            : new Date().getFullYear();
-
-        // Filter for trans_type=10 (invoice) references from debtor_trans
-        const existingRefs = debtorTrans
-            .filter((d: any) => Number(d.trans_type) === 10 && d.reference)
-            .map((d: any) => d.reference);
-
-        const yearReferences = existingRefs.filter((ref: string) =>
-            ref.endsWith(`/${year}`)
-        );
-
-        const nums = yearReferences
-            .map((ref: string) => {
-                const match = ref.match(/^(\d{3})\/\d{4}$/);
-                return match ? parseInt(match[1], 10) : 0;
-            })
-            .filter((num: number) => !isNaN(num) && num > 0);
-
-        const nextNumber = nums.length > 0 ? Math.max(...nums) + 1 : 1;
-        const formattedNumber = nextNumber.toString().padStart(3, '0');
-        setReference(`${formattedNumber}/${year}`);
-    }, [selectedFiscalYear, debtorTrans]);
+        if (nextInvoiceReference) {
+            setReference(nextInvoiceReference);
+        }
+    }, [nextInvoiceReference]);
 
     // Auto-select first customer on load (match DirectDelivery behaviour)
     useEffect(() => {
