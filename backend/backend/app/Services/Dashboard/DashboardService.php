@@ -432,24 +432,8 @@ class DashboardService
       $items = $items->concat($this->mapActivityRows($rows, 'bank'));
     }
 
-    if (Schema::hasTable('journal')) {
-      $rows = DB::table('journal as j')
-        ->select(
-          DB::raw('CONCAT(j.type, "-", j.trans_no) as id'),
-          'j.reference',
-          'j.tran_date as activity_date',
-          DB::raw('"GL Journal" as activity_type'),
-          'j.amount',
-          DB::raw('"Posted" as status')
-        )
-        ->whereNotNull('j.tran_date')
-        ->orderByDesc('j.tran_date')
-        ->orderByDesc('j.trans_no')
-        ->limit($limit)
-        ->get();
-
-      $items = $items->concat($this->mapActivityRows($rows, 'journal'));
-    }
+    // Journal Entries intentionally excluded from Recent Activity — the data
+    // itself is unaffected; this only hides it from this dashboard feed.
 
     return $items
       ->sortByDesc(fn ($row) => $row['sort_date'])

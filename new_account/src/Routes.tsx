@@ -3330,7 +3330,19 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/gl-postings"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute
+              // Accept any permission of a page that can link here (Payments,
+              // Deposits, Journal Inquiry, Bank Account Inquiry), since
+              // "Banking & GL Transactions" itself has no checkbox in Access
+              // Setup and can never be granted on its own.
+              required={[
+                PERMISSION_ID_MAP['Bank payments'],
+                PERMISSION_ID_MAP['Bank deposits'],
+                PERMISSION_ID_MAP['GL analytical reports and inquiries'],
+                PERMISSION_ID_MAP['Bank reports and inquiries'],
+                PERMISSION_ID_MAP['Banking & GL Transactions'],
+              ]}
+            >
               {withLayout(MainLayout, GLPostings)}
             </ProtectedRoute>
           }

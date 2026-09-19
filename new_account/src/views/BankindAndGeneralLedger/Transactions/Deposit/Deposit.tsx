@@ -427,7 +427,7 @@ export default function Deposits() {
               <TableCell>Account Description</TableCell>
               <TableCell>Cost Center</TableCell>
               <TableCell>Amount</TableCell>
-              <TableCell>Memo</TableCell>
+              <TableCell sx={{ minWidth: 280 }}>Memo</TableCell>
               <TableCell align="center">Action</TableCell>
             </TableRow>
           </TableHead>
@@ -500,7 +500,7 @@ export default function Deposits() {
                   <FormattedNumberField size="small" value={row.amount} onChange={(e) => handleChange(row.id, "amount", e.target.value)} />
                 </TableCell>
                 <TableCell>
-                  <TextField size="small" value={row.memo} onChange={(e) => handleChange(row.id, "memo", e.target.value)} />
+                  <TextField size="small" fullWidth sx={{ minWidth: 260 }} value={row.memo} onChange={(e) => handleChange(row.id, "memo", e.target.value)} />
                 </TableCell>
                 <TableCell align="center">
                   {index === rows.length - 1 ? (

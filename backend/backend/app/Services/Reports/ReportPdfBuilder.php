@@ -225,7 +225,7 @@ class ReportPdfBuilder
         return number_format((float) $val, 2);
     }
 
-    private function pack(string $title, array $headers, Collection|array $data, Request $request, ?string $subtitle = null): array
+    private function pack(string $title, array $headers, Collection|array $data, Request $request, ?string $subtitle = null, ?array $totalsRow = null): array
     {
         $rows = [];
         foreach ($data as $item) {
@@ -238,11 +238,21 @@ class ReportPdfBuilder
             $rows[] = $row;
         }
 
+        $totals = null;
+        if ($totalsRow !== null && count($rows) > 0) {
+            $totals = [];
+            foreach (array_keys($headers) as $field) {
+                $val = $totalsRow[$field] ?? '';
+                $totals[] = $val === '' ? '' : $this->formatPdfCell($field, $val);
+            }
+        }
+
         return array_merge([
             'title' => $title,
             'subtitle' => $subtitle,
             'headers' => array_values($headers),
             'rows' => $rows,
+            'totals' => $totals,
             'parameters' => count($rows) === 0 ? $this->flatParams($request) : [],
         ], [
             'companyHeader' => CompanyReportHeader::forReports(),
@@ -377,6 +387,19 @@ class ReportPdfBuilder
             'onlyBalance' => ($request->input('onlyBalances', 'no') === 'yes'),
         ]);
 
+        $rows = $this->normalizeRows($data);
+        $sumField = fn (string $field) => collect($rows)->sum(fn ($r) => (float) ((array) $r)[$field] ?? 0);
+        $totalsRow = [
+            'account' => '',
+            'accountName' => 'Total',
+            'broughtForwardDebit' => $sumField('broughtForwardDebit'),
+            'broughtForwardCredit' => $sumField('broughtForwardCredit'),
+            'thisPeriodDebit' => $sumField('thisPeriodDebit'),
+            'thisPeriodCredit' => $sumField('thisPeriodCredit'),
+            'balanceDebit' => $sumField('balanceDebit'),
+            'balanceCredit' => $sumField('balanceCredit'),
+        ];
+
         return $this->pack($title, [
             'account' => 'Account',
             'accountName' => 'Name',
@@ -386,7 +409,7 @@ class ReportPdfBuilder
             'thisPeriodCredit' => 'Period Credit',
             'balanceDebit' => 'Bal Debit',
             'balanceCredit' => 'Bal Credit',
-        ], $this->normalizeRows($data), $request, $this->periodSubtitle($dates['fromDate'], $dates['toDate']));
+        ], $rows, $request, $this->periodSubtitle($dates['fromDate'], $dates['toDate']), $totalsRow);
     }
 
     private function balanceSheetReport(Request $request, string $title): array
