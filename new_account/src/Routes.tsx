@@ -262,7 +262,7 @@ import CustomerPaymentsSuccess from "./views/Sales/Transactions/CustomerPayments
 import ViewCustomerPayments from "./views/Sales/Transactions/CustomerPayments/ViewCustomerPayments";
 import CustomerCreditNotesSuccess from "./views/Sales/Transactions/CustomerCreditNotes/CustomerCreditNotesSuccess";
 import ViewCustomerCreditNotes from "./views/Sales/Transactions/CustomerCreditNotes/ViewCustomerCreditNotes";
-import ViewDirectInvoice from "./views/Sales/Transactions/DirectInvoice/viewDirectInvoice";
+import ViewDirectInvoice from "./views/Sales/Transactions/DirectInvoice/ViewDirectInvoice";
 import ViewSalesGLJournalEntries from "./views/Sales/Transactions/GLJournalEntries/ViewSalesGLJournalEntries";
 import ViewPurchasesGLJournalEntries from "./views/Purchases/Transactions/GLJournalEntries/ViewPurchasesGLJournalEntries";
 import ViewInventoryGLJournalEntries from "./views/ItemsAndInventory/Transactions/GLJournalEntries/ViewInventoryGLJournalEntries";
@@ -2379,7 +2379,15 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/transactions/gl-journal-entries"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            // "Inventory Operations" has no checkbox in Access Setup and can
+            // never be granted on its own — accept the permission of the
+            // page that actually links here (Inventory Adjustments) too.
+            <ProtectedRoute
+              required={[
+                PERMISSION_ID_MAP['Inventory adjustments'],
+                PERMISSION_ID_MAP['Inventory Operations'],
+              ]}
+            >
               {withLayout(MainLayout, ViewInventoryGLJournalEntries)}
             </ProtectedRoute>
           }
@@ -2540,7 +2548,18 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/maintenance/items/transactions/view-adjustment"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            // "Inventory Operations" has no checkbox in Access Setup and can
+            // never be granted on its own — accept the permissions of the
+            // pages that actually link here (Stock Transactions view,
+            // Inventory Item Movements, Inventory Adjustments) too.
+            <ProtectedRoute
+              required={[
+                PERMISSION_ID_MAP['Stock transactions view'],
+                PERMISSION_ID_MAP['Items analytical reports and inquiries'],
+                PERMISSION_ID_MAP['Inventory adjustments'],
+                PERMISSION_ID_MAP['Inventory Operations'],
+              ]}
+            >
               {withLayout(MainLayout, ItemAdjustmentDetails)}
             </ProtectedRoute>
           }

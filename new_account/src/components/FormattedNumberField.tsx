@@ -30,8 +30,14 @@ export default function FormattedNumberField({
   ...rest
 }: FormattedNumberFieldProps) {
   const [text, setText] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
+    // Skip re-formatting while the user is actively typing — otherwise every
+    // keystroke round-trips through the parent's state and gets forced back
+    // into "X.00" shape mid-edit, making it impossible to type more digits.
+    if (isFocused) return;
+
     if (value === "" || value === null || value === undefined) {
       setText("");
       return;
@@ -41,7 +47,7 @@ export default function FormattedNumberField({
       ? num.toFixed(fixedDecimals)
       : String(value);
     setText(formatWithCommas(raw));
-  }, [value, fixedDecimals]);
+  }, [value, fixedDecimals, isFocused]);
 
   return (
     <TextField
@@ -50,8 +56,12 @@ export default function FormattedNumberField({
       helperText={typeof rest.error === 'string' ? rest.error : rest.helperText}
       value={text}
       inputMode="decimal"
-      onFocus={onFocus}
+      onFocus={(e) => {
+        setIsFocused(true);
+        onFocus?.(e);
+      }}
       onBlur={(e) => {
+        setIsFocused(false);
         const raw = text.replace(/,/g, "");
         const num = Number(raw);
         const formatted = fixedDecimals !== undefined && Number.isFinite(num)

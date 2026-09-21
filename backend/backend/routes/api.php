@@ -501,6 +501,7 @@ Route::post('sys-prefs/bulk', [\App\Http\Controllers\SysPrefsController::class, 
 Route::apiResource('sys-prefs', \App\Http\Controllers\SysPrefsController::class);
 
 Route::post('/reports/generate', [\App\Http\Controllers\ReportController::class, 'generate']);
+Route::post('/reports/generate-excel', [\App\Http\Controllers\ReportController::class, 'generateExcel']);
 Route::post('/reports/monthly-sales-summary', [\App\Http\Controllers\ReportController::class, 'monthlySalesSummary']);
 Route::post('/reports/customer-balances', [\App\Http\Controllers\ReportController::class, 'customerBalances']);
 Route::post('/reports/aged-customer-analysis', [\App\Http\Controllers\ReportController::class, 'agedCustomerAnalysis']);

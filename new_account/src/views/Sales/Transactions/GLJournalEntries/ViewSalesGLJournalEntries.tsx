@@ -8,6 +8,8 @@ import { getChartMasters } from "../../../../api/GLAccounts/ChartMasterApi";
 import { getSysPrefs } from "../../../../api/OrganizationSettings/SysPrefsApi";
 import { getBankAccounts } from "../../../../api/BankAccount/BankAccountApi";
 import { getBankTrans } from "../../../../api/BankTrans/BankTransApi";
+import { getCustomers } from "../../../../api/Customer/AddCustomerApi";
+import { getSalesOrders } from "../../../../api/SalesOrders/SalesOrdersApi";
 import {
   buildSalesGlJournalGroups,
   TRANS_TYPE_LABELS,
@@ -43,6 +45,8 @@ export default function ViewSalesGLJournalEntries() {
   const { data: sysPrefs = [] } = useQuery({ queryKey: ["sysPrefs"], queryFn: getSysPrefs });
   const { data: bankAccounts = [] } = useQuery({ queryKey: ["bankAccounts"], queryFn: getBankAccounts });
   const { data: bankTrans = [] } = useQuery({ queryKey: ["bankTrans"], queryFn: getBankTrans });
+  const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: getCustomers });
+  const { data: salesOrders = [] } = useQuery({ queryKey: ["salesOrders"], queryFn: getSalesOrders });
 
   const primaryTrans = useMemo(() => {
     const list = debtorTrans || [];
@@ -210,6 +214,24 @@ export default function ViewSalesGLJournalEntries() {
     return total > 0.001 ? total : undefined;
   }, [primaryTrans]);
 
+  const counterparty = useMemo(() => {
+    if (!primaryTrans?.debtor_no) return undefined;
+    const cust = (customers as any[]).find(
+      (c) => String(c.debtor_no) === String(primaryTrans.debtor_no)
+    );
+    if (!cust) return undefined;
+    return `[${String(primaryTrans.debtor_no).padStart(5, "0")}] ${cust.name}`;
+  }, [customers, primaryTrans]);
+
+  const relatedOrder = useMemo(() => {
+    const targetOrderNo = orderNo ?? primaryTrans?.order_no;
+    if (targetOrderNo == null) return undefined;
+    return (salesOrders as any[]).find((o) => Number(o.order_no) === Number(targetOrderNo));
+  }, [salesOrders, orderNo, primaryTrans]);
+
+  const comments = relatedOrder?.comments || undefined;
+  const glNumber = primaryTrans?.id ?? undefined;
+
   return (
     <GLJournalEntriesPage
       breadcrumbs={[
@@ -233,6 +255,9 @@ export default function ViewSalesGLJournalEntries() {
       }
       orderNo={orderNo ?? primaryTrans?.order_no}
       orderNoLabel="Sales Order #"
+      counterparty={counterparty}
+      glNumber={glNumber}
+      comments={comments}
       groups={groups}
       isLoading={isLoading}
       documentAmount={documentAmount}

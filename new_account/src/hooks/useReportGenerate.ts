@@ -1,7 +1,12 @@
 import { useCallback, useContext } from "react";
 import { useSnackbar } from "notistack";
 import { ReportGenerationContext } from "../context/ReportGenerationContext";
-import { downloadPdfBlob, generateReportPdf } from "../utils/reportPdfDownload";
+import {
+  downloadExcelBlob,
+  downloadPdfBlob,
+  generateReportExcel,
+  generateReportPdf,
+} from "../utils/reportPdfDownload";
 
 interface UseReportGenerateOptions {
   validate?: () => boolean;
@@ -26,27 +31,32 @@ export function useReportGenerate(options: UseReportGenerateOptions = {}) {
 
       const reportKey = ctx.reportKey;
       const title = ctx?.reportTitle ?? "Report";
+      const isExcel = String(payload.destination ?? "").toLowerCase() === "excel";
 
       try {
-        const blob = await generateReportPdf(reportKey, {
-          ...payload,
-          title,
-        });
-
-        const defaultName = `${reportKey}_${new Date().toISOString().slice(0, 10)}.pdf`;
-        const fileName =
+        const baseName =
           typeof options.fileName === "function"
-            ? options.fileName(payload)
-            : options.fileName ?? defaultName;
+            ? options.fileName(payload).replace(/\.pdf$/i, "")
+            : (options.fileName ?? `${reportKey}_${new Date().toISOString().slice(0, 10)}`).replace(
+                /\.pdf$/i,
+                ""
+              );
 
-        downloadPdfBlob(blob, fileName);
-        enqueueSnackbar("Report PDF generated successfully", { variant: "success" });
+        if (isExcel) {
+          const blob = await generateReportExcel(reportKey, { ...payload, title });
+          downloadExcelBlob(blob, baseName);
+          enqueueSnackbar("Report Excel generated successfully", { variant: "success" });
+        } else {
+          const blob = await generateReportPdf(reportKey, { ...payload, title });
+          downloadPdfBlob(blob, baseName);
+          enqueueSnackbar("Report PDF generated successfully", { variant: "success" });
+        }
       } catch (error) {
-        console.error("Report PDF generation failed:", error);
+        console.error("Report generation failed:", error);
         const message =
           error instanceof Error && error.message
             ? error.message
-            : "Failed to generate report PDF";
+            : `Failed to generate report ${isExcel ? "Excel" : "PDF"}`;
         enqueueSnackbar(message, { variant: "error" });
       }
     },

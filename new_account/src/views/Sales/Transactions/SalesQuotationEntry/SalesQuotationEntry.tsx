@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { FormPageLayout } from "../../../../components/Layout/FormPageLayout";
 import {
     Box,
@@ -350,6 +350,11 @@ export default function SalesQuotationEntry() {
     // === Additional derived fields for backend mapping ===
     const [submitting, setSubmitting] = useState(false);
     const [orderNo, setOrderNo] = useState<number>(1);
+    // Synchronous guard against double-clicks: React state (`submitting`) only
+    // disables the button after a re-render, which isn't fast enough to stop
+    // two clicks fired in quick succession. This ref blocks the second one
+    // immediately, before that render happens.
+    const isSubmittingRef = useRef(false);
 
     // Helper to get selected customer object
     const customerName = selectedCustomer?.name || null;
@@ -358,6 +363,7 @@ export default function SalesQuotationEntry() {
     const customerAddr = selectedCustomer?.address || selectedCustomer?.delivery_address || address || null;
 
     const handlePlaceQuotation = async () => {
+        if (isSubmittingRef.current) return;
         if (!customer) { alert("Select customer first"); return; }
         if (!branch) { alert("Select branch first"); return; }
         if (!priceList) { alert("Please select a price list."); return; }
@@ -370,6 +376,7 @@ export default function SalesQuotationEntry() {
             alert("At least one item must be added to the quotation.");
             return;
         }
+        isSubmittingRef.current = true;
         setSubmitting(true);
         try {
             const payload = {
@@ -429,6 +436,7 @@ export default function SalesQuotationEntry() {
             const detail = e?.response?.data?.message ?? e?.message ?? "Unknown error";
             alert("Failed to save: " + detail);
         } finally {
+            isSubmittingRef.current = false;
             setSubmitting(false);
         }
     };
