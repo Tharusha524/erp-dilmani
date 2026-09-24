@@ -202,6 +202,7 @@ export const PERMISSION_ID_MAP: Record<string, number> = {
   "User login activity page": 5030,
   "System diagnostics page": 5031,
   "Class Types (GL)": 5032,
+  "Login slideshow images": 5033,
 };
 
 export const PERMISSION_NAME_BY_ID: Record<number, string> = Object.fromEntries(

@@ -24,12 +24,16 @@ import { reportKeyFromTitle } from "./reportKeys";
 
 // Permission mapping for report classes
 const REPORT_CLASS_PERMISSIONS: Record<string, number> = {
-  Customer: PERMISSION_ID_MAP["Sales analytical reports"],
+  // These must match real checkboxes in Access Setup (navigationTree.ts) —
+  // the previous names here ("Sales analytical reports", "Inventory
+  // Analytics", "Manufacturing Analytics", "CostCenter reports") don't exist
+  // there and could never be granted to any user.
+  Customer: PERMISSION_ID_MAP["Customer and sales reports"],
   Supplier: PERMISSION_ID_MAP["Supplier analytical reports"],
-  Inventory: PERMISSION_ID_MAP["Inventory Analytics"],
-  Manufacturing: PERMISSION_ID_MAP["Manufacturing Analytics"],
+  Inventory: PERMISSION_ID_MAP["Inventory reports"],
+  Manufacturing: PERMISSION_ID_MAP["Manufacturing reports"],
   FixedAssets: PERMISSION_ID_MAP["Fixed Asset analytical reports and inquiries"],
-  CostCenters: PERMISSION_ID_MAP["CostCenter reports"],
+  CostCenters: PERMISSION_ID_MAP["CostCenters"],
   Banking: PERMISSION_ID_MAP["Banking & GL Analytics"],
   GeneralLedger: PERMISSION_ID_MAP["GL reports and inquiries"],
 };

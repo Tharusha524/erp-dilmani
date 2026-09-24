@@ -324,6 +324,7 @@ export const NAVIGATION_PERMISSION_TREE: NavModule[] = [
           { label: "System Diagnostics", id: id("System diagnostics page"), path: "/setup/maintenance/system-diagnostics" },
           { label: "Backup and Restore", id: id("Database backup/restore"), path: "/setup/maintenance/backup-and-restore" },
           { label: "User Login Activity", id: id("User login activity page"), path: "/setup/maintenance/user-login-logs" },
+          { label: "Slideshow Images", id: id("Login slideshow images"), path: "/setup/maintenance/slideshow-images" },
         ],
       },
     ],

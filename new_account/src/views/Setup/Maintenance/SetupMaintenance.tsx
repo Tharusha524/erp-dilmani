@@ -5,6 +5,7 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import BackupIcon from "@mui/icons-material/Backup";
 import LoginIcon from "@mui/icons-material/Login";
+import CollectionsIcon from "@mui/icons-material/Collections";
 import { useNavigate } from "react-router";
 import ModuleHubLayout, { type ModuleHubItem } from "../../../components/ModuleHubLayout";
 
@@ -15,6 +16,7 @@ const ITEMS: ModuleHubItem[] = [
   { text: "SYSTEM DIAGNOSTICS", icon: <HealthAndSafetyIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/maintenance/system-diagnostics" },
   { text: "BACKUP AND RESTORE", icon: <BackupIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/maintenance/backup-and-restore" },
   { text: "USER LOGIN ACTIVITY", icon: <LoginIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/maintenance/user-login-logs" },
+  { text: "SLIDESHOW IMAGES", icon: <CollectionsIcon sx={{ fontSize: 40, color: "#1976d2" }} />, path: "/setup/maintenance/slideshow-images" },
 ];
 
 export default function SetupMaintenance() {

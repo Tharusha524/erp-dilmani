@@ -11,13 +11,24 @@ const ImageCarousel = ({
   const isMdUp = useMediaQuery(theme.breakpoints.up(990));
   const isSmUp = useMediaQuery(theme.breakpoints.up("sm"));
 
+  // If the image list shrinks (e.g. the default 6 swapped for 2 uploaded
+  // ones) while sitting on a now out-of-range index, snap back into range
+  // immediately instead of showing blank space until the next tick.
   useEffect(() => {
+    if (images.length > 0 && currentIndex >= images.length) {
+      setCurrentIndex(0);
+    }
+  }, [images.length, currentIndex]);
+
+  useEffect(() => {
+    if (images.length <= 1) return;
+
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
     }, 10000); // Change slide every 10 seconds
 
     return () => clearInterval(interval); // Cleanup interval on component unmount
-  }, []);
+  }, [images.length]);
 
   return (
     <div

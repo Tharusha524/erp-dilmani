@@ -29,6 +29,7 @@ import BankingTransactions from "./views/BankindAndGeneralLedger/Transactions/Ba
 import BankingInquiriesAndReports from "./views/BankindAndGeneralLedger/InquiriesAndReports/BankingInquiriesAndReports";
 import BankingMaintenance from "./views/BankindAndGeneralLedger/Maintenance/BankingMaintenance";
 import SetupMaintenance from "./views/Setup/Maintenance/SetupMaintenance";
+import SlideshowImagesTable from "./views/Setup/Maintenance/SlideshowImages/SlideshowImagesTable";
 import Dashboard from "./views/Dashboard/Dashboard";
 import CompanySetup from "./views/Setup/CompanySetup/CompanySetup";
 import Miscellaneous from "./views/Setup/Miscellaneous/Miscellaneous";
@@ -1136,6 +1137,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute required={PERMISSION_ID_MAP['User login activity page']}>
                 {withLayout(MainLayout, UserLoginLogs)}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="maintenance/slideshow-images"
+            element={
+              <ProtectedRoute required={PERMISSION_ID_MAP['Login slideshow images']}>
+                {withLayout(MainLayout, SlideshowImagesTable)}
               </ProtectedRoute>
             }
           />

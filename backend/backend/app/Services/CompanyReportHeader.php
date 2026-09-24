@@ -41,7 +41,7 @@ class CompanyReportHeader
             $stored = $company->new_company_logo;
             if (Storage::disk('public')->exists($stored)) {
                 $logoPath = Storage::disk('public')->path($stored);
-                $logoUrl = asset('storage/' . $stored);
+                $logoUrl = url('api/storage-file/' . $stored);
             }
         }
 

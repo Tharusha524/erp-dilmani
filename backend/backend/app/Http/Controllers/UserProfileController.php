@@ -43,7 +43,7 @@ class UserProfileController extends Controller
         }
 
          if ($user->image) {
-            $user->image_url = asset('storage/' . $user->image);
+            $user->image_url = url('api/storage-file/' . $user->image);
         }
 
         return response()->json($user);
