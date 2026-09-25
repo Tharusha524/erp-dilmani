@@ -1,0 +1,49 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Pallegama POS",
+  "version": "0.1.0",
+  "identifier": "lk.dio.pallegama.pos",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173/sky_erp/",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build:desktop"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Pallegama POS",
+        "width": 1280,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "debugApplicationIdSuffix": ".debug"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://pos.dio.lk/pallegama_supermarket/updates/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ5ODYzN0YyMTQ2RjUxQkYKUldTL1VXOFU4amVHU2NtNHFoczVSNHZhRjhlN254UkxQZXZmK2lOdXpLOG5uYVFkVkJqOHNycloK"
+    }
+  }
+}

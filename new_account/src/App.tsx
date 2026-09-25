@@ -15,6 +15,8 @@ import NotificationBridge from "./components/NotificationBridge";
 import { snackbarComponents } from "./components/AppSnackbarContent";
 import { ThemeContextProvider, useThemeContext } from "./context/ThemeContext";
 import React, { useEffect } from "react";
+import { checkForUpdate } from "./offline/updater";
+import { syncUserDirectory } from "./offline/userSync";
 
 const InnerApp = () => {
   const { mode } = useThemeContext();
@@ -23,6 +25,21 @@ const InnerApp = () => {
   useEffect(() => {
     document.body.setAttribute('data-theme', mode);
   }, [mode]);
+
+  // Desktop app only, and a no-op until an update manifest is actually
+  // hosted at the endpoint in tauri.conf.json — see offline/updater.ts.
+  useEffect(() => {
+    checkForUpdate();
+  }, []);
+
+  // Desktop app only: keep the local user directory fresh whenever online —
+  // on launch, and again the moment the connection comes back — same
+  // pattern as the product/customer sync on the checkout page.
+  useEffect(() => {
+    syncUserDirectory();
+    window.addEventListener("online", syncUserDirectory);
+    return () => window.removeEventListener("online", syncUserDirectory);
+  }, []);
 
   return (
     <ThemeProvider theme={theme}>

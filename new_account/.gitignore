@@ -25,3 +25,8 @@ dist-ssr
 .vite
 
 .env
+
+# Tauri updater private signing key — NEVER commit this. Losing it means
+# future releases can no longer sign updates for machines running an old
+# build with the matching public key baked into tauri.conf.json.
+src-tauri/updater.key

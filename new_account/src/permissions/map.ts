@@ -223,6 +223,7 @@ export const PERMISSION_ID_MAP: Record<string, number> = {
   "Supermarket purchase": 5058,
   "Supermarket stock": 5059,
   "Supermarket returns": 5060,
+  "Supermarket offline sales": 5061,
   "Supermarket sales analytics": 5033,
   "Supermarket low stock alerts": 5034,
   "Supermarket loyalty tiers": 5035,

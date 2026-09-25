@@ -361,6 +361,7 @@ export const NAVIGATION_PERMISSION_TREE: NavModule[] = [
           { label: "Purchase", id: id("Supermarket purchase"), path: "/supermarket/purchase" },
           { label: "Stock", id: id("Supermarket stock"), path: "/supermarket/stock" },
           { label: "Process Return", id: id("Supermarket returns"), path: "/supermarket/returns" },
+          { label: "Offline Sales", id: id("Supermarket offline sales"), path: "/supermarket/offline-sales" },
         ],
       },
     ],

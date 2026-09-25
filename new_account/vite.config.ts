@@ -7,7 +7,10 @@ export default defineConfig(({ mode }) => {
   const apiTarget =
     env.VITE_API_PROXY_TARGET?.trim() || 'http://127.0.0.1:8000'
   const rawBasePath = (env.VITE_APP_BASE_PATH?.trim() || '/sky_erp').replace(/^\/+|\/+$/g, '')
-  const basePath = `/${rawBasePath}/`
+  // A packaged desktop app (Tauri) serves the built files from its own local
+  // root, not a web-server subpath — "." means "relative asset paths" so the
+  // build works no matter where Tauri actually serves it from.
+  const basePath = rawBasePath === '.' ? './' : `/${rawBasePath}/`
 
   return {
   base: basePath,

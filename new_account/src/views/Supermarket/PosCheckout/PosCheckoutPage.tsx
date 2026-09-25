@@ -46,6 +46,13 @@ import {
 import { deductVariantStock } from "../../../api/Pos/posAdvancedApi";
 import PosReceiptDialog from "../../../components/PosReceiptDialog";
 import QuickAddCustomerDialog from "../../../components/QuickAddCustomerDialog";
+import { useOnlineStatus, getOrCreateTerminalId } from "../../../offline/useOnlineStatus";
+import {
+  isDesktopApp, queuePendingSale, saveProductsSnapshot, saveCustomersSnapshot,
+  listProducts as listOfflineProducts, listCustomers, findProductByBarcode,
+} from "../../../offline/db";
+import { syncPendingSales } from "../../../offline/sync";
+import WifiOffIcon from "@mui/icons-material/WifiOff";
 
 const QUICK_DISCOUNTS = [5, 10, 15, 20];
 
@@ -87,6 +94,22 @@ export default function PosCheckoutPage() {
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [quickAddCustomerOpen, setQuickAddCustomerOpen] = useState(false);
 
+  // Offline mode (desktop app only): when the connection drops, sales are
+  // queued locally instead of posted live, then synced back automatically
+  // once it returns.
+  const isOnline = useOnlineStatus();
+  const isOffline = isDesktopApp() && !isOnline;
+  useEffect(() => {
+    if (isDesktopApp() && isOnline) {
+      syncPendingSales();
+      // Also pull fresh prices/customers right away, instead of waiting for
+      // the 5-minute refetch interval — closes the stale-price gap as soon
+      // as the connection comes back.
+      queryClient.invalidateQueries({ queryKey: ["items-all"] });
+      queryClient.invalidateQueries({ queryKey: ["customers-all"] });
+    }
+  }, [isOnline]);
+
   const { data: posSettings } = useQuery({ queryKey: ["pos-settings"], queryFn: getPosSettings });
 
   // Quick discount / coupon / voucher
@@ -105,7 +128,65 @@ export default function PosCheckoutPage() {
   // Held sales (park / recall)
   const [recallOpen, setRecallOpen] = useState(false);
 
-  const { data: customers } = useQuery({ queryKey: ["customers-all"], queryFn: getCustomers });
+  // Refetch every 5 minutes while online so the offline SQLite snapshot
+  // (prices especially) doesn't go stale just because the app was left open
+  // — no manual refresh needed before a price change is safe to use offline.
+  // react-query pauses this automatically while the tab isn't visible and
+  // resumes on focus, and it's a no-op anyway once offline.
+  const { data: customersFromApi } = useQuery({
+    queryKey: ["customers-all"], queryFn: getCustomers, refetchInterval: 5 * 60 * 1000,
+  });
+  const { data: itemsFromApi } = useQuery({
+    queryKey: ["items-all"], queryFn: getItems, refetchInterval: 5 * 60 * 1000,
+  });
+
+  // Offline fallback (desktop app only): products/customers synced down to
+  // SQLite the last time we were online, so checkout still works — cart,
+  // barcode scan, customer pick — after an app restart with no connection.
+  const [offlineItems, setOfflineItems] = useState<any[]>([]);
+  const [offlineCustomers, setOfflineCustomers] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!isDesktopApp()) return;
+    listOfflineProducts()
+      .then((rows) =>
+        setOfflineItems(rows.map((r) => ({ stock_id: r.stock_id, description: r.description, sale_price: r.unit_price })))
+      )
+      .catch(() => {});
+    listCustomers()
+      .then((rows) => setOfflineCustomers(rows.map((r) => ({ debtor_no: r.debtor_no, name: r.name }))))
+      .catch(() => {});
+  }, []);
+
+  // Refresh the local offline snapshot every time a fresh copy arrives from
+  // the server — this is what makes offline lookups possible after a restart.
+  useEffect(() => {
+    if (!isDesktopApp() || !itemsFromApi || itemsFromApi.length === 0) return;
+    saveProductsSnapshot(
+      itemsFromApi.map((i: any) => ({
+        stock_id: i.stock_id,
+        barcode: i.stock_id, // best-effort: foreign/variant barcodes still need a live lookup
+        description: i.description,
+        unit_price: Number(i.sale_price ?? i.purchase_cost) || 0,
+        updated_at: new Date().toISOString(),
+      }))
+    ).catch(() => {});
+  }, [itemsFromApi]);
+
+  useEffect(() => {
+    if (!isDesktopApp() || !customersFromApi || customersFromApi.length === 0) return;
+    saveCustomersSnapshot(
+      customersFromApi.map((c: any) => ({
+        debtor_no: String(c.debtor_no),
+        name: c.name,
+        branch_code: c.branch_code ? String(c.branch_code) : null,
+        updated_at: new Date().toISOString(),
+      }))
+    ).catch(() => {});
+  }, [customersFromApi]);
+
+  const customers = customersFromApi && customersFromApi.length > 0 ? customersFromApi : offlineCustomers;
+  const items = itemsFromApi && itemsFromApi.length > 0 ? itemsFromApi : offlineItems;
 
   // Default every sale to "Walk-in Customer" — a cashier should never be
   // forced to pick a named customer just to ring up a simple cash sale.
@@ -116,7 +197,6 @@ export default function PosCheckoutPage() {
       if (walkIn) setCustomer(walkIn);
     }
   }, [customers, customer]);
-  const { data: items } = useQuery({ queryKey: ["items-all"], queryFn: getItems });
 
   // Low stock — surfaced live at the till, not just as a separate report.
   const { data: lowStockItems } = useQuery({
@@ -286,12 +366,19 @@ export default function PosCheckoutPage() {
     // purchase_cost meaning real cost). Fetch the real Selling Price
     // separately here so manual search charges the same correct price a
     // barcode scan of the same product would.
-    let salePrice: number | undefined;
-    try {
-      const pricing = await getSalesPricingByStockId(selectedItem.stock_id);
-      salePrice = (pricing ?? []).find((p: any) => p.sales_type_id === 3 && p.currency_id === 8)?.price;
-    } catch {
-      // Non-fatal — falls back to purchase_cost below, same as before this existed.
+    //
+    // Offline: skip this live call entirely — `selectedItem` already came
+    // from the combined items list, which falls back to the offline SQLite
+    // snapshot (unit_price) when there's no server data, so it already has
+    // a usable price.
+    let salePrice: number | undefined = selectedItem.sale_price;
+    if (!isOffline) {
+      try {
+        const pricing = await getSalesPricingByStockId(selectedItem.stock_id);
+        salePrice = (pricing ?? []).find((p: any) => p.sales_type_id === 3 && p.currency_id === 8)?.price;
+      } catch {
+        // Non-fatal — falls back to purchase_cost below, same as before this existed.
+      }
     }
     addItemToCart({ ...selectedItem, sale_price: salePrice }, Number(qty) || 1);
     setSelectedItem(null);
@@ -307,6 +394,25 @@ export default function PosCheckoutPage() {
   const scanAndAddCode = async (code: string) => {
     const trimmed = code.trim();
     if (!trimmed) return;
+
+    // Offline: skip the live API entirely and match against the local
+    // SQLite snapshot (synced down the last time we were online). Only
+    // covers the item's own code, not foreign/variant barcodes — those need
+    // a live lookup and simply won't resolve until back online.
+    if (isOffline) {
+      try {
+        const local = await findProductByBarcode(trimmed);
+        if (!local) {
+          notify.error(`No offline product found for code "${trimmed}"`);
+          return;
+        }
+        addItemToCart({ stock_id: local.stock_id, description: local.description, sale_price: local.unit_price }, Number(qty) || 1);
+        notify.success(`Added: ${local.description}`);
+      } catch {
+        notify.error("Offline lookup failed");
+      }
+      return;
+    }
 
     try {
       const item = await lookupBarcode(trimmed);
@@ -373,6 +479,25 @@ export default function PosCheckoutPage() {
     },
   });
 
+  // Let the cashier hit Enter anywhere on the page to complete the sale,
+  // same as clicking "Complete Sale" — but not while Enter is being used
+  // for its own purpose in a text field (barcode scan box, voucher/coupon
+  // code, or any other free-text input/textarea).
+  useEffect(() => {
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      if (checkoutMutation.isPending || !customer || cart.length === 0) return;
+      e.preventDefault();
+      handleCheckout();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customer, cart.length, checkoutMutation.isPending]);
+
   const handleCheckout = () => {
     if (!customer || !branchCode || cart.length === 0) {
       notify.error("Select a customer and add at least one item before checkout");
@@ -429,6 +554,42 @@ export default function PosCheckoutPage() {
       payments: validPaymentLines.map((p) => ({ bank_account_id: Number(p.bank_account_id), amount: Number(p.amount) })),
       lines: combinedLines,
     } as any;
+
+    // Offline (desktop app, no connection): don't call the live API — queue
+    // the sale locally with a UUID + terminal/cashier id so it can't collide
+    // with another terminal's offline sale, and still print a receipt from
+    // the local data. It's pushed to Laravel automatically once back online.
+    if (isOffline) {
+      const uuid = crypto.randomUUID();
+      const receiptPayments = validPaymentLines.map((p) => ({
+        method: (bankAccounts ?? []).find((a: any) => a.id === p.bank_account_id)?.bank_account_name ?? "Cash",
+        amount: Number(p.amount) || 0,
+      }));
+      queuePendingSale({
+        uuid,
+        terminal_id: getOrCreateTerminalId(),
+        cashier_id: String(user?.id ?? user?.email ?? "unknown"),
+        customer_id: customer?.debtor_no ?? null,
+        payload: JSON.stringify(payload),
+        total: grandTotal,
+        created_at: new Date().toISOString(),
+      }).catch(() => {
+        notify.error("Could not save this sale offline — please retry");
+      });
+
+      notify.success("Sale saved offline — it will sync automatically once the connection is back");
+      setLastReceipt({
+        trans_no: uuid.slice(0, 8).toUpperCase(),
+        lines: cart,
+        subtotal: grandTotal,
+        customer,
+        payments: receiptPayments,
+        cashReceived: totalPaid,
+      });
+      setReceiptOpen(true);
+      resetSaleState();
+      return;
+    }
 
     checkoutMutation.mutate(payload, {
       onSuccess: async (result) => {
@@ -539,6 +700,13 @@ export default function PosCheckoutPage() {
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
+    // Coupon/voucher balances live on the server — trusting a locally cached
+    // value while offline risks two offline terminals both redeeming the
+    // same one. Safer to just defer this until back online.
+    if (isOffline) {
+      notify.error("Coupons can't be verified offline — apply this once the connection is back");
+      return;
+    }
     setCouponChecking(true);
     try {
       const offer = await applyCoupon({ coupon_code: couponCode.trim(), debtor_no: customer?.debtor_no });
@@ -552,11 +720,16 @@ export default function PosCheckoutPage() {
     }
   };
 
-  const handleApplyVoucher = async () => {
-    const amount = Number(voucherAmount) || 0;
-    const code = voucherCode.trim();
-    if (!code || amount <= 0) {
-      notify.error("Enter a voucher code and an amount to apply");
+  const handleApplyVoucher = async (scannedCode?: string) => {
+    const code = (scannedCode ?? voucherCode).trim();
+    if (!code) {
+      notify.error("Enter or scan a voucher code");
+      return;
+    }
+    // Same reasoning as coupons — a voucher's balance can't be trusted
+    // offline, since another terminal could be redeeming it at the same time.
+    if (isOffline) {
+      notify.error("Vouchers can't be verified offline — apply this once the connection is back");
       return;
     }
 
@@ -576,6 +749,17 @@ export default function PosCheckoutPage() {
         notify.error("This voucher has expired");
         return;
       }
+
+      // Barcode scan gives us only the code, not an amount — default to the
+      // full voucher balance (capped to what's still owed) so a scan applies
+      // the voucher in one motion. A manually typed amount is still honoured.
+      const typedAmount = Number(voucherAmount) || 0;
+      const amount = typedAmount > 0 ? typedAmount : Math.min(Number(voucher.balance), grandTotal);
+
+      if (amount <= 0) {
+        notify.error("Enter an amount to apply");
+        return;
+      }
       if (Number(voucher.balance) < amount) {
         notify.error(`Insufficient voucher balance — only ${formatCurrency(voucher.balance)} left`);
         return;
@@ -587,6 +771,16 @@ export default function PosCheckoutPage() {
       notify.error("Voucher not found");
     } finally {
       setVoucherChecking(false);
+    }
+  };
+
+  // Voucher cards are printed with a barcode; a barcode-scanner types the
+  // code into this field and fires an Enter keystroke — catch that and
+  // apply the voucher immediately instead of waiting for a button click.
+  const handleVoucherCodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !appliedVoucher && !voucherChecking) {
+      e.preventDefault();
+      handleApplyVoucher(voucherCode);
     }
   };
 
@@ -640,6 +834,15 @@ export default function PosCheckoutPage() {
         <Box>
           <PageTitle title="POS Checkout" />
           <Breadcrumb breadcrumbs={[{ title: "Smart Supermarket", href: "/supermarket" }, { title: "POS Checkout" }]} />
+          {isOffline && (
+            <Chip
+              icon={<WifiOffIcon />}
+              label="Offline Mode — sales are being saved locally and will sync automatically"
+              color="warning"
+              size="small"
+              sx={{ mt: 1 }}
+            />
+          )}
         </Box>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" startIcon={<PauseCircleOutlineIcon />} onClick={handleHoldSale} disabled={cart.length === 0}>
@@ -915,8 +1118,9 @@ export default function PosCheckoutPage() {
               </Stack>
               <Stack direction="row" spacing={1}>
                 <TextField
-                  label="Voucher Code" size="small" value={voucherCode}
+                  label="Voucher Code (scan or type)" size="small" value={voucherCode}
                   onChange={(e) => setVoucherCode(e.target.value)}
+                  onKeyDown={handleVoucherCodeKeyDown}
                   disabled={!!appliedVoucher}
                   sx={{ flex: 1 }}
                 />
@@ -924,12 +1128,13 @@ export default function PosCheckoutPage() {
                   label="Amount" type="number" size="small" value={voucherAmount}
                   onChange={(e) => setVoucherAmount(e.target.value)}
                   disabled={!!appliedVoucher}
+                  placeholder="Full balance"
                   sx={{ width: 110 }}
                 />
                 {appliedVoucher ? (
                   <Button variant="outlined" color="error" onClick={() => { setAppliedVoucher(null); setVoucherCode(""); setVoucherAmount(""); }}>Remove</Button>
                 ) : (
-                  <Button variant="outlined" onClick={handleApplyVoucher} disabled={voucherChecking}>
+                  <Button variant="outlined" onClick={() => handleApplyVoucher()} disabled={voucherChecking}>
                     {voucherChecking ? "Checking..." : "Apply"}
                   </Button>
                 )}

@@ -92,9 +92,24 @@ export default function PosReceiptDialog({
       <DialogContent>
         <style>{`
           @media print {
+            @page { size: 80mm auto; margin: 0; }
             body * { visibility: hidden; }
             #pos-receipt-print-area, #pos-receipt-print-area * { visibility: visible; }
-            #pos-receipt-print-area { position: absolute; top: 0; left: 0; width: 100%; }
+            #pos-receipt-print-area {
+              position: absolute; top: 0; left: 0;
+              width: 80mm; max-width: 80mm;
+              margin: 0; padding: 4mm;
+              border: none;
+            }
+            /* Thermal print heads render thin/light text as faint or broken —
+               force everything bolder and fully black (not gray) so it comes
+               out crisp on paper. */
+            #pos-receipt-print-area, #pos-receipt-print-area * {
+              font-weight: 600 !important;
+              color: #000 !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
             .pos-receipt-no-print { display: none !important; }
           }
         `}</style>
@@ -122,18 +137,18 @@ export default function PosReceiptDialog({
             <Typography align="center" variant="caption">{now.toLocaleDateString()} {now.toLocaleTimeString()}</Typography>
           </Stack>
 
-          <Divider sx={{ borderStyle: "dashed" }} />
+          <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary" }} />
 
-          <Stack spacing={0.25} sx={{ my: 1, fontSize: 12 }}>
-            <Typography variant="caption">Invoice ID: {transNo}</Typography>
-            <Typography variant="caption">Cashier: {user?.first_name || user?.email || "—"}</Typography>
+          <Stack spacing={0.25} sx={{ my: 1, fontSize: 13 }}>
+            <Typography variant="caption" fontSize={13}>Invoice ID: {transNo}</Typography>
+            <Typography variant="caption" fontSize={13}>Cashier: {user?.first_name || user?.email || "—"}</Typography>
           </Stack>
 
-          <Divider sx={{ borderStyle: "dashed" }} />
+          <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary" }} />
 
           {/* Line items — ITEM / DISC / NET / TOTAL, matching the reference layout */}
           <Box sx={{ my: 1 }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 700 }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700 }}>
               <span>ITEM</span>
               <Box sx={{ display: "flex", gap: 2 }}>
                 <span>DISC</span><span>NET</span><span>TOTAL</span>
@@ -144,9 +159,9 @@ export default function PosReceiptDialog({
               const lineTotal = l.quantity * netPrice;
               return (
                 <Box key={i} sx={{ mt: 1 }}>
-                  <Typography fontSize={13} fontWeight={700}>{l.description}</Typography>
-                  <Typography fontSize={11} color="text.secondary">UNIT PRICE {l.unit_price.toFixed(2)}</Typography>
-                  <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                  <Typography fontSize={14} fontWeight={700}>{l.description}</Typography>
+                  <Typography fontSize={12} color="text.secondary">UNIT PRICE {l.unit_price.toFixed(2)}</Typography>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
                     <span>{l.quantity} x</span>
                     <Box sx={{ display: "flex", gap: 2 }}>
                       <span>{l.discount_percent > 0 ? `${l.discount_percent}%` : "-"}</span>
@@ -159,9 +174,9 @@ export default function PosReceiptDialog({
             })}
           </Box>
 
-          <Divider sx={{ borderStyle: "dashed" }} />
+          <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary" }} />
 
-          <Stack spacing={0.25} sx={{ my: 1, fontSize: 13 }}>
+          <Stack spacing={0.25} sx={{ my: 1, fontSize: 14 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <span>Subtotal</span><span>{formatCurrency(subtotal)}</span>
             </Box>
@@ -172,45 +187,45 @@ export default function PosReceiptDialog({
             )}
           </Stack>
 
-          <Divider sx={{ borderStyle: "dashed" }} />
+          <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary" }} />
 
           <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
-            <Typography fontWeight={800} fontSize={18}>TOTAL</Typography>
-            <Typography fontWeight={800} fontSize={18}>{formatCurrency(total)}</Typography>
+            <Typography fontWeight={800} fontSize={20}>TOTAL</Typography>
+            <Typography fontWeight={800} fontSize={20}>{formatCurrency(total)}</Typography>
           </Box>
 
-          <Divider sx={{ borderStyle: "dashed", mt: 1.5 }} />
+          <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary", mt: 1.5 }} />
 
           {/* Payment Info */}
-          <Typography variant="caption" fontWeight={700} sx={{ mt: 1.5, display: "block" }}>PAYMENT INFO</Typography>
-          <Stack spacing={0.25} sx={{ mt: 0.5, fontSize: 13 }}>
+          <Typography variant="caption" fontWeight={700} fontSize={13} sx={{ mt: 1.5, display: "block" }}>PAYMENT INFO</Typography>
+          <Stack spacing={0.25} sx={{ mt: 0.5, fontSize: 14 }}>
             {paymentLines.map((p, i) => (
               <Box key={i} sx={{ display: "flex", justifyContent: "space-between" }}>
                 <span>{p.method.toUpperCase()}</span>
-                <Typography fontWeight={700}>{formatCurrency(p.amount)}</Typography>
+                <Typography fontWeight={700} fontSize={14}>{formatCurrency(p.amount)}</Typography>
               </Box>
             ))}
             <Box sx={{ display: "flex", justifyContent: "space-between" }}>
               <span>CASH RECEIVED</span>
-              <Typography fontWeight={700}>{formatCurrency(received)}</Typography>
+              <Typography fontWeight={700} fontSize={14}>{formatCurrency(received)}</Typography>
             </Box>
             {change > 0.001 && (
               <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                 <span>CHANGE</span>
-                <Typography fontWeight={700}>{formatCurrency(change)}</Typography>
+                <Typography fontWeight={700} fontSize={14}>{formatCurrency(change)}</Typography>
               </Box>
             )}
           </Stack>
 
-          <Divider sx={{ borderStyle: "dashed", mt: 1.5 }} />
+          <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary", mt: 1.5 }} />
 
-          <Typography variant="caption" sx={{ mt: 1.5, display: "block" }}>
+          <Typography variant="caption" fontSize={13} sx={{ mt: 1.5, display: "block" }}>
             CUSTOMER {customerName ? customerName.toUpperCase() : "WALK-IN"}
           </Typography>
 
-          <Divider sx={{ borderStyle: "dashed", mt: 1.5 }} />
+          <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary", mt: 1.5 }} />
 
-          <Typography align="center" fontWeight={700} fontSize={13} sx={{ mt: 2 }}>
+          <Typography align="center" fontWeight={700} fontSize={14} sx={{ mt: 2 }}>
             THANK YOU FOR YOUR BUSINESS!
           </Typography>
 

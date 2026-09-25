@@ -3,6 +3,7 @@ import { validateUser, User } from "../api/userApi";
 import { getSecurityRole } from "../api/AccessSetup/AccessSetupApi";
 import PERMISSION_ID_MAP from "../permissions/map";
 import { useAuthStore } from "../store/authStore";
+import { isDesktopApp, cacheAuthenticatedUser, getCachedUser } from "../offline/db";
 
 type AuthContextType = {
   user: User | null;
@@ -58,6 +59,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Desktop app only: cached sessions live in SQLite (users table), not
+  // localStorage — survives the same way products/customers do, and is
+  // synced down the same way. LAST_USER_ID_KEY is just a pointer (not a
+  // credential) to which cached row belongs to this machine's last login.
+  const LAST_USER_ID_KEY = "last_user_id";
+
+  const writeCachedAuth = async (u: User, permissionIds: number[], editPermissionIds: number[]) => {
+    if (!isDesktopApp()) return;
+    const id = String((u as any)?.id ?? (u as any)?.user_id ?? "");
+    if (!id) return;
+    try {
+      await cacheAuthenticatedUser(id, (u as any)?.email ?? null, (u as any)?.first_name ?? (u as any)?.name ?? null, JSON.stringify(u), permissionIds, editPermissionIds);
+      localStorage.setItem(LAST_USER_ID_KEY, id);
+    } catch {
+      // Offline auto-login just won't have a fresh cache to fall back on.
+    }
+  };
+
+  const readCachedAuth = async (): Promise<{ user: User; permissionIds: number[]; editPermissionIds: number[] } | null> => {
+    if (!isDesktopApp()) return null;
+    const id = localStorage.getItem(LAST_USER_ID_KEY);
+    if (!id) return null;
+    try {
+      const row = await getCachedUser(id);
+      if (!row) return null;
+      return {
+        user: JSON.parse(row.user_json),
+        permissionIds: JSON.parse(row.permission_ids),
+        editPermissionIds: JSON.parse(row.edit_permission_ids),
+      };
+    } catch {
+      return null;
+    }
+  };
+
   const reloadPermissions = async () => {
     if (loadingRef.current) return;
     loadingRef.current = true;
@@ -83,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const areas = parseArr((u as any).areas);
             setPermissionIds(sections);
             setEditPermissionIds(areas);
+            if (u) await writeCachedAuth(u, sections, areas);
         } else {
             // fallback: if role_id present but no sections returned, fetch role
             const roleId = (u as any)?.role_id || (u as any)?.roleId || (u as any)?.role;
@@ -92,10 +129,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setPermissionIds([]);
                 setEditPermissionIds([]);
             }
+            if (u) await writeCachedAuth(u, [], []);
         }
     } catch (err) {
-      // If the token is missing/invalid, the backend returns 401. Handle that
-      // gracefully: remove stored token and clear user state without noisy stack.
+      // If the token is missing/invalid, the backend returns 401 — that's a
+      // real "you're logged out", so clear everything and remove the token.
       const status = (err as any)?.response?.status;
       if (status === 401) {
         try {
@@ -105,7 +143,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // For other errors, log a concise message and clear user state.
+      // No response at all means the request never reached the server —
+      // offline, most likely (the desktop app can be opened with no
+      // internet at all). Don't force a login screen the cashier can't get
+      // past: trust the last verified session from this same token instead,
+      // and let the next successful reloadPermissions (once back online)
+      // re-verify it for real.
+      const isNetworkError = !(err as any)?.response;
+      if (isNetworkError) {
+        const cached = await readCachedAuth();
+        if (cached) {
+          setUser(cached.user);
+          setPermissionIds(cached.permissionIds);
+          setEditPermissionIds(cached.editPermissionIds);
+          return;
+        }
+      }
+
+      // For other errors, or no cache to fall back on, log and clear state.
       console.error("reloadPermissions error", (err as any)?.message || err);
       clearAuth();
     } finally {

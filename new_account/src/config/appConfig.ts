@@ -6,7 +6,10 @@
  */
 
 const rawBasePath = (import.meta.env.VITE_APP_BASE_PATH ?? "/sky_erp").trim();
-export const APP_BASE_PATH = `/${rawBasePath.replace(/^\/+|\/+$/g, "")}`;
+// "." means "relative asset paths" (used for the packaged Tauri desktop
+// build, which serves from its own local root) — it's a Vite `base` value,
+// not a real URL path, so the router must treat it as root "/", not "/./".
+export const APP_BASE_PATH = rawBasePath === "." ? "" : `/${rawBasePath.replace(/^\/+|\/+$/g, "")}`;
 
 /** Trailing slash — use with React Router basename */
 export const APP_ROUTER_BASENAME = `${APP_BASE_PATH}/`;
