@@ -25,6 +25,7 @@ import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import AssignmentReturnIcon from "@mui/icons-material/AssignmentReturn";
+import SyncProblemIcon from "@mui/icons-material/SyncProblem";
 import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
 import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
 import GroupsIcon from "@mui/icons-material/Groups";
@@ -88,6 +89,7 @@ const baseSidebarItems: Array<SidebarItem> = [
       { title: "Purchase", href: "/supermarket/purchase", icon: <ReceiptIcon fontSize="small" /> },
       { title: "Stock", href: "/supermarket/stock", icon: <ListAltIcon fontSize="small" /> },
       { title: "Process Return", href: "/supermarket/returns", icon: <AssignmentReturnIcon fontSize="small" /> },
+      { title: "Offline Sales", href: "/supermarket/offline-sales", icon: <SyncProblemIcon fontSize="small" /> },
       { title: "Loyalty Tiers", href: "/supermarket/loyalty-tiers", icon: <LoyaltyIcon fontSize="small" /> },
       { title: "Loyalty Cards", href: "/supermarket/loyalty-cards", icon: <CardMembershipIcon fontSize="small" /> },
       { title: "Offers & Discounts", href: "/supermarket/offers", icon: <LocalOfferIcon fontSize="small" /> },

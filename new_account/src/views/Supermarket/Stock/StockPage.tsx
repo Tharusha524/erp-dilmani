@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Card, CardContent, Stack, TextField, Autocomplete, Table, TableHead, TableRow,
@@ -25,6 +25,12 @@ import { getInventoryLocations } from "../../../api/InventoryLocation/InventoryL
 import { getItems } from "../../../api/Item/ItemApi";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
 import { notify } from "../../../services/notificationService";
+import { useOnlineStatus, getOrCreateTerminalId } from "../../../offline/useOnlineStatus";
+import {
+  isDesktopApp, saveReferenceData, getReferenceData,
+  listProducts as listOfflineProducts, queuePendingStockDamage, listAllPendingStockDamages,
+  deletePendingStockDamage, type PendingStockDamage,
+} from "../../../offline/db";
 
 /**
  * One "Stock" page — search/browse inventory, click a row's arrow to
@@ -66,12 +72,42 @@ function ProductsTab() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<any>(null);
   const [expandedStockId, setExpandedStockId] = useState<string | null>(null);
+  const isOnline = useOnlineStatus();
+  const isOffline = isDesktopApp() && !isOnline;
 
   const { data: categories } = useQuery({ queryKey: ["item-categories"], queryFn: () => getItemCategories() });
-  const { data: stock, isLoading } = useQuery({
+  const { data: stockFromApi, isLoading } = useQuery({
     queryKey: ["stock-list", search, category?.category_id],
     queryFn: () => getStockList({ search: search || undefined, category_id: category?.category_id }),
   });
+
+  // A separate, always-unfiltered fetch purely to keep a full offline
+  // snapshot current — the filtered query above only ever holds whatever
+  // the cashier last searched for, which isn't enough to browse offline.
+  const { data: fullStockFromApi } = useQuery({ queryKey: ["stock-list-all"], queryFn: () => getStockList() });
+  const [offlineStock, setOfflineStock] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!isDesktopApp()) return;
+    getReferenceData<any[]>("stock_list").then((v) => v && setOfflineStock(v)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktopApp() || !fullStockFromApi || fullStockFromApi.length === 0) return;
+    saveReferenceData("stock_list", fullStockFromApi).catch(() => {});
+  }, [fullStockFromApi]);
+
+  // Offline: filter the cached full snapshot client-side the same way the
+  // server would, since there's nothing to send the search/category to.
+  const stock = isOffline
+    ? offlineStock.filter((s: any) => {
+        const matchesSearch = !search || [s.description, s.stock_id, s.barcode].some((v) =>
+          String(v ?? "").toLowerCase().includes(search.toLowerCase())
+        );
+        const matchesCategory = !category?.category_id || s.category_id === category.category_id;
+        return matchesSearch && matchesCategory;
+      })
+    : (stockFromApi ?? []);
 
   return (
     <>
@@ -96,7 +132,11 @@ function ProductsTab() {
         </CardContent>
       </Card>
 
-      {isLoading ? <PageLoader /> : (
+      {isOffline && (
+        <Chip label="Offline — showing the last synced stock snapshot" color="warning" size="small" sx={{ mb: 2 }} />
+      )}
+
+      {isLoading && !isOffline ? <PageLoader /> : (
         <TableContainer component={Paper} elevation={2}>
           <Table size="small">
             <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -159,9 +199,35 @@ function StockDamageTab() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyDamageForm);
+  const isOnline = useOnlineStatus();
+  const isOffline = isDesktopApp() && !isOnline;
 
-  const { data: damages, isLoading } = useQuery({ queryKey: ["stock-damages"], queryFn: () => getStockDamages() });
-  const { data: items } = useQuery({ queryKey: ["items-all"], queryFn: getItems });
+  const { data: damagesFromApi, isLoading } = useQuery({ queryKey: ["stock-damages"], queryFn: () => getStockDamages() });
+  const { data: itemsFromApi } = useQuery({ queryKey: ["items-all"], queryFn: getItems });
+  const [offlineDamages, setOfflineDamages] = useState<any[]>([]);
+  const [offlineItems, setOfflineItems] = useState<any[]>([]);
+  const [pendingDamages, setPendingDamages] = useState<PendingStockDamage[]>([]);
+
+  const refreshPendingDamages = () => {
+    if (!isDesktopApp()) return;
+    listAllPendingStockDamages().then(setPendingDamages).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!isDesktopApp()) return;
+    getReferenceData<any[]>("stock_damages").then((v) => v && setOfflineDamages(v)).catch(() => {});
+    listOfflineProducts().then((rows) =>
+      setOfflineItems(rows.map((r) => ({ stock_id: r.stock_id, description: r.description })))
+    ).catch(() => {});
+    refreshPendingDamages();
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktopApp() || !damagesFromApi || damagesFromApi.length === 0) return;
+    saveReferenceData("stock_damages", damagesFromApi).catch(() => {});
+  }, [damagesFromApi]);
+
+  const items = itemsFromApi && itemsFromApi.length > 0 ? itemsFromApi : offlineItems;
 
   const createMutation = useMutation({
     mutationFn: recordStockDamage,
@@ -181,8 +247,27 @@ function StockDamageTab() {
     },
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.stock_id) return;
+
+    if (isOffline) {
+      await queuePendingStockDamage({
+        uuid: crypto.randomUUID(),
+        terminal_id: getOrCreateTerminalId(),
+        stock_id: form.stock_id.stock_id,
+        description: form.stock_id.description ?? null,
+        quantity: Number(form.quantity) || 0,
+        reason: form.reason || null,
+        damage_date: form.damage_date,
+        created_at: new Date().toISOString(),
+      });
+      notify.success("Damage recorded offline — it will sync automatically once the connection is back");
+      setOpen(false);
+      setForm(emptyDamageForm);
+      refreshPendingDamages();
+      return;
+    }
+
     createMutation.mutate({
       stock_id: form.stock_id.stock_id,
       quantity: Number(form.quantity) || 0,
@@ -191,13 +276,42 @@ function StockDamageTab() {
     });
   };
 
+  const handleDelete = async (row: any) => {
+    if (row._offlinePending) {
+      await deletePendingStockDamage(row._uuid);
+      refreshPendingDamages();
+      return;
+    }
+    if (isOffline) {
+      notify.error("Can't delete a synced damage record while offline");
+      return;
+    }
+    deleteMutation.mutate(row.id);
+  };
+
+  // Offline: show whatever was synced down last, plus anything queued
+  // locally on top (clearly marked, since it hasn't reached the server yet).
+  const damages = isOffline
+    ? [
+        ...pendingDamages.map((d) => ({
+          id: d.uuid, stock: { description: d.description }, stock_id: d.stock_id,
+          quantity: d.quantity, reason: d.reason, damage_date: d.damage_date,
+          _offlinePending: true, _uuid: d.uuid, _syncFailed: !!d.sync_error,
+        })),
+        ...offlineDamages,
+      ]
+    : (damagesFromApi ?? []);
+
   return (
     <>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+        {isOffline ? (
+          <Chip label="Offline — showing the last synced list + anything recorded locally" color="warning" size="small" />
+        ) : <span />}
         <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)}>Record Damage</Button>
       </Box>
 
-      {isLoading ? <PageLoader /> : (
+      {isLoading && !isOffline ? <PageLoader /> : (
         <TableContainer component={Paper} elevation={2}>
           <Table>
             <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
@@ -206,6 +320,7 @@ function StockDamageTab() {
                 <TableCell align="right">Quantity</TableCell>
                 <TableCell>Reason</TableCell>
                 <TableCell>Date</TableCell>
+                <TableCell align="center">Status</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -217,14 +332,21 @@ function StockDamageTab() {
                   <TableCell>{d.reason ?? "—"}</TableCell>
                   <TableCell>{String(d.damage_date).slice(0, 10)}</TableCell>
                   <TableCell align="center">
-                    <IconButton size="small" color="error" onClick={() => deleteMutation.mutate(d.id)}>
+                    {d._offlinePending ? (
+                      <Chip size="small" color={d._syncFailed ? "error" : "warning"} label={d._syncFailed ? "Sync failed" : "Pending sync"} />
+                    ) : (
+                      <Chip size="small" color="success" label="Synced" />
+                    )}
+                  </TableCell>
+                  <TableCell align="center">
+                    <IconButton size="small" color="error" onClick={() => handleDelete(d)}>
                       <DeleteIcon fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
               ))}
               {(!damages || damages.length === 0) && (
-                <TableRow><TableCell colSpan={5} align="center"><Typography variant="body2">No damaged stock recorded.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} align="center"><Typography variant="body2">No damaged stock recorded.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>

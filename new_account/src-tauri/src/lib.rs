@@ -59,6 +59,57 @@ pub fn run() {
       );
     "#,
     kind: MigrationKind::Up,
+  }, Migration {
+    version: 3,
+    // Small reference lists checkout depends on to even submit a sale
+    // (branches, shipping companies, bank accounts) — none of these change
+    // often, so one JSON blob per list, synced down the same way as
+    // products/customers, is enough to unblock checkout offline.
+    description: "create offline reference_data table",
+    sql: r#"
+      CREATE TABLE IF NOT EXISTS reference_data (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    "#,
+    kind: MigrationKind::Up,
+  }, Migration {
+    version: 4,
+    // Damage entries logged while offline — queued the same way as
+    // pending_sales, synced up to the real recordStockDamage endpoint once
+    // back online. Viewing the Stock/Stock Damage pages offline reuses the
+    // reference_data blobs above (stock_list, stock_damages), not new
+    // tables — they're read-only snapshots, this is the one write queue.
+    description: "create offline stock damage queue",
+    sql: r#"
+      CREATE TABLE IF NOT EXISTS pending_stock_damages (
+        uuid TEXT PRIMARY KEY,
+        terminal_id TEXT NOT NULL,
+        stock_id TEXT NOT NULL,
+        description TEXT,
+        quantity REAL NOT NULL,
+        reason TEXT,
+        damage_date TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        synced_at TEXT,
+        sync_error TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_pending_stock_damages_synced ON pending_stock_damages(synced_at);
+    "#,
+    kind: MigrationKind::Up,
+  }, Migration {
+    version: 5,
+    // The customers cache only ever stored debtor_no/name/branch_code —
+    // fine for the customer picker, but checkout also needs sales_type
+    // (to pick the right price list) and other fields nothing here
+    // anticipated. Store the whole customer object instead, the same way
+    // users' user_json already does, so no future field goes missing.
+    description: "store full customer object in offline cache",
+    sql: r#"
+      ALTER TABLE customers ADD COLUMN customer_json TEXT NOT NULL DEFAULT '{}';
+    "#,
+    kind: MigrationKind::Up,
   }];
 
   tauri::Builder::default()

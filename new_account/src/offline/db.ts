@@ -35,7 +35,9 @@ export interface OfflineProduct {
 export interface OfflineCustomer {
   debtor_no: string;
   name: string;
-  branch_code: string | null;
+  customer_json: string; // full customer object, JSON-encoded — same approach as users' user_json,
+  // so every field the accounting/checkout logic ever reads (sales_type, date_of_birth, curr_code,
+  // credit_status, etc.) survives offline, not just the handful we happened to pick out by hand.
   updated_at: string | null;
 }
 
@@ -56,6 +58,19 @@ export interface PendingSale {
   customer_id: string | null;
   payload: string; // JSON-encoded sale payload, same shape as the online checkout submits
   total: number;
+  created_at: string;
+  synced_at: string | null;
+  sync_error: string | null;
+}
+
+export interface PendingStockDamage {
+  uuid: string;
+  terminal_id: string;
+  stock_id: string;
+  description: string | null;
+  quantity: number;
+  reason: string | null;
+  damage_date: string;
   created_at: string;
   synced_at: string | null;
   sync_error: string | null;
@@ -90,8 +105,8 @@ export async function saveCustomersSnapshot(customers: OfflineCustomer[]): Promi
   await db.execute("DELETE FROM customers");
   for (const c of customers) {
     await db.execute(
-      "INSERT INTO customers (debtor_no, name, branch_code, updated_at) VALUES ($1, $2, $3, $4)",
-      [c.debtor_no, c.name, c.branch_code, c.updated_at],
+      "INSERT INTO customers (debtor_no, name, customer_json, updated_at) VALUES ($1, $2, $3, $4)",
+      [c.debtor_no, c.name, c.customer_json, c.updated_at],
     );
   }
 }
@@ -155,6 +170,31 @@ export async function cacheAuthenticatedUser(
   );
 }
 
+/**
+ * Small reference lists checkout needs even to submit a sale (branches,
+ * shipping companies, bank accounts) — cached as one JSON blob per list,
+ * the same "sync while online, read while offline" pattern as products.
+ */
+export async function saveReferenceData(key: string, value: unknown): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    `INSERT INTO reference_data (key, value, updated_at) VALUES ($1, $2, $3)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+    [key, JSON.stringify(value), new Date().toISOString()],
+  );
+}
+
+export async function getReferenceData<T>(key: string): Promise<T | null> {
+  const db = await getDb();
+  const rows = await db.select<{ value: string }[]>("SELECT value FROM reference_data WHERE key = $1", [key]);
+  if (rows.length === 0) return null;
+  try {
+    return JSON.parse(rows[0].value) as T;
+  } catch {
+    return null;
+  }
+}
+
 /** Reads back one cached user's session — used when opening the app with no connection at all. */
 export async function getCachedUser(id: string): Promise<OfflineUser | null> {
   const db = await getDb();
@@ -186,4 +226,51 @@ export async function saveUsersDirectorySnapshot(
       [u.id, u.email, u.name, new Date().toISOString()],
     );
   }
+}
+
+/** Queues a stock damage entry recorded while offline — synced up the same way as pending sales. */
+export async function queuePendingStockDamage(
+  damage: Omit<PendingStockDamage, "synced_at" | "sync_error">,
+): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    `INSERT INTO pending_stock_damages (uuid, terminal_id, stock_id, description, quantity, reason, damage_date, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [
+      damage.uuid, damage.terminal_id, damage.stock_id, damage.description,
+      damage.quantity, damage.reason, damage.damage_date, damage.created_at,
+    ],
+  );
+}
+
+export async function listUnsyncedStockDamages(): Promise<PendingStockDamage[]> {
+  const db = await getDb();
+  return db.select<PendingStockDamage[]>(
+    "SELECT * FROM pending_stock_damages WHERE synced_at IS NULL ORDER BY created_at",
+  );
+}
+
+/** Every offline-recorded damage entry, synced or not — merged with the server list for display. */
+export async function listAllPendingStockDamages(): Promise<PendingStockDamage[]> {
+  const db = await getDb();
+  return db.select<PendingStockDamage[]>("SELECT * FROM pending_stock_damages ORDER BY created_at DESC");
+}
+
+export async function markStockDamageSynced(uuid: string): Promise<void> {
+  const db = await getDb();
+  await db.execute("UPDATE pending_stock_damages SET synced_at = $1, sync_error = NULL WHERE uuid = $2", [
+    new Date().toISOString(),
+    uuid,
+  ]);
+}
+
+export async function markStockDamageSyncFailed(uuid: string, error: string): Promise<void> {
+  const db = await getDb();
+  await db.execute("UPDATE pending_stock_damages SET sync_error = $1 WHERE uuid = $2", [error, uuid]);
+}
+
+/** Removes a still-unsynced damage entry — the "delete" action on one that never reached the server yet. */
+export async function deletePendingStockDamage(uuid: string): Promise<void> {
+  const db = await getDb();
+  await db.execute("DELETE FROM pending_stock_damages WHERE uuid = $1 AND synced_at IS NULL", [uuid]);
 }

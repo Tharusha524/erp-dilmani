@@ -17,6 +17,7 @@ import { ThemeContextProvider, useThemeContext } from "./context/ThemeContext";
 import React, { useEffect } from "react";
 import { checkForUpdate } from "./offline/updater";
 import { syncUserDirectory } from "./offline/userSync";
+import { syncPendingStockDamages } from "./offline/sync";
 
 const InnerApp = () => {
   const { mode } = useThemeContext();
@@ -39,6 +40,15 @@ const InnerApp = () => {
     syncUserDirectory();
     window.addEventListener("online", syncUserDirectory);
     return () => window.removeEventListener("online", syncUserDirectory);
+  }, []);
+
+  // Desktop app only: flush any stock damage entries recorded offline the
+  // moment the connection comes back, regardless of which page is open —
+  // the Stock page might not even be mounted when that happens.
+  useEffect(() => {
+    syncPendingStockDamages();
+    window.addEventListener("online", syncPendingStockDamages);
+    return () => window.removeEventListener("online", syncPendingStockDamages);
   }, []);
 
   return (
