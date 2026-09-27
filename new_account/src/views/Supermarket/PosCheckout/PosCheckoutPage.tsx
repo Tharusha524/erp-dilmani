@@ -114,6 +114,9 @@ export default function PosCheckoutPage() {
   const [scanCode, setScanCode] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
   const scanInputRef = useRef<HTMLInputElement>(null);
+  const qtyInputRef = useRef<HTMLInputElement>(null);
+  const customerInputRef = useRef<HTMLInputElement>(null);
+  const paymentAmountInputRef = useRef<HTMLInputElement>(null);
   const [lastReceipt, setLastReceipt] = useState<any>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [quickAddCustomerOpen, setQuickAddCustomerOpen] = useState(false);
@@ -176,7 +179,7 @@ export default function PosCheckoutPage() {
       .then((rows) =>
         setOfflineItems(rows.map((r) => ({ stock_id: r.stock_id, description: r.description, sale_price: r.unit_price })))
       )
-      .catch(() => {});
+      .catch(() => { });
     listCustomers()
       .then((rows) =>
         setOfflineCustomers(
@@ -189,7 +192,7 @@ export default function PosCheckoutPage() {
           })
         )
       )
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Refresh the local offline snapshot every time a fresh copy arrives from
@@ -204,7 +207,7 @@ export default function PosCheckoutPage() {
         unit_price: Number(i.sale_price ?? i.purchase_cost) || 0,
         updated_at: new Date().toISOString(),
       }))
-    ).catch(() => {});
+    ).catch(() => { });
   }, [itemsFromApi]);
 
   useEffect(() => {
@@ -219,7 +222,7 @@ export default function PosCheckoutPage() {
         customer_json: JSON.stringify(c),
         updated_at: new Date().toISOString(),
       }))
-    ).catch(() => {});
+    ).catch(() => { });
   }, [customersFromApi]);
 
   const customers = customersFromApi && customersFromApi.length > 0 ? customersFromApi : offlineCustomers;
@@ -255,7 +258,7 @@ export default function PosCheckoutPage() {
   const [offlineStockList, setOfflineStockList] = useState<any[]>([]);
   useEffect(() => {
     if (!isDesktopApp()) return;
-    getReferenceData<any[]>("stock_list").then((v) => v && setOfflineStockList(v)).catch(() => {});
+    getReferenceData<any[]>("stock_list").then((v) => v && setOfflineStockList(v)).catch(() => { });
   }, []);
   const stockQtyByStockId = useMemo(() => {
     const list = stockListFromApi && stockListFromApi.length > 0 ? stockListFromApi : offlineStockList;
@@ -276,19 +279,19 @@ export default function PosCheckoutPage() {
 
   useEffect(() => {
     if (!isDesktopApp()) return;
-    getReferenceData<any[]>("shipping_companies").then((v) => v && setOfflineShippingCompanies(v)).catch(() => {});
-    getReferenceData<any[]>("bank_accounts").then((v) => v && setOfflineBankAccounts(v)).catch(() => {});
-    getReferenceData<any[]>("branches").then((v) => v && setOfflineBranchesAll(v)).catch(() => {});
+    getReferenceData<any[]>("shipping_companies").then((v) => v && setOfflineShippingCompanies(v)).catch(() => { });
+    getReferenceData<any[]>("bank_accounts").then((v) => v && setOfflineBankAccounts(v)).catch(() => { });
+    getReferenceData<any[]>("branches").then((v) => v && setOfflineBranchesAll(v)).catch(() => { });
   }, []);
 
   useEffect(() => {
     if (!isDesktopApp() || !shippingCompaniesFromApi || shippingCompaniesFromApi.length === 0) return;
-    saveReferenceData("shipping_companies", shippingCompaniesFromApi).catch(() => {});
+    saveReferenceData("shipping_companies", shippingCompaniesFromApi).catch(() => { });
   }, [shippingCompaniesFromApi]);
 
   useEffect(() => {
     if (!isDesktopApp() || !bankAccountsFromApi || bankAccountsFromApi.length === 0) return;
-    saveReferenceData("bank_accounts", bankAccountsFromApi).catch(() => {});
+    saveReferenceData("bank_accounts", bankAccountsFromApi).catch(() => { });
   }, [bankAccountsFromApi]);
 
   const shippingCompanies = shippingCompaniesFromApi && shippingCompaniesFromApi.length > 0 ? shippingCompaniesFromApi : offlineShippingCompanies;
@@ -318,7 +321,7 @@ export default function PosCheckoutPage() {
 
   useEffect(() => {
     if (!isDesktopApp() || !allBranchesFromApi || allBranchesFromApi.length === 0) return;
-    saveReferenceData("branches", allBranchesFromApi).catch(() => {});
+    saveReferenceData("branches", allBranchesFromApi).catch(() => { });
   }, [allBranchesFromApi]);
 
   const allBranches = allBranchesFromApi && allBranchesFromApi.length > 0 ? allBranchesFromApi : offlineBranchesAll;
@@ -605,6 +608,46 @@ export default function PosCheckoutPage() {
         }
         return;
       }
+      if (e.key === "F10") {
+        e.preventDefault();
+        if (cart.length > 0) handleHoldSale();
+        return;
+      }
+      if (e.key === "F2") {
+        e.preventDefault();
+        if (!checkoutMutation.isPending && customer && cart.length > 0) handleCheckout();
+        return;
+      }
+      if (e.key === "F3") {
+        e.preventDefault();
+        if (!quoteMutation.isPending && customer && cart.length > 0) handleGiveQuote();
+        return;
+      }
+      if (e.key === "F4") {
+        e.preventDefault();
+        qtyInputRef.current?.focus();
+        return;
+      }
+      if (e.key === "F5") {
+        e.preventDefault();
+        customerInputRef.current?.focus();
+        return;
+      }
+      if (e.key === "F6") {
+        e.preventDefault();
+        paymentAmountInputRef.current?.focus();
+        return;
+      }
+      if (e.ctrlKey && ["1", "2", "3", "4"].includes(e.key)) {
+        e.preventDefault();
+        setCartDiscountPercent(QUICK_DISCOUNTS[Number(e.key) - 1]);
+        return;
+      }
+      if (e.ctrlKey && e.key === "Delete") {
+        e.preventDefault();
+        if (cart.length > 0) removeLine(cart[cart.length - 1].stock_id);
+        return;
+      }
 
       if (e.key !== "Enter") return;
       const target = e.target as HTMLElement | null;
@@ -617,7 +660,7 @@ export default function PosCheckoutPage() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customer, cart.length, checkoutMutation.isPending]);
+  }, [customer, cart, checkoutMutation.isPending]);
 
   const handleCheckout = () => {
     if (!customer || !branchCode || cart.length === 0) {
@@ -985,17 +1028,17 @@ export default function PosCheckoutPage() {
           )}
         </Box>
         <Stack direction="row" spacing={1}>
-          <Button variant="outlined" startIcon={<SearchIcon />} onClick={() => scanInputRef.current?.focus()}>
+          <Button variant="contained" color="primary" startIcon={<SearchIcon />} onClick={() => scanInputRef.current?.focus()}>
             Find (F9)
           </Button>
-          <Button variant="outlined" startIcon={<PauseCircleOutlineIcon />} onClick={handleHoldSale} disabled={cart.length === 0}>
+          <Button variant="contained" color="warning" startIcon={<PauseCircleOutlineIcon />} onClick={handleHoldSale} disabled={cart.length === 0}>
             Hold Sale
           </Button>
-          <Button variant="outlined" startIcon={<RestoreIcon />} onClick={() => setRecallOpen(true)}>
+          <Button variant="contained" color="info" startIcon={<RestoreIcon />} onClick={() => setRecallOpen(true)}>
             Recall Sale {heldSales && heldSales.length > 0 ? `(${heldSales.length})` : ""}
           </Button>
           <Button
-            variant="outlined" color="error" startIcon={<CloseIcon />}
+            variant="contained" color="error" startIcon={<CloseIcon />}
             onClick={() => {
               if (cart.length === 0 || window.confirm("Clear the current bill? This does not undo a completed sale.")) {
                 resetSaleState();
@@ -1005,7 +1048,7 @@ export default function PosCheckoutPage() {
             Close (Esc)
           </Button>
           <Button
-            variant="outlined" startIcon={<AddIcon />}
+            variant="contained" color="success" startIcon={<AddIcon />}
             onClick={() => {
               if (cart.length === 0 || window.confirm("Start a new bill? Current cart will be cleared.")) {
                 resetSaleState();
@@ -1015,7 +1058,7 @@ export default function PosCheckoutPage() {
             New (F12)
           </Button>
           <Button
-            variant="outlined" startIcon={isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+            variant="contained" color="secondary" startIcon={isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
             onClick={() => setIsFullScreen((v) => !v)}
           >
             {isFullScreen ? "Exit Full Screen (F11)" : "Full Screen (F11)"}
@@ -1078,14 +1121,6 @@ export default function PosCheckoutPage() {
                     onKeyDown={handleScanKeyDown}
                     InputProps={{ startAdornment: <QrCodeScannerIcon sx={{ mr: 1, color: "text.secondary" }} /> }}
                   />
-                  <Button
-                    variant="outlined"
-                    startIcon={<CameraAltIcon />}
-                    onClick={() => setCameraOpen(true)}
-                    sx={{ whiteSpace: "nowrap", flexShrink: 0, px: 2 }}
-                  >
-                    Scan with Camera
-                  </Button>
                 </Stack>
                 <Stack direction="row" spacing={2} alignItems="flex-start">
                   <Autocomplete
@@ -1104,7 +1139,7 @@ export default function PosCheckoutPage() {
                     )}
                     renderInput={(params) => <TextField {...params} label="Or Search Product Manually" size="small" />}
                   />
-                  <TextField label="Qty" type="number" size="small" sx={{ width: 90 }} value={qty} onChange={(e) => setQty(e.target.value)} />
+                  <TextField inputRef={qtyInputRef} label="Qty" type="number" size="small" sx={{ width: 90 }} value={qty} onChange={(e) => setQty(e.target.value)} />
                   <Button variant="contained" startIcon={<AddShoppingCartIcon />} onClick={addToCart} disabled={!selectedItem}>
                     Add
                   </Button>
@@ -1125,8 +1160,11 @@ export default function PosCheckoutPage() {
             }}
           >
             <Table size="small" stickyHeader>
-              <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
-                <TableRow>
+              {/* stickyHeader makes each <th> sticky with its OWN background
+                  (defaults to white), which overrides a color set on
+                  TableHead itself — so the tint has to go on the cells. */}
+              <TableHead>
+                <TableRow sx={{ "& .MuiTableCell-root": { backgroundColor: "#79c4faff" } }}>
                   <TableCell>Item</TableCell>
                   <TableCell align="right">Stock</TableCell>
                   <TableCell align="center">Qty</TableCell>
@@ -1139,7 +1177,7 @@ export default function PosCheckoutPage() {
               </TableHead>
               <TableBody>
                 {cart.map((l) => (
-                  <TableRow key={l.stock_id} hover>
+                  <TableRow key={l.stock_id} hover sx={{ backgroundColor: "#e0dedeff" }}>
                     <TableCell>{l.description}</TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" color={(stockQtyByStockId.get(l.stock_id) ?? 0) <= 0 ? "error" : "text.secondary"}>
@@ -1226,13 +1264,14 @@ export default function PosCheckoutPage() {
                     label={a.bank_account_name}
                     clickable
                     size="small"
+                    color="info"
                     onClick={() => updatePaymentLine(paymentLines[0].id, { bank_account_id: a.id, amount: String(balanceRemaining || grandTotal) })}
                   />
                 ))}
               </Stack>
 
               <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
-                {paymentLines.map((p) => (
+                {paymentLines.map((p, pIndex) => (
                   <Stack direction="row" spacing={1} key={p.id} alignItems="center">
                     <FormControl size="small" sx={{ width: 180 }}>
                       <InputLabel>Account</InputLabel>
@@ -1247,6 +1286,7 @@ export default function PosCheckoutPage() {
                       </Select>
                     </FormControl>
                     <TextField
+                      inputRef={pIndex === 0 ? paymentAmountInputRef : undefined}
                       label="Amount" type="number" size="small" sx={{ width: 110 }}
                       value={p.amount}
                       onChange={(e) => updatePaymentLine(p.id, { amount: e.target.value })}
@@ -1258,7 +1298,7 @@ export default function PosCheckoutPage() {
                     )}
                   </Stack>
                 ))}
-                <Button size="small" startIcon={<AddIcon />} onClick={addPaymentLine}>
+                <Button variant="contained" color="secondary" size="small" startIcon={<AddIcon />} onClick={addPaymentLine}>
                   Split into another payment method
                 </Button>
               </Stack>
@@ -1275,30 +1315,7 @@ export default function PosCheckoutPage() {
                 )}
               </Stack>
 
-              {/* Complete Sale / Give Quote sit as one horizontal row at the
-                  end of this section, pushed toward the right edge — right
-                  next to the customer/totals panel, not buried at the far
-                  bottom-left. */}
-              <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 2 }}>
-                <Tooltip title="Give the customer a price estimate — not a sale, no payment needed, nothing posted to accounts yet">
-                  <span>
-                    <Button
-                      variant="outlined" size="large" startIcon={<RequestQuoteIcon />}
-                      disabled={quoteMutation.isPending || !customer || cart.length === 0}
-                      onClick={handleGiveQuote}
-                    >
-                      {quoteMutation.isPending ? "Creating Quote..." : "Give Quote"}
-                    </Button>
-                  </span>
-                </Tooltip>
-                <Button
-                  variant="contained" size="large" startIcon={<ReceiptLongIcon />}
-                  disabled={checkoutMutation.isPending || !customer || cart.length === 0}
-                  onClick={handleCheckout}
-                >
-                  {checkoutMutation.isPending ? "Processing..." : "Complete Sale"}
-                </Button>
-              </Stack>
+
             </CardContent>
           </Card>
         </Grid>
@@ -1322,7 +1339,7 @@ export default function PosCheckoutPage() {
                   getOptionLabel={(c: any) => c.name ?? ""}
                   value={customer}
                   onChange={(_, val) => setCustomer(val)}
-                  renderInput={(params) => <TextField {...params} label="Customer" size="small" />}
+                  renderInput={(params) => <TextField {...params} label="Customer" size="small" inputRef={customerInputRef} />}
                 />
                 <Tooltip title="Add New Customer">
                   <IconButton
@@ -1334,23 +1351,6 @@ export default function PosCheckoutPage() {
                     <PersonAddIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
-              </Stack>
-
-              {/* Plain Cus.Nam / Address display — read-only, matching the
-                  old till software's look. The dropdown above is still what
-                  actually selects the customer (debtor_no, sales_type,
-                  branch, credit — all the accounting-relevant fields);
-                  this is purely a familiar-looking readout of that same
-                  selection, nothing new to pick here. */}
-              <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
-                <TextField
-                  label="Cus.Nam" size="small" fullWidth value={customer?.name ?? ""}
-                  slotProps={{ input: { readOnly: true } }}
-                />
-                <TextField
-                  label="Address" size="small" fullWidth value={customer?.address ?? ""}
-                  slotProps={{ input: { readOnly: true } }}
-                />
               </Stack>
 
               <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
@@ -1382,13 +1382,13 @@ export default function PosCheckoutPage() {
                 const today = new Date();
                 return dob.getUTCMonth() === today.getMonth() && dob.getUTCDate() === today.getDate();
               })() && (
-                <Chip
-                  sx={{ mt: 1.5 }}
-                  color="secondary"
-                  icon={<CakeIcon />}
-                  label={`It's ${customer.name}'s birthday — consider a birthday offer!`}
-                />
-              )}
+                  <Chip
+                    sx={{ mt: 1.5 }}
+                    color="secondary"
+                    icon={<CakeIcon />}
+                    label={`It's ${customer.name}'s birthday — consider a birthday offer!`}
+                  />
+                )}
 
               {applicableOffers && applicableOffers.length > 0 && (
                 <Box sx={{ mt: 1.5 }}>
@@ -1426,7 +1426,7 @@ export default function PosCheckoutPage() {
                 {appliedCoupon ? (
                   <Button variant="outlined" color="error" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}>Remove</Button>
                 ) : (
-                  <Button variant="outlined" onClick={handleApplyCoupon} disabled={couponChecking}>Apply</Button>
+                  <Button variant="contained" color="success" onClick={handleApplyCoupon} disabled={couponChecking}>Apply</Button>
                 )}
               </Stack>
               <Stack direction="row" spacing={1}>
@@ -1447,7 +1447,7 @@ export default function PosCheckoutPage() {
                 {appliedVoucher ? (
                   <Button variant="outlined" color="error" onClick={() => { setAppliedVoucher(null); setVoucherCode(""); setVoucherAmount(""); }}>Remove</Button>
                 ) : (
-                  <Button variant="outlined" onClick={() => handleApplyVoucher()} disabled={voucherChecking}>
+                  <Button variant="contained" color="success" onClick={() => handleApplyVoucher()} disabled={voucherChecking}>
                     {voucherChecking ? "Checking..." : "Apply"}
                   </Button>
                 )}
@@ -1488,6 +1488,31 @@ export default function PosCheckoutPage() {
                   <Typography variant="h6">Total</Typography>
                   <Typography variant="h5" fontWeight={800} color="primary.main">{formatCurrency(grandTotal)}</Typography>
                 </Stack>
+              </Stack>
+
+              {/* Complete Sale / Give Quote sit at the bottom of the right panel,
+                  immediately under the totals. */}
+              <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+                <Tooltip title="Give the customer a price estimate — not a sale, no payment needed, nothing posted to accounts yet">
+                  <span style={{ flex: 1, display: 'flex' }}>
+                    <Button
+                      variant="contained" color="warning" size="large" startIcon={<RequestQuoteIcon />}
+                      disabled={quoteMutation.isPending || !customer || cart.length === 0}
+                      onClick={handleGiveQuote}
+                      fullWidth
+                    >
+                      {quoteMutation.isPending ? "Creating Quote..." : "Give Quote"}
+                    </Button>
+                  </span>
+                </Tooltip>
+                <Button
+                  variant="contained" size="large" startIcon={<ReceiptLongIcon />}
+                  disabled={checkoutMutation.isPending || !customer || cart.length === 0}
+                  onClick={handleCheckout}
+                  sx={{ flex: 1 }}
+                >
+                  {checkoutMutation.isPending ? "Processing..." : "Complete Sale"}
+                </Button>
               </Stack>
             </CardContent>
           </Card>
@@ -1563,7 +1588,7 @@ export default function PosCheckoutPage() {
       <Box
         sx={{
           position: "fixed", inset: 0, zIndex: 1300,
-          bgcolor: "background.default",
+          bgcolor: "#ffffffff",
           display: "flex", flexDirection: "column", overflow: "hidden",
           p: 2,
         }}
