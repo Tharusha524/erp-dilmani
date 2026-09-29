@@ -66,13 +66,32 @@ class BarcodeLookupController extends Controller
             }
         }
 
-        $itemCode = ItemCode::where('item_code', $code)->where('inactive', false)->first();
-        if ($itemCode) {
-            $stock = StockMaster::where('stock_id', $itemCode->stock_id)->where('inactive', false)->first();
-            if ($stock) {
-                $stockArray = $stock->toArray();
-                $stockArray['sale_price'] = $this->resolveSalePrice($stock->stock_id);
-                return response()->json($stockArray);
+        // item_code has no unique constraint, so more than one product can
+        // share the same code (e.g. a generic "Snack" barcode used for both
+        // the 50g and 100g pack). When that happens, return every match as a
+        // list instead of guessing — the cashier picks the right one instead
+        // of silently ringing up the wrong pack size.
+        $itemCodes = ItemCode::where('item_code', $code)->where('inactive', false)->get();
+        if ($itemCodes->isNotEmpty()) {
+            $matches = $itemCodes
+                ->map(function ($itemCode) {
+                    $stock = StockMaster::where('stock_id', $itemCode->stock_id)->where('inactive', false)->first();
+                    if (!$stock) {
+                        return null;
+                    }
+                    $stockArray = $stock->toArray();
+                    $stockArray['sale_price'] = $this->resolveSalePrice($stock->stock_id);
+                    return $stockArray;
+                })
+                ->filter()
+                ->unique('stock_id')
+                ->values();
+
+            if ($matches->count() > 1) {
+                return response()->json(['matches' => $matches]);
+            }
+            if ($matches->count() === 1) {
+                return response()->json($matches->first());
             }
         }
 

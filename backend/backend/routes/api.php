@@ -284,6 +284,7 @@ Route::middleware('company.module:fixed_assets')->group(function () {
 Route::get('system-diagnostics', [SystemDiagnosticsController::class, 'index']);
 Route::get('dashboard', [DashboardController::class, 'index']);
 Route::get('dashboard/alerts', [DashboardController::class, 'alerts']);
+Route::post('sales-pricings/bulk', [SalesPricingController::class, 'bulkUpsert']);
 Route::apiResource('sales-pricings', SalesPricingController::class);
 
 Route::apiResource('inventory-locations', InventoryLocationController::class);
@@ -352,6 +353,9 @@ Route::apiResource('subcategories', \App\Http\Controllers\SubcategoryController:
 Route::apiResource('item-types', ItemTypeController::class);
 
 Route::apiResource('stock-masters', StockMasterController::class);
+Route::patch('stock-masters/{id}/mrp-price', [StockMasterController::class, 'updateMrpPrice']);
+Route::patch('stock-masters/{id}/expiry-date', [StockMasterController::class, 'updateExpiryDate']);
+Route::get('stock-masters-expiry-list', [StockMasterController::class, 'expiryList']);
 
 Route::apiResource('purchasing-pricings', PurchasingPricingController::class);
 Route::get('purchasing-pricings/{supplier_id}/{stock_id}', [PurchasingPricingController::class, 'showToUpdate']);
@@ -548,6 +552,13 @@ Route::get('sales-analytics/dead-stock', [SalesAnalyticsController::class, 'dead
 Route::get('sales-analytics/product-profit', [SalesAnalyticsController::class, 'productProfit']);
 Route::get('sales-analytics/business-activity', [SalesAnalyticsController::class, 'businessActivityFeed']);
 Route::get('sales-analytics/valuation', [SalesAnalyticsController::class, 'valuation']);
+Route::get('sales-analytics/sales-by-cashier-shift', [SalesAnalyticsController::class, 'salesByCashierShift']);
+Route::get('sales-analytics/void-report', [SalesAnalyticsController::class, 'voidReport']);
+Route::get('sales-analytics/price-override-audit', [SalesAnalyticsController::class, 'priceOverrideAudit']);
+Route::get('sales-analytics/negative-stock', [SalesAnalyticsController::class, 'negativeStock']);
+Route::get('sales-analytics/voucher-liability', [SalesAnalyticsController::class, 'voucherLiability']);
+Route::get('sales-analytics/receivables-aging', [SalesAnalyticsController::class, 'receivablesAging']);
+Route::get('sales-analytics/payables-aging', [SalesAnalyticsController::class, 'payablesAging']);
 
 Route::apiResource('bank-trans', BankTransController::class);
 Route::get('purch-orders/next-order-no', [PurchOrdersController::class, 'nextOrderNo']);

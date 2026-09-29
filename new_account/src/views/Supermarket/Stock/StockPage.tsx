@@ -6,7 +6,9 @@ import {
   Collapse, Button, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel,
   Select, MenuItem, Grid, Tabs, Tab, Tooltip,
 } from "@mui/material";
+import * as XLSX from "xlsx";
 import SearchIcon from "@mui/icons-material/Search";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import TuneIcon from "@mui/icons-material/Tune";
@@ -19,10 +21,14 @@ import Breadcrumb from "../../../components/BreadCrumb";
 import PageLoader from "../../../components/PageLoader";
 import { getStockList } from "../../../api/Inventory/StockListApi";
 import { getItemCategories } from "../../../api/ItemCategories/ItemCategoriesApi";
+import { getBrands } from "../../../api/Brands/BrandsApi";
+import { getSubcategories } from "../../../api/Subcategories/SubcategoriesApi";
 import { createStockAdjustment, getStockAdjustments } from "../../../api/Pos/posOpsApi";
 import { getStockDamages, recordStockDamage, deleteStockDamage } from "../../../api/Pos/posApi";
 import { getInventoryLocations } from "../../../api/InventoryLocation/InventoryLocationApi";
 import { getItems } from "../../../api/Item/ItemApi";
+import { bulkUpsertSalesPricing } from "../../../api/SalesPricing/SalesPricingApi";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
 import { notify } from "../../../services/notificationService";
 import { useOnlineStatus, getOrCreateTerminalId } from "../../../offline/useOnlineStatus";
@@ -42,7 +48,7 @@ import {
  * inside this same row instead of a separate screen/tab.
  */
 export default function StockPage() {
-  const [tab, setTab] = useState<"products" | "damage">("products");
+  const [tab, setTab] = useState<"products" | "damage" | "bulk-price">("products");
 
   return (
     <FormPageLayout>
@@ -57,9 +63,12 @@ export default function StockPage() {
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
         <Tab value="products" label="Products" />
         <Tab value="damage" label="Stock Damage" />
+        <Tab value="bulk-price" label="Bulk Price Update" />
       </Tabs>
 
-      {tab === "products" ? <ProductsTab /> : <StockDamageTab />}
+      {tab === "products" && <ProductsTab />}
+      {tab === "damage" && <StockDamageTab />}
+      {tab === "bulk-price" && <BulkPriceUpdateTab />}
     </FormPageLayout>
   );
 }
@@ -71,14 +80,23 @@ function ProductsTab() {
   const { formatCurrency } = useHomeCurrency();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<any>(null);
+  const [brand, setBrand] = useState<any>(null);
+  const [subcategory, setSubcategory] = useState<any>(null);
   const [expandedStockId, setExpandedStockId] = useState<string | null>(null);
   const isOnline = useOnlineStatus();
   const isOffline = isDesktopApp() && !isOnline;
 
   const { data: categories } = useQuery({ queryKey: ["item-categories"], queryFn: () => getItemCategories() });
+  const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: () => getBrands() });
+  const { data: subcategories } = useQuery({ queryKey: ["subcategories"], queryFn: () => getSubcategories() });
   const { data: stockFromApi, isLoading } = useQuery({
-    queryKey: ["stock-list", search, category?.category_id],
-    queryFn: () => getStockList({ search: search || undefined, category_id: category?.category_id }),
+    queryKey: ["stock-list", search, category?.category_id, brand?.id, subcategory?.id],
+    queryFn: () => getStockList({
+      search: search || undefined,
+      category_id: category?.category_id,
+      brand_id: brand?.id,
+      subcategory_id: subcategory?.id,
+    }),
   });
 
   // A separate, always-unfiltered fetch purely to keep a full offline
@@ -105,12 +123,40 @@ function ProductsTab() {
           String(v ?? "").toLowerCase().includes(search.toLowerCase())
         );
         const matchesCategory = !category?.category_id || s.category_id === category.category_id;
-        return matchesSearch && matchesCategory;
+        const matchesBrand = !brand?.id || s.brand_id === brand.id;
+        const matchesSubcategory = !subcategory?.id || s.subcategory_id === subcategory.id;
+        return matchesSearch && matchesCategory && matchesBrand && matchesSubcategory;
       })
     : (stockFromApi ?? []);
 
+  const handleExportExcel = () => {
+    const rows = (stock ?? []).map((s: any) => ({
+      Product: s.description,
+      "Stock ID": s.stock_id,
+      Barcode: s.barcode ?? "",
+      Category: s.category_name ?? "",
+      Subcategory: s.subcategory_name ?? "",
+      Brand: s.brand_name ?? "",
+      "Purchase Cost": s.purchase_cost ?? 0,
+      "Quantity on Hand": s.quantity ?? 0,
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Stock");
+    XLSX.writeFile(workbook, `stock-export-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   return (
     <>
+      <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1.5 }}>
+        <Button
+          variant="outlined" startIcon={<FileDownloadIcon />} onClick={handleExportExcel}
+          sx={{ whiteSpace: "nowrap" }}
+        >
+          Export Excel
+        </Button>
+      </Stack>
+
       <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mb: 2 }}>
         <CardContent>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -121,12 +167,28 @@ function ProductsTab() {
               InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
             />
             <Autocomplete
-              sx={{ minWidth: 240 }}
+              sx={{ minWidth: 200 }}
               options={categories ?? []}
               getOptionLabel={(c: any) => c.description ?? ""}
               value={category}
               onChange={(_, v) => setCategory(v)}
               renderInput={(p) => <TextField {...p} label="Category" size="small" />}
+            />
+            <Autocomplete
+              sx={{ minWidth: 200 }}
+              options={brands ?? []}
+              getOptionLabel={(b: any) => b.name ?? ""}
+              value={brand}
+              onChange={(_, v) => setBrand(v)}
+              renderInput={(p) => <TextField {...p} label="Brand" size="small" />}
+            />
+            <Autocomplete
+              sx={{ minWidth: 200 }}
+              options={subcategories ?? []}
+              getOptionLabel={(sc: any) => sc.name ?? ""}
+              value={subcategory}
+              onChange={(_, v) => setSubcategory(v)}
+              renderInput={(p) => <TextField {...p} label="Subcategory" size="small" />}
             />
           </Stack>
         </CardContent>
@@ -546,5 +608,213 @@ function ProductDetailPanel({ product }: { product: any }) {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// "Bulk Price Update" tab: upload an .xlsx with stock_id + price (required),
+// plus optional columns — sales_type_id, mrp_price, expiry_date, category_id,
+// subcategory_id, brand_id, barcode — then push it through the same
+// sales_pricing upsert / stock_master field updates / item_codes barcode
+// link the single-product Set Price screen already uses, just looped
+// server-side over many rows. Parsing happens entirely in the browser
+// (existing "xlsx" package, already used for the Products export on this
+// same page). The optional columns are all classification/master-data
+// fields, never the GL account fields on stock_master, so this still can't
+// touch accounting.
+// ---------------------------------------------------------------------------
+const BULK_PRICE_LKR_CURRENCY_ID = 8;
+const BULK_PRICE_RETAIL_SALES_TYPE_ID = 3;
+
+type BulkPriceRow = {
+  stock_id: string;
+  price: number;
+  currency_id: number;
+  sales_type_id: number;
+  description?: string;
+  mrp_price?: number;
+  expiry_date?: string;
+  category?: string;
+  subcategory?: string;
+  brand?: string;
+  barcode?: string;
+};
+
+function BulkPriceUpdateTab() {
+  const [rows, setRows] = useState<BulkPriceRow[]>([]);
+  const [fileName, setFileName] = useState("");
+  const [result, setResult] = useState<{ updated: number; created: number; errors: any[] } | null>(null);
+
+  // Powers "Download Current Products" below — the real product list with
+  // its real current values, so the sheet you edit and re-upload is a
+  // genuine export/re-import round trip, not a blank guess-the-columns form.
+  const { data: currentStock } = useQuery({ queryKey: ["stock-list-all-for-bulk-price"], queryFn: () => getStockList({}) });
+
+  const bulkMutation = useMutation({
+    mutationFn: () => bulkUpsertSalesPricing(rows),
+    onSuccess: (data) => {
+      setResult(data);
+      notify.success(`Prices updated: ${data.created} created, ${data.updated} updated${data.errors?.length ? `, ${data.errors.length} skipped` : ""}`);
+    },
+    onError: (err: any) => notify.error(err?.response?.data?.message || "Bulk price update failed"),
+  });
+
+  const handleFile = (file: File) => {
+    setFileName(file.name);
+    setResult(null);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const parsed: any[] = XLSX.utils.sheet_to_json(sheet);
+      const mapped: BulkPriceRow[] = parsed
+        .map((r) => ({
+          stock_id: String(r.stock_id ?? r.Stock_ID ?? r["Stock ID"] ?? "").trim(),
+          price: Number(r.price ?? r.Price ?? 0),
+          currency_id: Number(r.currency_id ?? BULK_PRICE_LKR_CURRENCY_ID),
+          sales_type_id: Number(r.sales_type_id ?? BULK_PRICE_RETAIL_SALES_TYPE_ID),
+          description: r.description ? String(r.description).trim() : undefined,
+          mrp_price: r.mrp_price !== undefined && r.mrp_price !== "" ? Number(r.mrp_price) : undefined,
+          expiry_date: r.expiry_date ? String(r.expiry_date).slice(0, 10) : undefined,
+          category: r.category ? String(r.category).trim() : undefined,
+          subcategory: r.subcategory ? String(r.subcategory).trim() : undefined,
+          brand: r.brand ? String(r.brand).trim() : undefined,
+          barcode: r.barcode ? String(r.barcode).trim() : undefined,
+        }))
+        .filter((r) => r.stock_id && r.price > 0);
+      setRows(mapped);
+      if (mapped.length === 0) {
+        notify.error("No valid rows found — the sheet needs stock_id and price columns");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  // Column widths so headers and values (barcodes, long descriptions) show
+  // in full instead of being visually cut off — same order the sheets below
+  // write their columns in.
+  const BULK_PRICE_COLUMN_WIDTHS = [
+    { wch: 12 }, // stock_id
+    { wch: 10 }, // price
+    { wch: 14 }, // sales_type_id
+    { wch: 30 }, // description
+    { wch: 12 }, // mrp_price
+    { wch: 12 }, // expiry_date
+    { wch: 12 }, // category_id
+    { wch: 14 }, // subcategory_id
+    { wch: 10 }, // brand_id
+    { wch: 18 }, // barcode
+  ];
+
+  // The one people actually want: every existing product with its real
+  // stock_id and current values already filled in — edit only the cells
+  // that need to change, then re-upload the same file.
+  const downloadCurrentProducts = () => {
+    const list = currentStock ?? [];
+    if (list.length === 0) {
+      notify.error("Product list hasn't loaded yet — try again in a moment");
+      return;
+    }
+    const sheetRows = list.map((s: any) => ({
+      stock_id: s.stock_id,
+      price: s.selling_price ?? "",
+      sales_type_id: "",
+      description: s.description ?? "",
+      mrp_price: s.mrp_price ?? "",
+      expiry_date: s.expiry_date ?? "",
+      category: s.category_name ?? "",
+      subcategory: s.subcategory_name ?? "",
+      brand: s.brand_name ?? "",
+      barcode: s.barcode ?? "",
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(sheetRows);
+    worksheet["!cols"] = BULK_PRICE_COLUMN_WIDTHS;
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Prices");
+    XLSX.writeFile(workbook, `current-products-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+  return (
+    <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
+      <CardContent>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Bulk Price Update</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+          Click <b>Download Current Products</b> to get every product already in the system with its real values
+          filled in, edit whichever cells need to change, then upload that same file back. Columns:
+          {" "}<b>stock_id</b> and <b>price</b> (required), plus optional <b>description</b>, <b>sales_type_id</b>,
+          {" "}<b>mrp_price</b>, <b>expiry_date</b>, <b>category</b>, <b>subcategory</b>, <b>brand</b> (typed by name,
+          {" "}not ID), and <b>barcode</b> — leave any of them blank to leave that field unchanged.
+        </Typography>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <Button variant="outlined" startIcon={<UploadFileIcon />} component="label">
+            Choose File
+            <input
+              type="file" hidden accept=".xlsx,.xls"
+              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+            />
+          </Button>
+          {fileName && <Typography variant="body2">{fileName} — {rows.length} valid row(s)</Typography>}
+          <Button variant="contained" size="small" onClick={downloadCurrentProducts}>Download Current Products</Button>
+        </Stack>
+
+        {rows.length > 0 && (
+          <>
+            <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 320, mb: 2 }}>
+              <Table size="small" stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Stock ID</TableCell><TableCell>Description</TableCell><TableCell align="right">Price</TableCell>
+                    <TableCell align="right">MRP</TableCell><TableCell>Expiry</TableCell>
+                    <TableCell>Category</TableCell><TableCell>Subcategory</TableCell><TableCell>Brand</TableCell>
+                    <TableCell>Barcode</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rows.map((r, i) => (
+                    <TableRow key={i}>
+                      <TableCell>{r.stock_id}</TableCell>
+                      <TableCell>{r.description ?? "—"}</TableCell>
+                      <TableCell align="right">{r.price}</TableCell>
+                      <TableCell align="right">{r.mrp_price ?? "—"}</TableCell>
+                      <TableCell>{r.expiry_date ?? "—"}</TableCell>
+                      <TableCell>{r.category ?? "—"}</TableCell>
+                      <TableCell>{r.subcategory ?? "—"}</TableCell>
+                      <TableCell>{r.brand ?? "—"}</TableCell>
+                      <TableCell>{r.barcode ?? "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <Button
+              variant="contained" disabled={bulkMutation.isPending}
+              onClick={() => bulkMutation.mutate()}
+            >
+              {bulkMutation.isPending ? "Applying..." : `Apply ${rows.length} Price Update(s)`}
+            </Button>
+          </>
+        )}
+
+        {result && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2">Created: {result.created} · Updated: {result.updated} · Skipped: {result.errors?.length ?? 0}</Typography>
+            {result.errors?.length > 0 && (
+              <TableContainer component={Paper} elevation={0} sx={{ mt: 1, maxHeight: 200 }}>
+                <Table size="small">
+                  <TableHead><TableRow><TableCell>Row</TableCell><TableCell>Stock ID</TableCell><TableCell>Error</TableCell></TableRow></TableHead>
+                  <TableBody>
+                    {result.errors.map((e: any, i: number) => (
+                      <TableRow key={i}><TableCell>{e.row}</TableCell><TableCell>{e.stock_id}</TableCell><TableCell>{e.message}</TableCell></TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Box>
+        )}
+      </CardContent>
+    </Card>
   );
 }

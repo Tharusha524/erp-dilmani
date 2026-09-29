@@ -20,6 +20,7 @@ import {
   getSupermarketDashboardSummary, getProductPerformance, getSalesTrend, getTopCustomers,
 } from "../../../api/Pos/posApi";
 import { getBestSuppliers } from "../../../api/Pos/posApi";
+import { getNegativeStock, getVoucherLiability } from "../../../api/Pos/posAdvancedApi";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
 
 // Same brand-neutral, colorblind-safe palette across every chart on this
@@ -61,6 +62,9 @@ export default function SalesAnalyticsPage() {
     queryFn: () => getBestSuppliers(),
   });
 
+  const { data: negativeStock } = useQuery({ queryKey: ["negative-stock", ""], queryFn: () => getNegativeStock() });
+  const { data: voucherLiability } = useQuery({ queryKey: ["voucher-liability"], queryFn: getVoucherLiability });
+
   if (loadingSummary) return <PageLoader />;
 
   const kpis = [
@@ -69,6 +73,8 @@ export default function SalesAnalyticsPage() {
     { label: "Debtors Outstanding", value: formatCurrency(summary?.total_debtors_outstanding ?? 0), color: "warning" as const, icon: <AccountBalanceWalletIcon fontSize="small" /> },
     { label: "Creditors Payable", value: formatCurrency(summary?.total_creditors_payable ?? 0), color: "secondary" as const, icon: <PaymentsIcon fontSize="small" /> },
     { label: "Low Stock Items", value: summary?.low_stock_count ?? 0, color: "error" as const, icon: <WarningAmberIcon fontSize="small" /> },
+    { label: "Negative Stock Items", value: negativeStock?.length ?? 0, color: "error" as const, icon: <WarningAmberIcon fontSize="small" /> },
+    { label: "Voucher Liability", value: formatCurrency(voucherLiability?.total_outstanding ?? 0), color: "secondary" as const, icon: <PaymentsIcon fontSize="small" /> },
   ];
 
   return (

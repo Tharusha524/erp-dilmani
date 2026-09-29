@@ -17,6 +17,8 @@ class StockListController extends Controller
     {
         $search = trim((string) $request->query('search', ''));
         $categoryId = $request->query('category_id');
+        $brandId = $request->query('brand_id');
+        $subcategoryId = $request->query('subcategory_id');
 
         $query = DB::table('stock_master as sm')
             ->leftJoin('item_category as ic', 'ic.category_id', '=', 'sm.category_id')
@@ -24,21 +26,39 @@ class StockListController extends Controller
             ->leftJoin('brands as br', 'br.id', '=', 'sm.brand_id')
             ->leftJoin(DB::raw('(select stock_id, sum(quantity) as total_qty from loc_stock group by stock_id) as ls'), 'ls.stock_id', '=', 'sm.stock_id')
             ->leftJoin(DB::raw('(select stock_id, min(item_code) as barcode from item_codes group by stock_id) as codes'), 'codes.stock_id', '=', 'sm.stock_id')
+            ->leftJoin('sales_pricing as sp', function ($join) {
+                $join->on('sp.stock_id', '=', 'sm.stock_id')
+                     ->where('sp.sales_type_id', '=', 3)
+                     ->where('sp.currency_id', '=', 8);
+            })
             ->where('sm.inactive', false)
             ->select(
                 'sm.stock_id',
                 'sm.description',
                 'sm.category_id',
                 'ic.description as category_name',
+                'sm.subcategory_id',
                 'sub.name as subcategory_name',
+                'sm.brand_id',
                 'br.name as brand_name',
                 'sm.purchase_cost',
+                'sm.mrp_price',
+                'sm.expiry_date',
+                'sp.price as selling_price',
                 DB::raw('COALESCE(ls.total_qty, 0) as quantity'),
                 'codes.barcode'
             );
 
         if ($categoryId) {
             $query->where('sm.category_id', $categoryId);
+        }
+
+        if ($brandId) {
+            $query->where('sm.brand_id', $brandId);
+        }
+
+        if ($subcategoryId) {
+            $query->where('sm.subcategory_id', $subcategoryId);
         }
 
         if ($search !== '') {

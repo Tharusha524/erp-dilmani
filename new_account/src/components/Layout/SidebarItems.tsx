@@ -36,6 +36,7 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import ScaleIcon from "@mui/icons-material/Scale";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import PriceChangeIcon from "@mui/icons-material/PriceChange";
+import PrintIcon from "@mui/icons-material/Print";
 import { getModulePermissionIds } from "../../permissions/navigationTree";
 
 export interface SidebarItem {
@@ -73,47 +74,101 @@ const baseSidebarItems: Array<SidebarItem> = [
     icon: <DashboardIcon fontSize="small" />,
   },
   {
-    title: "Smart Supermarket",
-    href: "/supermarket",
-    icon: <StorefrontOutlinedIcon fontSize="small" />,
+    title: "Supermarket Dashboard",
+    href: "/supermarket/dashboard",
+    icon: <InsightsIcon fontSize="small" />,
+    requiredPermission: getModulePermissionIds("Smart Supermarket"),
+  },
+  // The 9 groups below used to sit one level deeper, inside a single
+  // "Smart Supermarket" parent button — removed so each group is reached
+  // in one click instead of two, straight from the main sidebar. Every
+  // link inside them is unchanged.
+  {
+    title: "POS & Sales", href: "/supermarket/pos-checkout", icon: <PointOfSaleOutlinedIcon fontSize="small" />,
     requiredPermission: getModulePermissionIds("Smart Supermarket"),
     nestedItems: [
       { title: "POS Checkout", href: "/supermarket/pos-checkout", icon: <PointOfSaleOutlinedIcon fontSize="small" /> },
-      { title: "Low Stock Alerts", href: "/supermarket/low-stock", icon: <WarningAmberIcon fontSize="small" /> },
-      // Product Variants — disabled per request, feature/page code kept as-is.
-      // { title: "Product Variants", href: "/supermarket/product-variants", icon: <StyleIcon fontSize="small" /> },
-      { title: "Weigh & Print", href: "/supermarket/weigh-and-print", icon: <ScaleIcon fontSize="small" /> },
-      { title: "Set Price", href: "/supermarket/set-price", icon: <PriceChangeIcon fontSize="small" /> },
-      { title: "Suppliers", href: "/supermarket/suppliers", icon: <GroupsIcon fontSize="small" /> },
-      { title: "Category", href: "/supermarket/category", icon: <LocalOfferIcon fontSize="small" /> },
-      { title: "Purchase", href: "/supermarket/purchase", icon: <ReceiptIcon fontSize="small" /> },
-      { title: "Stock", href: "/supermarket/stock", icon: <ListAltIcon fontSize="small" /> },
+      { title: "POS Shifts", href: "/supermarket/pos-shifts", icon: <PointOfSaleIcon fontSize="small" /> },
       { title: "Process Return", href: "/supermarket/returns", icon: <AssignmentReturnIcon fontSize="small" /> },
       { title: "Offline Sales", href: "/supermarket/offline-sales", icon: <SyncProblemIcon fontSize="small" /> },
-      { title: "Loyalty Tiers", href: "/supermarket/loyalty-tiers", icon: <LoyaltyIcon fontSize="small" /> },
-      { title: "Loyalty Cards", href: "/supermarket/loyalty-cards", icon: <CardMembershipIcon fontSize="small" /> },
-      { title: "Offers & Discounts", href: "/supermarket/offers", icon: <LocalOfferIcon fontSize="small" /> },
-      { title: "Win-Back Campaigns", href: "/supermarket/win-back", icon: <CampaignIcon fontSize="small" /> },
+      { title: "Offline Sales & Purchases", href: "/supermarket/offline-entries", icon: <ReceiptIcon fontSize="small" /> },
+    ],
+  },
+  {
+    title: "Products", href: "/supermarket/category", icon: <LocalOfferIcon fontSize="small" />,
+    requiredPermission: getModulePermissionIds("Smart Supermarket"),
+    nestedItems: [
+      { title: "Category", href: "/supermarket/category", icon: <LocalOfferIcon fontSize="small" /> },
+      { title: "Set Price", href: "/supermarket/set-price", icon: <PriceChangeIcon fontSize="small" /> },
+      { title: "Weigh & Print", href: "/supermarket/weigh-and-print", icon: <ScaleIcon fontSize="small" /> },
+      { title: "Price Labels", href: "/supermarket/price-labels", icon: <PrintIcon fontSize="small" /> },
+      // Product Variants — disabled per request, feature/page code kept as-is.
+      // { title: "Product Variants", href: "/supermarket/product-variants", icon: <StyleIcon fontSize="small" /> },
+    ],
+  },
+  {
+    title: "Inventory", href: "/supermarket/stock", icon: <ListAltIcon fontSize="small" />,
+    requiredPermission: getModulePermissionIds("Smart Supermarket"),
+    nestedItems: [
+      { title: "Stock", href: "/supermarket/stock", icon: <ListAltIcon fontSize="small" /> },
+      { title: "Low Stock Alerts", href: "/supermarket/low-stock", icon: <WarningAmberIcon fontSize="small" /> },
       // Stock Damage — merged into the "Stock" page's "Stock Damage" tab, one button instead of two.
       // { title: "Stock Damage", href: "/supermarket/stock-damage", icon: <ReportProblemIcon fontSize="small" /> },
-      // POS Shifts — disabled per request, feature/page code kept as-is.
-      // { title: "POS Shifts", href: "/supermarket/pos-shifts", icon: <PointOfSaleIcon fontSize="small" /> },
       // Stock Adjustments — merged into the "Stock" page's Adjustments tab, one button instead of two.
       // { title: "Stock Adjustments", href: "/supermarket/stock-adjustments", icon: <InventoryIcon fontSize="small" /> },
-      // Stock Transfers — disabled per request, feature/page code kept as-is.
-      // { title: "Stock Transfers", href: "/supermarket/stock-transfers", icon: <SwapHorizIcon fontSize="small" /> },
-      // Inventory Audits — disabled per request, feature/page code kept as-is.
-      // { title: "Inventory Audits", href: "/supermarket/inventory-audits", icon: <FactCheckIcon fontSize="small" /> },
-      { title: "Offline Sales & Purchases", href: "/supermarket/offline-entries", icon: <ReceiptIcon fontSize="small" /> },
+      { title: "Stock Transfers", href: "/supermarket/stock-transfers", icon: <SwapHorizIcon fontSize="small" /> },
+      { title: "Inventory Audits", href: "/supermarket/inventory-audits", icon: <FactCheckIcon fontSize="small" /> },
+    ],
+  },
+  {
+    title: "Purchasing", href: "/supermarket/suppliers", icon: <GroupsIcon fontSize="small" />,
+    requiredPermission: getModulePermissionIds("Smart Supermarket"),
+    nestedItems: [
+      { title: "Suppliers", href: "/supermarket/suppliers", icon: <GroupsIcon fontSize="small" /> },
+      { title: "Purchase", href: "/supermarket/purchase", icon: <ReceiptIcon fontSize="small" /> },
+    ],
+  },
+  {
+    title: "Customers", href: "/supermarket/customer-segments", icon: <GroupsIcon fontSize="small" />,
+    requiredPermission: getModulePermissionIds("Smart Supermarket"),
+    nestedItems: [
+      { title: "Customer Segments", href: "/supermarket/customer-segments", icon: <GroupsIcon fontSize="small" /> },
+    ],
+  },
+  {
+    title: "Marketing & Loyalty", href: "/supermarket/offers", icon: <CampaignIcon fontSize="small" />,
+    requiredPermission: getModulePermissionIds("Smart Supermarket"),
+    nestedItems: [
+      { title: "Offers & Discounts", href: "/supermarket/offers", icon: <LocalOfferIcon fontSize="small" /> },
+      { title: "Loyalty Tiers", href: "/supermarket/loyalty-tiers", icon: <LoyaltyIcon fontSize="small" /> },
+      { title: "Loyalty Cards", href: "/supermarket/loyalty-cards", icon: <CardMembershipIcon fontSize="small" /> },
+      { title: "Win-Back Campaigns", href: "/supermarket/win-back", icon: <CampaignIcon fontSize="small" /> },
+    ],
+  },
+  {
+    title: "Finance", href: "/supermarket/vouchers", icon: <CardGiftcardIcon fontSize="small" />,
+    requiredPermission: getModulePermissionIds("Smart Supermarket"),
+    nestedItems: [
+      { title: "Vouchers", href: "/supermarket/vouchers", icon: <CardGiftcardIcon fontSize="small" /> },
       // Warranty — disabled per request, feature/page code kept as-is.
       // { title: "Warranty", href: "/supermarket/warranty", icon: <VerifiedUserIcon fontSize="small" /> },
-      { title: "Vouchers", href: "/supermarket/vouchers", icon: <CardGiftcardIcon fontSize="small" /> },
-      { title: "Customer Segments", href: "/supermarket/customer-segments", icon: <GroupsIcon fontSize="small" /> },
+    ],
+  },
+  {
+    title: "Reports", href: "/supermarket/reports", icon: <AssessmentIcon fontSize="small" />,
+    requiredPermission: getModulePermissionIds("Smart Supermarket"),
+    nestedItems: [
+      { title: "Reports", href: "/supermarket/reports", icon: <AssessmentIcon fontSize="small" /> },
       { title: "Sales Analytics", href: "/supermarket/sales-analytics", icon: <InsightsIcon fontSize="small" /> },
+    ],
+  },
+  {
+    title: "Settings", href: "/supermarket/pos-settings", icon: <SettingsSuggestIcon fontSize="small" />,
+    requiredPermission: getModulePermissionIds("Smart Supermarket"),
+    nestedItems: [
+      { title: "POS Settings", href: "/supermarket/pos-settings", icon: <SettingsSuggestIcon fontSize="small" /> },
       // Service Tickets — disabled per request, feature/page code kept as-is.
       // { title: "Service Tickets", href: "/supermarket/service-tickets", icon: <BuildIcon fontSize="small" /> },
-      { title: "POS Settings", href: "/supermarket/pos-settings", icon: <SettingsSuggestIcon fontSize="small" /> },
-      { title: "Reports", href: "/supermarket/reports", icon: <AssessmentIcon fontSize="small" /> },
     ],
   },
   /* Sales — disabled per request, feature/page code kept as-is.

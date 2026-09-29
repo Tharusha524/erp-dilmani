@@ -3,17 +3,21 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Box, Tabs, Tab, Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper,
   Typography, Card, CardContent, Stack, TextField, FormControl, InputLabel, Select, MenuItem,
-  Autocomplete,
+  Autocomplete, Chip,
 } from "@mui/material";
 import { getInventoryLocations } from "../../../api/InventoryLocation/InventoryLocationApi";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
 import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
 import PageLoader from "../../../components/PageLoader";
-import { getVelocityAndDemand, getDeadStock, getProductProfit, getBusinessActivity, getValuation } from "../../../api/Pos/posAdvancedApi";
+import {
+  getVelocityAndDemand, getDeadStock, getProductProfit, getBusinessActivity, getValuation,
+  getNegativeStock, getVoucherLiability, getReceivablesAging, getPayablesAging, getSalesByCashierShift,
+  getVoidReport, getPriceOverrideAudit,
+} from "../../../api/Pos/posAdvancedApi";
 import { getLowestCostBySupplier } from "../../../api/Pos/posApi";
 import { getStockMoveHistory } from "../../../api/StockMoves/StockMovesApi";
-import { getItems } from "../../../api/Item/ItemApi";
+import { getItems, getExpiryList } from "../../../api/Item/ItemApi";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
 
 export default function SupermarketReportsPage() {
@@ -43,6 +47,37 @@ export default function SupermarketReportsPage() {
 
   const { data: lowestCost, isLoading: l6 } = useQuery({
     queryKey: ["lowest-cost-by-supplier"], queryFn: () => getLowestCostBySupplier(), enabled: tab === "lowest-cost",
+  });
+
+  const { data: negativeStock, isLoading: l8 } = useQuery({
+    queryKey: ["negative-stock", locCode], queryFn: () => getNegativeStock(locCode || undefined), enabled: tab === "negative-stock",
+  });
+  const { data: voucherLiability, isLoading: l9 } = useQuery({
+    queryKey: ["voucher-liability"], queryFn: getVoucherLiability, enabled: tab === "voucher-liability",
+  });
+  const { data: receivablesAging, isLoading: l10 } = useQuery({
+    queryKey: ["receivables-aging"], queryFn: getReceivablesAging, enabled: tab === "receivables-aging",
+  });
+  const { data: payablesAging, isLoading: l11 } = useQuery({
+    queryKey: ["payables-aging"], queryFn: getPayablesAging, enabled: tab === "payables-aging",
+  });
+  const { data: cashierShift, isLoading: l12 } = useQuery({
+    queryKey: ["sales-by-cashier-shift", fromDate, toDate],
+    queryFn: () => getSalesByCashierShift({ from_date: fromDate, to_date: toDate }),
+    enabled: tab === "cashier-shift",
+  });
+  const { data: expiryList, isLoading: l13 } = useQuery({
+    queryKey: ["expiry-list"], queryFn: () => getExpiryList(90), enabled: tab === "expiry-list",
+  });
+  const { data: voidReport, isLoading: l14 } = useQuery({
+    queryKey: ["void-report", fromDate, toDate],
+    queryFn: () => getVoidReport({ from_date: fromDate, to_date: toDate }),
+    enabled: tab === "void-report",
+  });
+  const { data: priceOverrides, isLoading: l15 } = useQuery({
+    queryKey: ["price-override-audit", fromDate, toDate],
+    queryFn: () => getPriceOverrideAudit({ from_date: fromDate, to_date: toDate }),
+    enabled: tab === "price-override-audit",
   });
 
   const { data: items } = useQuery({ queryKey: ["items-all"], queryFn: getItems, enabled: tab === "stock-history" });
@@ -84,6 +119,14 @@ export default function SupermarketReportsPage() {
         <Tab label="Valuation" value="valuation" />
         <Tab label="Lowest Cost Supplier" value="lowest-cost" />
         <Tab label="Stock History" value="stock-history" />
+        <Tab label="Negative Stock" value="negative-stock" />
+        <Tab label="Voucher Liability" value="voucher-liability" />
+        <Tab label="Receivables Aging" value="receivables-aging" />
+        <Tab label="Payables Aging" value="payables-aging" />
+        <Tab label="Sales by Cashier/Shift" value="cashier-shift" />
+        <Tab label="Expiry List" value="expiry-list" />
+        <Tab label="Void Report" value="void-report" />
+        <Tab label="Price Override Audit" value="price-override-audit" />
       </Tabs>
 
       {tab === "velocity" && (l1 ? <PageLoader /> : (
@@ -242,6 +285,274 @@ export default function SupermarketReportsPage() {
           )}
         </Stack>
       )}
+
+      {tab === "negative-stock" && (l8 ? <PageLoader /> : (
+        <TableContainer component={Paper} elevation={2}>
+          <Table size="small">
+            <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+              <TableRow><TableCell>Product</TableCell><TableCell>Location</TableCell><TableCell align="right">Quantity</TableCell></TableRow>
+            </TableHead>
+            <TableBody>
+              {(negativeStock ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell>{r.description}</TableCell>
+                  <TableCell>{r.loc_code}</TableCell>
+                  <TableCell align="right" sx={{ color: "error.main", fontWeight: 700 }}>{r.quantity}</TableCell>
+                </TableRow>
+              ))}
+              {(!negativeStock || negativeStock.length === 0) && (
+                <TableRow><TableCell colSpan={3} align="center"><Typography variant="body2">No negative-stock items — everything is at or above zero.</Typography></TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ))}
+
+      {tab === "voucher-liability" && (l9 ? <PageLoader /> : (
+        <Box>
+          <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mb: 2, display: "inline-block", px: 3, py: 2 }}>
+            <Typography variant="caption" color="text.secondary">TOTAL OUTSTANDING VOUCHER LIABILITY</Typography>
+            <Typography variant="h5" fontWeight={800}>{formatCurrency(voucherLiability?.total_outstanding ?? 0)}</Typography>
+          </Card>
+          <TableContainer component={Paper} elevation={2}>
+            <Table size="small">
+              <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+                <TableRow><TableCell>Voucher Code</TableCell><TableCell align="right">Face Value</TableCell><TableCell align="right">Balance</TableCell><TableCell>Issued</TableCell><TableCell>Expires</TableCell></TableRow>
+              </TableHead>
+              <TableBody>
+                {(voucherLiability?.vouchers ?? []).map((v: any) => (
+                  <TableRow key={v.voucher_code}>
+                    <TableCell>{v.voucher_code}</TableCell>
+                    <TableCell align="right">{formatCurrency(v.face_value)}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(v.balance)}</TableCell>
+                    <TableCell>{v.issue_date}</TableCell>
+                    <TableCell>{v.expiry_date ?? "—"}</TableCell>
+                  </TableRow>
+                ))}
+                {(!voucherLiability?.vouchers || voucherLiability.vouchers.length === 0) && (
+                  <TableRow><TableCell colSpan={5} align="center"><Typography variant="body2">No outstanding vouchers.</Typography></TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      ))}
+
+      {tab === "receivables-aging" && (l10 ? <PageLoader /> : (
+        <TableContainer component={Paper} elevation={2}>
+          <Table size="small">
+            <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+              <TableRow>
+                <TableCell>Customer</TableCell><TableCell align="right">Current</TableCell><TableCell align="right">1-30 Days</TableCell>
+                <TableCell align="right">31-60 Days</TableCell><TableCell align="right">61-90 Days</TableCell><TableCell align="right">90+ Days</TableCell>
+                <TableCell align="right">Total</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(receivablesAging ?? []).map((r: any) => (
+                <TableRow key={r.party_id}>
+                  <TableCell>{r.party_name}</TableCell>
+                  <TableCell align="right">{formatCurrency(r.current)}</TableCell>
+                  <TableCell align="right">{formatCurrency(r.days_1_30)}</TableCell>
+                  <TableCell align="right">{formatCurrency(r.days_31_60)}</TableCell>
+                  <TableCell align="right" sx={{ color: r.days_61_90 > 0 ? "warning.main" : undefined }}>{formatCurrency(r.days_61_90)}</TableCell>
+                  <TableCell align="right" sx={{ color: r.days_over_90 > 0 ? "error.main" : undefined }}>{formatCurrency(r.days_over_90)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(r.total_outstanding)}</TableCell>
+                </TableRow>
+              ))}
+              {(!receivablesAging || receivablesAging.length === 0) && (
+                <TableRow><TableCell colSpan={7} align="center"><Typography variant="body2">No outstanding customer balances.</Typography></TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ))}
+
+      {tab === "payables-aging" && (l11 ? <PageLoader /> : (
+        <TableContainer component={Paper} elevation={2}>
+          <Table size="small">
+            <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+              <TableRow>
+                <TableCell>Supplier</TableCell><TableCell align="right">Current</TableCell><TableCell align="right">1-30 Days</TableCell>
+                <TableCell align="right">31-60 Days</TableCell><TableCell align="right">61-90 Days</TableCell><TableCell align="right">90+ Days</TableCell>
+                <TableCell align="right">Total</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(payablesAging ?? []).map((r: any) => (
+                <TableRow key={r.party_id}>
+                  <TableCell>{r.party_name}</TableCell>
+                  <TableCell align="right">{formatCurrency(r.current)}</TableCell>
+                  <TableCell align="right">{formatCurrency(r.days_1_30)}</TableCell>
+                  <TableCell align="right">{formatCurrency(r.days_31_60)}</TableCell>
+                  <TableCell align="right" sx={{ color: r.days_61_90 > 0 ? "warning.main" : undefined }}>{formatCurrency(r.days_61_90)}</TableCell>
+                  <TableCell align="right" sx={{ color: r.days_over_90 > 0 ? "error.main" : undefined }}>{formatCurrency(r.days_over_90)}</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>{formatCurrency(r.total_outstanding)}</TableCell>
+                </TableRow>
+              ))}
+              {(!payablesAging || payablesAging.length === 0) && (
+                <TableRow><TableCell colSpan={7} align="center"><Typography variant="body2">No outstanding supplier balances.</Typography></TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ))}
+
+      {tab === "cashier-shift" && (l12 ? <PageLoader /> : (
+        <Stack spacing={2}>
+          <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Sales by Cashier</Typography>
+              <TableContainer><Table size="small">
+                <TableHead><TableRow><TableCell>Cashier</TableCell><TableCell align="right">Bills</TableCell><TableCell align="right">Total Sales</TableCell></TableRow></TableHead>
+                <TableBody>
+                  {(cashierShift?.by_cashier ?? []).map((r: any) => (
+                    <TableRow key={r.user_id}>
+                      <TableCell>{r.cashier_name}</TableCell>
+                      <TableCell align="right">{r.bill_count}</TableCell>
+                      <TableCell align="right">{formatCurrency(r.total_sales)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!cashierShift?.by_cashier || cashierShift.by_cashier.length === 0) && (
+                    <TableRow><TableCell colSpan={3} align="center"><Typography variant="body2">No shift-tagged sales in this period.</Typography></TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table></TableContainer>
+            </CardContent>
+          </Card>
+
+          <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Sales by Shift</Typography>
+              <TableContainer><Table size="small">
+                <TableHead><TableRow><TableCell>Cashier</TableCell><TableCell>Shift Start</TableCell><TableCell>Shift End</TableCell><TableCell>Status</TableCell><TableCell align="right">Bills</TableCell><TableCell align="right">Total Sales</TableCell></TableRow></TableHead>
+                <TableBody>
+                  {(cashierShift?.by_shift ?? []).map((r: any) => (
+                    <TableRow key={r.shift_id}>
+                      <TableCell>{r.cashier_name}</TableCell>
+                      <TableCell>{r.shift_start}</TableCell>
+                      <TableCell>{r.shift_end ?? "—"}</TableCell>
+                      <TableCell>{r.status}</TableCell>
+                      <TableCell align="right">{r.bill_count}</TableCell>
+                      <TableCell align="right">{formatCurrency(r.total_sales)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!cashierShift?.by_shift || cashierShift.by_shift.length === 0) && (
+                    <TableRow><TableCell colSpan={6} align="center"><Typography variant="body2">No shifts recorded in this period.</Typography></TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table></TableContainer>
+            </CardContent>
+          </Card>
+
+          <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Sales by Hour of Day</Typography>
+              <TableContainer><Table size="small">
+                <TableHead><TableRow><TableCell>Hour</TableCell><TableCell align="right">Bills</TableCell><TableCell align="right">Total Sales</TableCell></TableRow></TableHead>
+                <TableBody>
+                  {(cashierShift?.by_hour ?? []).map((r: any) => (
+                    <TableRow key={r.hour}>
+                      <TableCell>{String(r.hour).padStart(2, "0")}:00</TableCell>
+                      <TableCell align="right">{r.bill_count}</TableCell>
+                      <TableCell align="right">{formatCurrency(r.total_sales)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!cashierShift?.by_hour || cashierShift.by_hour.length === 0) && (
+                    <TableRow><TableCell colSpan={3} align="center"><Typography variant="body2">No sales in this period.</Typography></TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table></TableContainer>
+            </CardContent>
+          </Card>
+        </Stack>
+      ))}
+
+      {tab === "expiry-list" && (l13 ? <PageLoader /> : (
+        <TableContainer component={Paper} elevation={2}>
+          <Table size="small">
+            <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+              <TableRow><TableCell>Product</TableCell><TableCell>Expiry Date</TableCell><TableCell>Status</TableCell></TableRow>
+            </TableHead>
+            <TableBody>
+              {(expiryList ?? []).map((r: any) => (
+                <TableRow key={r.stock_id}>
+                  <TableCell>{r.description}</TableCell>
+                  <TableCell>{r.expiry_date}</TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      label={r.status === "expired" ? "Expired" : "Expiring Soon"}
+                      color={r.status === "expired" ? "error" : "warning"}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+              {(!expiryList || expiryList.length === 0) && (
+                <TableRow><TableCell colSpan={3} align="center"><Typography variant="body2">Nothing expiring in the next 90 days.</Typography></TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ))}
+
+      {tab === "void-report" && (l14 ? <PageLoader /> : (
+        <Box>
+          <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mb: 2, display: "inline-block", px: 3, py: 2 }}>
+            <Typography variant="caption" color="text.secondary">TOTAL VOIDED AMOUNT</Typography>
+            <Typography variant="h5" fontWeight={800}>{formatCurrency(voidReport?.total_voided_amount ?? 0)}</Typography>
+          </Card>
+          <TableContainer component={Paper} elevation={2}>
+            <Table size="small">
+              <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+                <TableRow><TableCell>Invoice #</TableCell><TableCell>Customer</TableCell><TableCell align="right">Amount</TableCell><TableCell>Reason</TableCell><TableCell>Voided By</TableCell><TableCell>Voided At</TableCell></TableRow>
+              </TableHead>
+              <TableBody>
+                {(voidReport?.voids ?? []).map((v: any, i: number) => (
+                  <TableRow key={i}>
+                    <TableCell>{v.trans_no}</TableCell>
+                    <TableCell>{v.customer_name ?? "—"}</TableCell>
+                    <TableCell align="right">{formatCurrency(v.amount)}</TableCell>
+                    <TableCell>{v.memo ?? "—"}</TableCell>
+                    <TableCell>{v.voided_by_name ?? "—"}</TableCell>
+                    <TableCell>{v.voided_at}</TableCell>
+                  </TableRow>
+                ))}
+                {(!voidReport?.voids || voidReport.voids.length === 0) && (
+                  <TableRow><TableCell colSpan={6} align="center"><Typography variant="body2">No voided sales in this period.</Typography></TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      ))}
+
+      {tab === "price-override-audit" && (l15 ? <PageLoader /> : (
+        <TableContainer component={Paper} elevation={2}>
+          <Table size="small">
+            <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+              <TableRow><TableCell>Invoice #</TableCell><TableCell>Product</TableCell><TableCell align="right">Original Price</TableCell><TableCell align="right">New Price</TableCell><TableCell>Cashier</TableCell><TableCell>When</TableCell></TableRow>
+            </TableHead>
+            <TableBody>
+              {(priceOverrides ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell>{r.debtor_trans_no}</TableCell>
+                  <TableCell>{r.description ?? "—"}</TableCell>
+                  <TableCell align="right">{formatCurrency(r.original_price)}</TableCell>
+                  <TableCell align="right" sx={{ color: r.new_price < r.original_price ? "warning.main" : "success.main", fontWeight: 700 }}>
+                    {formatCurrency(r.new_price)}
+                  </TableCell>
+                  <TableCell>{r.cashier_name ?? "—"}</TableCell>
+                  <TableCell>{r.created_at}</TableCell>
+                </TableRow>
+              ))}
+              {(!priceOverrides || priceOverrides.length === 0) && (
+                <TableRow><TableCell colSpan={6} align="center"><Typography variant="body2">No manual price overrides in this period.</Typography></TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ))}
     </FormPageLayout>
   );
 }

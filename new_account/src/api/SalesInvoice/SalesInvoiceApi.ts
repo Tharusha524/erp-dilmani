@@ -44,6 +44,8 @@ export interface DirectSalesInvoicePayload {
   deliver_to?: string;
   cash_sale?: boolean;
   bank_account_id?: number | null;
+  pos_shift_id?: number | null;
+  price_overrides?: Array<{ stock_id: string; original_price: number; new_price: number }>;
   lines: DirectSalesInvoiceLine[];
 }
 

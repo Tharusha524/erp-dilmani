@@ -31,3 +31,17 @@ export const getBusinessActivity = async (params?: { from_date?: string; to_date
   (await api.get("/sales-analytics/business-activity", { params })).data;
 export const getValuation = async (locCode?: string) =>
   (await api.get("/sales-analytics/valuation", { params: { loc_code: locCode } })).data;
+export const getNegativeStock = async (locCode?: string) =>
+  (await api.get("/sales-analytics/negative-stock", { params: { loc_code: locCode } })).data;
+export const getVoucherLiability = async () =>
+  (await api.get("/sales-analytics/voucher-liability")).data;
+export const getReceivablesAging = async () =>
+  (await api.get("/sales-analytics/receivables-aging")).data;
+export const getPayablesAging = async () =>
+  (await api.get("/sales-analytics/payables-aging")).data;
+export const getSalesByCashierShift = async (params?: { from_date?: string; to_date?: string }) =>
+  (await api.get("/sales-analytics/sales-by-cashier-shift", { params })).data;
+export const getVoidReport = async (params?: { from_date?: string; to_date?: string }) =>
+  (await api.get("/sales-analytics/void-report", { params })).data;
+export const getPriceOverrideAudit = async (params?: { from_date?: string; to_date?: string }) =>
+  (await api.get("/sales-analytics/price-override-audit", { params })).data;

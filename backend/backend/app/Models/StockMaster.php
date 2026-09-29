@@ -34,6 +34,8 @@ class StockMaster extends Model
         'cost_center_id',
         'cost_center2_id',
         'purchase_cost',
+        'mrp_price',
+        'expiry_date',
         'salvage_value',
         'useful_life_years',
         'material_cost',

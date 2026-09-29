@@ -10,6 +10,8 @@ import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
 import { getStockList } from "../../../api/Inventory/StockListApi";
 import { createItemCode } from "../../../api/ItemCodes/ItemCodesApi";
+import { updateMrpPrice, updateExpiryDate } from "../../../api/Item/ItemApi";
+import { useNavigate } from "react-router-dom";
 import { getSalesPricingByStockId, createSalesPricing, updateSalesPricing } from "../../../api/SalesPricing/SalesPricingApi";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
 import { notify } from "../../../services/notificationService";
@@ -28,6 +30,7 @@ const RETAIL_SALES_TYPE_ID = 3; // default price list for supermarket walk-in sa
 export default function SetPricePage() {
   const { formatCurrency } = useHomeCurrency();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [product, setProduct] = useState<any>(null);
@@ -35,6 +38,8 @@ export default function SetPricePage() {
   const [sellingPrice, setSellingPrice] = useState("");
   const [lastEdited, setLastEdited] = useState<"margin" | "price">("margin");
   const [newBarcode, setNewBarcode] = useState("");
+  const [mrpPrice, setMrpPrice] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
 
   const { data: results } = useQuery({
     queryKey: ["stock-search", search],
@@ -78,7 +83,29 @@ export default function SetPricePage() {
     setMargin("20");
     setLastEdited("margin");
     setNewBarcode("");
+    setMrpPrice(p.mrp_price != null ? String(p.mrp_price) : "");
+    setExpiryDate(p.expiry_date ? String(p.expiry_date).slice(0, 10) : "");
   };
+
+  const saveMrpMutation = useMutation({
+    mutationFn: () => updateMrpPrice(product.stock_id, mrpPrice ? Number(mrpPrice) : null),
+    onSuccess: () => {
+      notify.success("MRP price saved");
+      queryClient.invalidateQueries({ queryKey: ["stock-search"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-list"] });
+    },
+    onError: (err: any) => notify.error(err?.response?.data?.message || "Failed to save MRP price"),
+  });
+
+  const saveExpiryMutation = useMutation({
+    mutationFn: () => updateExpiryDate(product.stock_id, expiryDate || null),
+    onSuccess: () => {
+      notify.success("Expiry date saved");
+      queryClient.invalidateQueries({ queryKey: ["stock-search"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-list"] });
+    },
+    onError: (err: any) => notify.error(err?.response?.data?.message || "Failed to save expiry date"),
+  });
 
   const saveMutation = useMutation({
     mutationFn: () => {
@@ -192,6 +219,13 @@ export default function SetPricePage() {
                   </Stack>
                 )}
 
+                <Button
+                  variant="text" size="small" sx={{ alignSelf: "flex-start" }}
+                  onClick={() => navigate(`/itemsandinventory/maintenance/foreign-item-codes?stock_id=${encodeURIComponent(product.stock_id)}`)}
+                >
+                  Manage all barcodes for this product
+                </Button>
+
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                   <TextField
                     label="Purchase Cost" size="small" sx={{ flex: 1 }}
@@ -208,6 +242,19 @@ export default function SetPricePage() {
                     value={sellingPrice}
                     onChange={(e) => { setLastEdited("price"); setSellingPrice(e.target.value); }}
                   />
+                  <TextField
+                    label="MRP Price" type="number" size="small" sx={{ flex: 1 }}
+                    value={mrpPrice}
+                    onChange={(e) => setMrpPrice(e.target.value)}
+                    helperText="Shown to the cashier during checkout"
+                  />
+                  <TextField
+                    label="Expiry Date" type="date" size="small" sx={{ flex: 1 }}
+                    value={expiryDate}
+                    onChange={(e) => setExpiryDate(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    helperText="Optional — feeds the Expiry List report"
+                  />
                 </Stack>
 
                 {currentPricing && (
@@ -216,14 +263,29 @@ export default function SetPricePage() {
                   </Typography>
                 )}
 
-                <Button
-                  variant="contained" size="large" startIcon={<PriceChangeIcon />}
-                  disabled={!sellingPrice || Number(sellingPrice) <= 0 || saveMutation.isPending}
-                  onClick={() => saveMutation.mutate()}
-                  sx={{ alignSelf: "flex-start" }}
-                >
-                  {saveMutation.isPending ? "Saving..." : "Save Selling Price"}
-                </Button>
+                <Stack direction="row" spacing={2}>
+                  <Button
+                    variant="contained" size="large" startIcon={<PriceChangeIcon />}
+                    disabled={!sellingPrice || Number(sellingPrice) <= 0 || saveMutation.isPending}
+                    onClick={() => saveMutation.mutate()}
+                  >
+                    {saveMutation.isPending ? "Saving..." : "Save Selling Price"}
+                  </Button>
+                  <Button
+                    variant="outlined" size="large"
+                    disabled={saveMrpMutation.isPending}
+                    onClick={() => saveMrpMutation.mutate()}
+                  >
+                    {saveMrpMutation.isPending ? "Saving..." : "Save MRP Price"}
+                  </Button>
+                  <Button
+                    variant="outlined" size="large"
+                    disabled={saveExpiryMutation.isPending}
+                    onClick={() => saveExpiryMutation.mutate()}
+                  >
+                    {saveExpiryMutation.isPending ? "Saving..." : "Save Expiry Date"}
+                  </Button>
+                </Stack>
               </>
             )}
           </Stack>

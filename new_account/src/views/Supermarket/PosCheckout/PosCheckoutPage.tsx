@@ -32,7 +32,7 @@ import { directSalesInvoice, DirectSalesInvoicePayload } from "../../../api/Sale
 import { createQuotation, printQuotationPdf } from "../../../api/Quotations/QuotationsApi";
 import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 import { getApplicableOffers } from "../../../api/Loyalty/loyaltyApi";
-import { lookupBarcode, getLowStock } from "../../../api/Pos/posApi";
+import { lookupBarcode, getLowStock, getPosShifts } from "../../../api/Pos/posApi";
 import { getStockList } from "../../../api/Inventory/StockListApi";
 import { getSalesPricingByStockId } from "../../../api/SalesPricing/SalesPricingApi";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
@@ -70,6 +70,10 @@ interface CartLine {
   discount_percent: number;
   variant_id?: number;
   variant_name?: string;
+  mrp_price?: number;
+  // The catalog price this line was added at — never shown or edited, kept
+  // only so a manual unit_price edit can be flagged as a price override.
+  original_unit_price?: number;
 }
 
 interface PaymentLine {
@@ -86,6 +90,16 @@ export default function PosCheckoutPage() {
   const { formatCurrency } = useHomeCurrency();
   const { user } = useCurrentUser();
   const queryClient = useQueryClient();
+
+  // Tags each sale with the cashier's open shift, for the Sales by
+  // Cashier/Shift report only — not required to check out, so a missing
+  // or not-yet-opened shift never blocks a sale.
+  const { data: openShifts } = useQuery({
+    queryKey: ["pos-open-shift", user?.id],
+    queryFn: () => getPosShifts({ status: "open", user_id: user?.id }),
+    enabled: !!user?.id,
+  });
+  const currentShiftId: number | undefined = openShifts?.[0]?.id;
 
   const [customer, setCustomer] = useState<any>(null);
   const [branchCode, setBranchCode] = useState<string>("");
@@ -113,6 +127,11 @@ export default function PosCheckoutPage() {
   const [qty, setQty] = useState("1");
   const [scanCode, setScanCode] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
+  // When a barcode is shared by more than one product (e.g. a generic
+  // "Snack" code used for both the 50g and 100g pack), the lookup returns
+  // every match instead of guessing — this holds that list so the cashier
+  // can pick the right one.
+  const [barcodeMatches, setBarcodeMatches] = useState<any[] | null>(null);
   const scanInputRef = useRef<HTMLInputElement>(null);
   const qtyInputRef = useRef<HTMLInputElement>(null);
   const customerInputRef = useRef<HTMLInputElement>(null);
@@ -448,6 +467,8 @@ export default function PosCheckoutPage() {
           discount_percent: 0,
           variant_id: variant?.id,
           variant_name: variant?.variant_name,
+          mrp_price: item.mrp_price != null ? Number(item.mrp_price) : undefined,
+          original_unit_price: Number(item.sale_price ?? item.purchase_cost) || 0,
         },
       ];
     });
@@ -510,14 +531,25 @@ export default function PosCheckoutPage() {
     }
 
     try {
-      const item = await lookupBarcode(trimmed);
-      addItemToCart(item, Number(qty) || 1);
-      setLastViewedProduct(item);
-      notify.success(`Added: ${item.description}`);
+      const result = await lookupBarcode(trimmed);
+      if (result?.matches) {
+        setBarcodeMatches(result.matches);
+        return;
+      }
+      addItemToCart(result, Number(qty) || 1);
+      setLastViewedProduct(result);
+      notify.success(`Added: ${result.description}`);
     } catch (err: any) {
       const message = err?.response?.data?.message || `No product found for code "${trimmed}"`;
       notify.error(message);
     }
+  };
+
+  const handlePickBarcodeMatch = (item: any) => {
+    addItemToCart(item, Number(qty) || 1);
+    setLastViewedProduct(item);
+    notify.success(`Added: ${item.description}`);
+    setBarcodeMatches(null);
   };
 
   const handleScanKeyDown = async (e: KeyboardEvent<HTMLInputElement>) => {
@@ -682,7 +714,7 @@ export default function PosCheckoutPage() {
       return;
     }
     if (balanceRemaining > 0.01) {
-      notify.error(`Payments don't cover the total — ${formatCurrency(balanceRemaining)} remaining`);
+      notify.error(`Payments don't cover the total — ${formatCurrency(balanceRemaining, 2)} remaining`);
       return;
     }
 
@@ -704,6 +736,17 @@ export default function PosCheckoutPage() {
       };
     });
 
+    // Flags any line where the cashier typed a different unit price than
+    // the catalog price it was added at — audit trail only, the sale still
+    // posts at whatever unit_price is on the line either way.
+    const priceOverrides = cart
+      .filter((l) => l.original_unit_price != null && Math.abs(l.unit_price - l.original_unit_price) > 0.01)
+      .map((l) => ({
+        stock_id: l.stock_id,
+        original_price: l.original_unit_price,
+        new_price: l.unit_price,
+      }));
+
     const payload: DirectSalesInvoicePayload = {
       debtor_no: customer.debtor_no,
       branch_code: Number(branchCode),
@@ -715,6 +758,8 @@ export default function PosCheckoutPage() {
       cost_center_id: 0,
       cost_center2_id: 0,
       reference: `POS-${Date.now()}`,
+      pos_shift_id: currentShiftId,
+      price_overrides: priceOverrides.length > 0 ? priceOverrides : undefined,
       payments: validPaymentLines.map((p) => ({ bank_account_id: Number(p.bank_account_id), amount: Number(p.amount) })),
       lines: combinedLines,
     } as any;
@@ -925,12 +970,12 @@ export default function PosCheckoutPage() {
         return;
       }
       if (Number(voucher.balance) < amount) {
-        notify.error(`Insufficient voucher balance — only ${formatCurrency(voucher.balance)} left`);
+        notify.error(`Insufficient voucher balance — only ${formatCurrency(voucher.balance, 2)} left`);
         return;
       }
 
       setAppliedVoucher({ code, amount });
-      notify.success(`Voucher ${code} applied for ${formatCurrency(amount)}`);
+      notify.success(`Voucher ${code} applied for ${formatCurrency(amount, 2)}`);
     } catch {
       notify.error("Voucher not found");
     } finally {
@@ -1102,7 +1147,7 @@ export default function PosCheckoutPage() {
             guarantees the three pieces always add up to the actual screen
             height instead of a guessed pixel number that can overflow. */}
         <Grid
-          item xs={12} md={8}
+          item xs={12} md={9}
           sx={isFullScreen ? { height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" } : undefined}
         >
           <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mb: 2, flexShrink: 0 }}>
@@ -1168,6 +1213,7 @@ export default function PosCheckoutPage() {
                   <TableCell>Item</TableCell>
                   <TableCell align="right">Stock</TableCell>
                   <TableCell align="center">Qty</TableCell>
+                  <TableCell align="right">MRP</TableCell>
                   <TableCell align="right">Unit Price</TableCell>
                   <TableCell align="right">Disc %</TableCell>
                   <TableCell align="right">Net Price</TableCell>
@@ -1206,6 +1252,11 @@ export default function PosCheckoutPage() {
                       </Stack>
                     </TableCell>
                     <TableCell align="right">
+                      <Typography variant="body2" color="text.secondary">
+                        {l.mrp_price != null ? formatCurrency(l.mrp_price, 2) : "—"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
                       <TextField
                         type="text" inputMode="numeric" size="small" value={l.unit_price.toLocaleString()} sx={{ width: 140 }}
                         onChange={(e) => updateLine(l.stock_id, { unit_price: parseFormattedNumber(e.target.value) })}
@@ -1219,12 +1270,12 @@ export default function PosCheckoutPage() {
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2">
-                        {formatCurrency(l.unit_price * (1 - l.discount_percent / 100))}
+                        {formatCurrency(l.unit_price * (1 - l.discount_percent / 100), 2)}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" fontWeight={700}>
-                        {formatCurrency(l.quantity * l.unit_price * (1 - l.discount_percent / 100))}
+                        {formatCurrency(l.quantity * l.unit_price * (1 - l.discount_percent / 100), 2)}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
@@ -1235,7 +1286,7 @@ export default function PosCheckoutPage() {
                   </TableRow>
                 ))}
                 {cart.length === 0 && (
-                  <TableRow><TableCell colSpan={8} align="center" sx={{ py: 4 }}><Typography variant="body2" color="text.secondary">Cart is empty — scan or search a product to begin.</Typography></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} align="center" sx={{ py: 4 }}><Typography variant="body2" color="text.secondary">Cart is empty — scan or search a product to begin.</Typography></TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -1306,11 +1357,11 @@ export default function PosCheckoutPage() {
               <Stack direction="row" spacing={4} alignItems="center" sx={{ mt: 1.5 }}>
                 <Stack direction="row" spacing={1} alignItems="baseline">
                   <Typography variant="body2" color="text.secondary">Change Due</Typography>
-                  <Typography variant="body2" fontWeight={700}>{formatCurrency(changeDue)}</Typography>
+                  <Typography variant="body2" fontWeight={700}>{formatCurrency(changeDue, 2)}</Typography>
                 </Stack>
                 {balanceRemaining > 0.01 && (
                   <Typography variant="caption" color="error">
-                    {formatCurrency(balanceRemaining)} still needs to be covered by a payment method
+                    {formatCurrency(balanceRemaining, 2)} still needs to be covered by a payment method
                   </Typography>
                 )}
               </Stack>
@@ -1322,7 +1373,7 @@ export default function PosCheckoutPage() {
 
         {/* ---- Right: one consolidated till panel — customer, discounts, payment, checkout ---- */}
         <Grid
-          item xs={12} md={4}
+          item xs={12} md={3}
           sx={isFullScreen ? { height: "100%", overflowY: "auto" } : undefined}
         >
           <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, position: { md: isFullScreen ? "static" : "sticky" }, top: { md: 16 } }}>
@@ -1463,30 +1514,30 @@ export default function PosCheckoutPage() {
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-                  <Typography variant="body2" fontWeight={700}>{formatCurrency(subtotal)}</Typography>
+                  <Typography variant="body2" fontWeight={700}>{formatCurrency(subtotal, 2)}</Typography>
                 </Stack>
                 {cartDiscountAmount > 0 && (
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="body2" color="text.secondary">Cart Discount ({cartDiscountPercent}%)</Typography>
-                    <Typography variant="body2" color="error">-{formatCurrency(cartDiscountAmount)}</Typography>
+                    <Typography variant="body2" color="error">-{formatCurrency(cartDiscountAmount, 2)}</Typography>
                   </Stack>
                 )}
                 {couponDiscountAmount > 0 && (
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="body2" color="text.secondary">Coupon ({appliedCoupon?.coupon_code})</Typography>
-                    <Typography variant="body2" color="error">-{formatCurrency(couponDiscountAmount)}</Typography>
+                    <Typography variant="body2" color="error">-{formatCurrency(couponDiscountAmount, 2)}</Typography>
                   </Stack>
                 )}
                 {voucherApplied > 0 && (
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="body2" color="text.secondary">Voucher ({appliedVoucher?.code})</Typography>
-                    <Typography variant="body2" color="error">-{formatCurrency(voucherApplied)}</Typography>
+                    <Typography variant="body2" color="error">-{formatCurrency(voucherApplied, 2)}</Typography>
                   </Stack>
                 )}
                 <Divider />
                 <Stack direction="row" justifyContent="space-between" alignItems="baseline">
                   <Typography variant="h6">Total</Typography>
-                  <Typography variant="h5" fontWeight={800} color="primary.main">{formatCurrency(grandTotal)}</Typography>
+                  <Typography variant="h5" fontWeight={800} color="primary.main">{formatCurrency(grandTotal, 2)}</Typography>
                 </Stack>
               </Stack>
 
@@ -1496,20 +1547,21 @@ export default function PosCheckoutPage() {
                 <Tooltip title="Give the customer a price estimate — not a sale, no payment needed, nothing posted to accounts yet">
                   <span style={{ flex: 1, display: 'flex' }}>
                     <Button
-                      variant="contained" color="warning" size="large" startIcon={<RequestQuoteIcon />}
+                      variant="contained" color="warning" startIcon={<RequestQuoteIcon />}
                       disabled={quoteMutation.isPending || !customer || cart.length === 0}
                       onClick={handleGiveQuote}
                       fullWidth
+                      sx={{ whiteSpace: "nowrap", px: 1, fontSize: "0.72rem" }}
                     >
                       {quoteMutation.isPending ? "Creating Quote..." : "Give Quote"}
                     </Button>
                   </span>
                 </Tooltip>
                 <Button
-                  variant="contained" size="large" startIcon={<ReceiptLongIcon />}
+                  variant="contained" startIcon={<ReceiptLongIcon />}
                   disabled={checkoutMutation.isPending || !customer || cart.length === 0}
                   onClick={handleCheckout}
-                  sx={{ flex: 1 }}
+                  sx={{ flex: 1, whiteSpace: "nowrap", px: 1, fontSize: "0.72rem" }}
                 >
                   {checkoutMutation.isPending ? "Processing..." : "Complete Sale"}
                 </Button>
@@ -1524,7 +1576,7 @@ export default function PosCheckoutPage() {
                   ✓ Invoice #{lastReceipt.trans_no} posted for {lastReceipt.customer?.name}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {lastReceipt.lines.length} item(s) · {formatCurrency(lastReceipt.subtotal)}
+                  {lastReceipt.lines.length} item(s) · {formatCurrency(lastReceipt.subtotal, 2)}
                 </Typography>
               </CardContent>
             </Card>
@@ -1551,6 +1603,25 @@ export default function PosCheckoutPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRecallOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!barcodeMatches} onClose={() => setBarcodeMatches(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Multiple products share this barcode — pick one</DialogTitle>
+        <DialogContent>
+          <List>
+            {(barcodeMatches ?? []).map((m: any) => (
+              <ListItemButton key={m.stock_id} onClick={() => handlePickBarcodeMatch(m)}>
+                <ListItemText
+                  primary={`${m.stock_id} — ${m.description}`}
+                  secondary={formatCurrency(Number(m.sale_price ?? m.purchase_cost) || 0, 2)}
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBarcodeMatches(null)}>Cancel</Button>
         </DialogActions>
       </Dialog>
 

@@ -59,6 +59,7 @@ import PosSettingsPage from "./views/Supermarket/PosSettings/PosSettingsPage";
 import PendingOfflineSalesPage from "./views/Supermarket/PendingOfflineSales/PendingOfflineSalesPage";
 import SupermarketReportsPage from "./views/Supermarket/Reports/SupermarketReportsPage";
 import WeighAndPrintPage from "./views/Supermarket/WeighAndPrint/WeighAndPrintPage";
+import PriceLabelsPage from "./views/Supermarket/PriceLabels/PriceLabelsPage";
 import CompanySetup from "./views/Setup/CompanySetup/CompanySetup";
 import Miscellaneous from "./views/Setup/Miscellaneous/Miscellaneous";
 import FixedAssestsMaintenance from "./views/FixedAssets/Maintenance/FixedAssestsMaintenance";
@@ -564,12 +565,17 @@ const AppRoutes = () => {
         <Route path="/supermarket/offline-sales" element={withLayout(MainLayout, PendingOfflineSalesPage)} />
         <Route path="/supermarket/reports" element={withLayout(MainLayout, SupermarketReportsPage)} />
         <Route path="/supermarket/weigh-and-print" element={withLayout(MainLayout, WeighAndPrintPage)} />
+        <Route path="/supermarket/price-labels" element={withLayout(MainLayout, PriceLabelsPage)} />
         <Route path="/supermarket/set-price" element={withLayout(MainLayout, SetPricePage)} />
         <Route path="/supermarket/suppliers" element={withLayout(MainLayout, SuppliersPage)} />
         <Route path="/supermarket/category" element={withLayout(MainLayout, SupermarketCategoriesPage)} />
         <Route path="/supermarket/purchase" element={withLayout(MainLayout, PurchasePage)} />
         <Route path="/supermarket/stock" element={withLayout(MainLayout, StockPage)} />
         <Route path="/supermarket/sales-analytics" element={withLayout(MainLayout, SalesAnalyticsPage)} />
+        {/* Same page, reused as the blueprint's "Dashboard" entry — it
+            already covers Today Sales, Debtors/Creditors, Low Stock,
+            Fast/Slow Movers, Sales Trend, Top Customers/Suppliers. */}
+        <Route path="/supermarket/dashboard" element={withLayout(MainLayout, SalesAnalyticsPage)} />
         <Route path="/supermarket/low-stock" element={withLayout(MainLayout, LowStockPage)} />
         <Route path="/supermarket/loyalty-tiers" element={withLayout(MainLayout, LoyaltyTiersPage)} />
         <Route path="/supermarket/loyalty-cards" element={withLayout(MainLayout, LoyaltyCardsPage)} />

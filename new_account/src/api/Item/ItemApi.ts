@@ -67,6 +67,21 @@ export const createItem = async (
   }
 };
 
+export const updateMrpPrice = async (stockId: string, mrpPrice: number | null) => {
+  const response = await api.patch(`${API_URL}/${stockId}/mrp-price`, { mrp_price: mrpPrice });
+  return response.data;
+};
+
+export const updateExpiryDate = async (stockId: string, expiryDate: string | null) => {
+  const response = await api.patch(`${API_URL}/${stockId}/expiry-date`, { expiry_date: expiryDate });
+  return response.data;
+};
+
+export const getExpiryList = async (withinDays = 90) => {
+  const response = await api.get("/stock-masters-expiry-list", { params: { within_days: withinDays } });
+  return response.data;
+};
+
 export const updateItem = async (
   id: string | number,
   data: Record<string, unknown>,

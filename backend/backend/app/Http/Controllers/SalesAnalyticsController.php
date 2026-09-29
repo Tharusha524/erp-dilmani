@@ -359,6 +359,209 @@ class SalesAnalyticsController extends Controller
     }
 
     /**
+     * Sales grouped by cashier and by shift, via the pos_sale_shift_links
+     * tag written at checkout, plus sales by hour-of-day straight off
+     * debtor_trans.created_at (no shift tag needed for that one).
+     */
+    public function salesByCashierShift(Request $request)
+    {
+        $fromDate = $request->query('from_date', now()->subDays(30)->toDateString());
+        $toDate = $request->query('to_date', now()->toDateString());
+
+        $byCashier = DB::table('pos_sale_shift_links as l')
+            ->join('pos_shifts as s', 's.id', '=', 'l.pos_shift_id')
+            ->join('users as u', 'u.id', '=', 's.user_id')
+            ->join('debtor_trans as dt', function ($join) {
+                $join->on('dt.trans_no', '=', 'l.debtor_trans_no')
+                     ->on('dt.trans_type', '=', 'l.debtor_trans_type');
+            })
+            ->whereBetween('dt.tran_date', [$fromDate, $toDate])
+            ->select('u.id as user_id', 'u.name as cashier_name')
+            ->selectRaw('COUNT(*) as bill_count')
+            ->selectRaw('SUM(dt.ov_amount) as total_sales')
+            ->groupBy('u.id', 'u.name')
+            ->orderByDesc('total_sales')
+            ->get();
+
+        $byShift = DB::table('pos_sale_shift_links as l')
+            ->join('pos_shifts as s', 's.id', '=', 'l.pos_shift_id')
+            ->join('users as u', 'u.id', '=', 's.user_id')
+            ->join('debtor_trans as dt', function ($join) {
+                $join->on('dt.trans_no', '=', 'l.debtor_trans_no')
+                     ->on('dt.trans_type', '=', 'l.debtor_trans_type');
+            })
+            ->whereBetween('dt.tran_date', [$fromDate, $toDate])
+            ->select('s.id as shift_id', 'u.name as cashier_name', 's.shift_start', 's.shift_end', 's.status')
+            ->selectRaw('COUNT(*) as bill_count')
+            ->selectRaw('SUM(dt.ov_amount) as total_sales')
+            ->groupBy('s.id', 'u.name', 's.shift_start', 's.shift_end', 's.status')
+            ->orderByDesc('s.shift_start')
+            ->get();
+
+        $byHour = DB::table('debtor_trans')
+            ->where('trans_type', 10)
+            ->whereBetween('tran_date', [$fromDate, $toDate])
+            ->selectRaw('HOUR(created_at) as hour')
+            ->selectRaw('COUNT(*) as bill_count')
+            ->selectRaw('SUM(ov_amount) as total_sales')
+            ->groupBy('hour')
+            ->orderBy('hour')
+            ->get();
+
+        return response()->json([
+            'by_cashier' => $byCashier,
+            'by_shift' => $byShift,
+            'by_hour' => $byHour,
+        ]);
+    }
+
+    /**
+     * Void Report — every sale that was cancelled after posting, with who
+     * voided it and when, from the snapshot SalesInvoiceController::void()
+     * writes right after the void already happened.
+     */
+    public function voidReport(Request $request)
+    {
+        $fromDate = $request->query('from_date', now()->subDays(30)->toDateString());
+        $toDate = $request->query('to_date', now()->toDateString());
+
+        $rows = DB::table('voided_sales_log as v')
+            ->leftJoin('users as u', 'u.id', '=', 'v.voided_by')
+            ->whereBetween('v.voided_at', ["{$fromDate} 00:00:00", "{$toDate} 23:59:59"])
+            ->select('v.trans_no', 'v.customer_name', 'v.amount', 'v.memo', 'v.voided_at', 'u.name as voided_by_name')
+            ->orderByDesc('v.voided_at')
+            ->get();
+
+        return response()->json([
+            'voids' => $rows,
+            'total_voided_amount' => $rows->sum('amount'),
+        ]);
+    }
+
+    /**
+     * Price-Override Audit — every checkout line where the cashier typed a
+     * different unit price than the catalog price it was added at, from
+     * the log SalesInvoiceController::logPriceOverrides() writes right
+     * after the sale already posted.
+     */
+    public function priceOverrideAudit(Request $request)
+    {
+        $fromDate = $request->query('from_date', now()->subDays(30)->toDateString());
+        $toDate = $request->query('to_date', now()->toDateString());
+
+        $rows = DB::table('price_override_log as p')
+            ->leftJoin('users as u', 'u.id', '=', 'p.cashier_id')
+            ->leftJoin('stock_master as sm', 'sm.stock_id', '=', 'p.stock_id')
+            ->whereBetween('p.created_at', ["{$fromDate} 00:00:00", "{$toDate} 23:59:59"])
+            ->select(
+                'p.debtor_trans_no', 'sm.description', 'p.original_price', 'p.new_price',
+                'p.created_at', 'u.name as cashier_name'
+            )
+            ->orderByDesc('p.created_at')
+            ->get();
+
+        return response()->json($rows);
+    }
+
+    /**
+     * Stock rows that have gone negative — always a data problem (oversold,
+     * a missed GRN, a bad adjustment), never a real inventory state. Purely
+     * a finder; fixing the number is still done through the normal
+     * Inventory Audit / Stock Adjustment flow, not here.
+     */
+    public function negativeStock(Request $request)
+    {
+        $rows = DB::table('loc_stock as ls')
+            ->join('stock_master as sm', 'sm.stock_id', '=', 'ls.stock_id')
+            ->where('ls.quantity', '<', 0)
+            ->when($request->filled('loc_code'), fn ($q) => $q->where('ls.loc_code', $request->query('loc_code')))
+            ->select('ls.stock_id', 'sm.description', 'ls.loc_code', 'ls.quantity')
+            ->orderBy('ls.quantity')
+            ->get();
+
+        return response()->json($rows);
+    }
+
+    /**
+     * Outstanding gift voucher liability — active vouchers are money the
+     * business owes the holder in goods, same idea as a customer credit.
+     */
+    public function voucherLiability()
+    {
+        $rows = DB::table('vouchers')
+            ->where('status', 'active')
+            ->where('balance', '>', 0)
+            ->select('voucher_code', 'debtor_no', 'face_value', 'balance', 'issue_date', 'expiry_date')
+            ->orderByDesc('balance')
+            ->get();
+
+        return response()->json([
+            'vouchers' => $rows,
+            'total_outstanding' => $rows->sum('balance'),
+        ]);
+    }
+
+    /**
+     * Debtor (receivables) aging — every unpaid customer invoice bucketed
+     * by how overdue it is, same "ov_amount - alloc" outstanding formula
+     * dashboardSummary() already uses for the debtor total.
+     */
+    public function receivablesAging()
+    {
+        return response()->json($this->agingReport('debtor_trans', 'debtor_no', 'debtors_master', 'name'));
+    }
+
+    /**
+     * Creditor (payables) aging — same idea as receivablesAging() but for
+     * money owed to suppliers.
+     */
+    public function payablesAging()
+    {
+        return response()->json($this->agingReport('supp_trans', 'supplier_id', 'suppliers', 'supp_name'));
+    }
+
+    private function agingReport(string $transTable, string $partyKey, string $partyTable, string $nameColumn)
+    {
+        $today = now()->toDateString();
+
+        $rows = DB::table("{$transTable} as t")
+            ->join("{$partyTable} as p", "p.{$partyKey}", '=', "t.{$partyKey}")
+            ->selectRaw("t.{$partyKey} as party_id")
+            ->selectRaw("p.{$nameColumn} as party_name")
+            ->selectRaw('(t.ov_amount - t.alloc) as outstanding')
+            ->selectRaw('t.due_date')
+            ->havingRaw('outstanding > 0.01')
+            ->get()
+            ->groupBy('party_id');
+
+        $result = $rows->map(function ($partyRows) use ($today) {
+            $buckets = ['current' => 0, 'days_1_30' => 0, 'days_31_60' => 0, 'days_61_90' => 0, 'days_over_90' => 0];
+            foreach ($partyRows as $row) {
+                $daysOverdue = $row->due_date ? now()->diffInDays($row->due_date, false) * -1 : 0;
+                if ($daysOverdue <= 0) {
+                    $buckets['current'] += $row->outstanding;
+                } elseif ($daysOverdue <= 30) {
+                    $buckets['days_1_30'] += $row->outstanding;
+                } elseif ($daysOverdue <= 60) {
+                    $buckets['days_31_60'] += $row->outstanding;
+                } elseif ($daysOverdue <= 90) {
+                    $buckets['days_61_90'] += $row->outstanding;
+                } else {
+                    $buckets['days_over_90'] += $row->outstanding;
+                }
+            }
+            $first = $partyRows->first();
+            return array_merge(
+                ['party_id' => $first->party_id, 'party_name' => $first->party_name],
+                $buckets,
+                ['total_outstanding' => array_sum($buckets)]
+            );
+        })->values();
+
+        return $result;
+    }
+
+    /**
      * Personalized offer suggestions — read-only, staff-facing "hint", not
      * an automatic send. For each customer, finds their most-purchased
      * category over the lookback window, then checks whether an active
