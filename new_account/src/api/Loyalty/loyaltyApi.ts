@@ -20,7 +20,7 @@ export const deleteLoyaltyCard = async (id: number | string) =>
 // ---- Loyalty Points ----
 export const earnLoyaltyPoints = async (data: { debtor_no: number; amount_spent: number }) =>
   (await api.post("/loyalty-points/earn", data)).data;
-export const redeemLoyaltyPoints = async (data: { debtor_no: number; points: number }) =>
+export const redeemLoyaltyPoints = async (data: { debtor_no: number; points: number; debtor_trans_no?: number; debtor_trans_type?: number }) =>
   (await api.post("/loyalty-points/redeem", data)).data;
 export const getLoyaltyPointsHistory = async (debtorNo: number | string) =>
   (await api.get(`/loyalty-points/${debtorNo}/history`)).data;

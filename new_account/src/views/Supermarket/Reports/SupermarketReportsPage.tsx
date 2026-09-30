@@ -13,8 +13,9 @@ import PageLoader from "../../../components/PageLoader";
 import {
   getVelocityAndDemand, getDeadStock, getProductProfit, getBusinessActivity, getValuation,
   getNegativeStock, getVoucherLiability, getReceivablesAging, getPayablesAging, getSalesByCashierShift,
-  getVoidReport, getPriceOverrideAudit,
+  getVoidReport, getPriceOverrideAudit, getSupplierItemList,
 } from "../../../api/Pos/posAdvancedApi";
+import { getSuppliers } from "../../../api/Supplier/SupplierApi";
 import { getLowestCostBySupplier } from "../../../api/Pos/posApi";
 import { getStockMoveHistory } from "../../../api/StockMoves/StockMovesApi";
 import { getItems, getExpiryList } from "../../../api/Item/ItemApi";
@@ -79,6 +80,13 @@ export default function SupermarketReportsPage() {
     queryFn: () => getPriceOverrideAudit({ from_date: fromDate, to_date: toDate }),
     enabled: tab === "price-override-audit",
   });
+  const [supplierFilter, setSupplierFilter] = useState("");
+  const { data: suppliersList } = useQuery({ queryKey: ["suppliers-all"], queryFn: getSuppliers, enabled: tab === "supplier-item-list" });
+  const { data: supplierItems, isLoading: l16 } = useQuery({
+    queryKey: ["supplier-item-list", supplierFilter],
+    queryFn: () => getSupplierItemList(supplierFilter || undefined),
+    enabled: tab === "supplier-item-list",
+  });
 
   const { data: items } = useQuery({ queryKey: ["items-all"], queryFn: getItems, enabled: tab === "stock-history" });
   const [historyProduct, setHistoryProduct] = useState<any>(null);
@@ -109,6 +117,17 @@ export default function SupermarketReportsPage() {
             </Select>
           </FormControl>
         )}
+        {tab === "supplier-item-list" && (
+          <FormControl size="small" sx={{ minWidth: 220 }}>
+            <InputLabel>Supplier</InputLabel>
+            <Select value={supplierFilter} label="Supplier" onChange={(e) => setSupplierFilter(e.target.value)}>
+              <MenuItem value="">All Suppliers</MenuItem>
+              {(suppliersList ?? []).map((s: any) => (
+                <MenuItem key={s.supplier_id} value={s.supplier_id}>{s.supp_name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
       </Stack>
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }} variant="scrollable">
@@ -127,6 +146,7 @@ export default function SupermarketReportsPage() {
         <Tab label="Expiry List" value="expiry-list" />
         <Tab label="Void Report" value="void-report" />
         <Tab label="Price Override Audit" value="price-override-audit" />
+        <Tab label="Supplier Item List" value="supplier-item-list" />
       </Tabs>
 
       {tab === "velocity" && (l1 ? <PageLoader /> : (
@@ -548,6 +568,29 @@ export default function SupermarketReportsPage() {
               ))}
               {(!priceOverrides || priceOverrides.length === 0) && (
                 <TableRow><TableCell colSpan={6} align="center"><Typography variant="body2">No manual price overrides in this period.</Typography></TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ))}
+
+      {tab === "supplier-item-list" && (l16 ? <PageLoader /> : (
+        <TableContainer component={Paper} elevation={2}>
+          <Table size="small">
+            <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
+              <TableRow><TableCell>Supplier</TableCell><TableCell>Product</TableCell><TableCell align="right">Price</TableCell><TableCell>Supplier UOM</TableCell></TableRow>
+            </TableHead>
+            <TableBody>
+              {(supplierItems ?? []).map((r: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell>{r.supp_name}</TableCell>
+                  <TableCell>{r.description}</TableCell>
+                  <TableCell align="right">{formatCurrency(r.price)}</TableCell>
+                  <TableCell>{r.suppliers_uom ?? "—"}</TableCell>
+                </TableRow>
+              ))}
+              {(!supplierItems || supplierItems.length === 0) && (
+                <TableRow><TableCell colSpan={4} align="center"><Typography variant="body2">No supplier item pricing on file.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>

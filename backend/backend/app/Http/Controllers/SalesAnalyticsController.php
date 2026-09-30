@@ -359,6 +359,52 @@ class SalesAnalyticsController extends Controller
     }
 
     /**
+     * Shift Day-End Summary — for a given shift, total sales broken down by
+     * payment method (whatever the admin named each bank account — Cash,
+     * Card, etc.), via the same pos_sale_shift_links tag + bank_trans/
+     * cust_allocations records the checkout payment flow already writes.
+     * Pure read aggregation — no new writes, no change to how a payment
+     * posts.
+     */
+    public function shiftDayEndSummary(Request $request, int $shiftId)
+    {
+        $shift = DB::table('pos_shifts as s')
+            ->leftJoin('user_managements as u', 'u.id', '=', 's.user_id')
+            ->where('s.id', $shiftId)
+            ->select('s.id', 's.user_id', 's.shift_start', 's.shift_end', 's.status', 's.opening_float', 's.closing_expected', 's.closing_counted', 's.variance')
+            ->selectRaw("TRIM(CONCAT(u.first_name, ' ', u.last_name)) as cashier_name")
+            ->first();
+
+        if (!$shift) {
+            return response()->json(['message' => 'Shift not found'], 404);
+        }
+
+        $byMethod = DB::table('pos_sale_shift_links as l')
+            ->join('cust_allocations as ca', function ($join) {
+                $join->on('ca.trans_no_to', '=', 'l.debtor_trans_no')
+                     ->on('ca.trans_type_to', '=', 'l.debtor_trans_type');
+            })
+            ->join('bank_trans as bt', function ($join) {
+                $join->on('bt.trans_no', '=', 'ca.trans_no_from')
+                     ->where('bt.type', '=', 12); // SalesInvoiceService::TYPE_PAYMENT
+            })
+            ->join('bank_accounts as ba', 'ba.id', '=', 'bt.bank_act')
+            ->where('l.pos_shift_id', $shiftId)
+            ->select('ba.id as bank_account_id', 'ba.bank_account_name as method')
+            ->selectRaw('SUM(bt.amount) as total')
+            ->selectRaw('COUNT(DISTINCT l.debtor_trans_no) as bill_count')
+            ->groupBy('ba.id', 'ba.bank_account_name')
+            ->orderByDesc('total')
+            ->get();
+
+        return response()->json([
+            'shift' => $shift,
+            'by_payment_method' => $byMethod,
+            'total_sales' => $byMethod->sum('total'),
+        ]);
+    }
+
+    /**
      * Sales grouped by cashier and by shift, via the pos_sale_shift_links
      * tag written at checkout, plus sales by hour-of-day straight off
      * debtor_trans.created_at (no shift tag needed for that one).
@@ -370,31 +416,33 @@ class SalesAnalyticsController extends Controller
 
         $byCashier = DB::table('pos_sale_shift_links as l')
             ->join('pos_shifts as s', 's.id', '=', 'l.pos_shift_id')
-            ->join('users as u', 'u.id', '=', 's.user_id')
+            ->join('user_managements as u', 'u.id', '=', 's.user_id')
             ->join('debtor_trans as dt', function ($join) {
                 $join->on('dt.trans_no', '=', 'l.debtor_trans_no')
                      ->on('dt.trans_type', '=', 'l.debtor_trans_type');
             })
             ->whereBetween('dt.tran_date', [$fromDate, $toDate])
-            ->select('u.id as user_id', 'u.name as cashier_name')
+            ->select('u.id as user_id')
+            ->selectRaw("TRIM(CONCAT(u.first_name, ' ', u.last_name)) as cashier_name")
             ->selectRaw('COUNT(*) as bill_count')
             ->selectRaw('SUM(dt.ov_amount) as total_sales')
-            ->groupBy('u.id', 'u.name')
+            ->groupBy('u.id', 'u.first_name', 'u.last_name')
             ->orderByDesc('total_sales')
             ->get();
 
         $byShift = DB::table('pos_sale_shift_links as l')
             ->join('pos_shifts as s', 's.id', '=', 'l.pos_shift_id')
-            ->join('users as u', 'u.id', '=', 's.user_id')
+            ->join('user_managements as u', 'u.id', '=', 's.user_id')
             ->join('debtor_trans as dt', function ($join) {
                 $join->on('dt.trans_no', '=', 'l.debtor_trans_no')
                      ->on('dt.trans_type', '=', 'l.debtor_trans_type');
             })
             ->whereBetween('dt.tran_date', [$fromDate, $toDate])
-            ->select('s.id as shift_id', 'u.name as cashier_name', 's.shift_start', 's.shift_end', 's.status')
+            ->select('s.id as shift_id', 's.shift_start', 's.shift_end', 's.status')
+            ->selectRaw("TRIM(CONCAT(u.first_name, ' ', u.last_name)) as cashier_name")
             ->selectRaw('COUNT(*) as bill_count')
             ->selectRaw('SUM(dt.ov_amount) as total_sales')
-            ->groupBy('s.id', 'u.name', 's.shift_start', 's.shift_end', 's.status')
+            ->groupBy('s.id', 'u.first_name', 'u.last_name', 's.shift_start', 's.shift_end', 's.status')
             ->orderByDesc('s.shift_start')
             ->get();
 
@@ -426,9 +474,10 @@ class SalesAnalyticsController extends Controller
         $toDate = $request->query('to_date', now()->toDateString());
 
         $rows = DB::table('voided_sales_log as v')
-            ->leftJoin('users as u', 'u.id', '=', 'v.voided_by')
+            ->leftJoin('user_managements as u', 'u.id', '=', 'v.voided_by')
             ->whereBetween('v.voided_at', ["{$fromDate} 00:00:00", "{$toDate} 23:59:59"])
-            ->select('v.trans_no', 'v.customer_name', 'v.amount', 'v.memo', 'v.voided_at', 'u.name as voided_by_name')
+            ->select('v.trans_no', 'v.customer_name', 'v.amount', 'v.memo', 'v.voided_at')
+            ->selectRaw("TRIM(CONCAT(u.first_name, ' ', u.last_name)) as voided_by_name")
             ->orderByDesc('v.voided_at')
             ->get();
 
@@ -450,14 +499,37 @@ class SalesAnalyticsController extends Controller
         $toDate = $request->query('to_date', now()->toDateString());
 
         $rows = DB::table('price_override_log as p')
-            ->leftJoin('users as u', 'u.id', '=', 'p.cashier_id')
+            ->leftJoin('user_managements as u', 'u.id', '=', 'p.cashier_id')
             ->leftJoin('stock_master as sm', 'sm.stock_id', '=', 'p.stock_id')
             ->whereBetween('p.created_at', ["{$fromDate} 00:00:00", "{$toDate} 23:59:59"])
-            ->select(
-                'p.debtor_trans_no', 'sm.description', 'p.original_price', 'p.new_price',
-                'p.created_at', 'u.name as cashier_name'
-            )
+            ->select('p.debtor_trans_no', 'sm.description', 'p.original_price', 'p.new_price', 'p.created_at')
+            ->selectRaw("TRIM(CONCAT(u.first_name, ' ', u.last_name)) as cashier_name")
             ->orderByDesc('p.created_at')
+            ->get();
+
+        return response()->json($rows);
+    }
+
+    /**
+     * Supplier Item List — every item a given supplier is registered to
+     * supply, with the agreed price/UOM already on file (purch_data). Pure
+     * read report, same table Purchase Order/GRN screens already use to
+     * pre-fill supplier pricing.
+     */
+    public function supplierItemList(Request $request)
+    {
+        $supplierId = $request->query('supplier_id');
+
+        $rows = DB::table('purch_data as pd')
+            ->join('stock_master as sm', 'sm.stock_id', '=', 'pd.stock_id')
+            ->join('suppliers as sup', 'sup.supplier_id', '=', 'pd.supplier_id')
+            ->when($supplierId, fn ($q) => $q->where('pd.supplier_id', $supplierId))
+            ->select(
+                'sup.supplier_id', 'sup.supp_name',
+                'pd.stock_id', 'sm.description', 'pd.price', 'pd.suppliers_uom', 'pd.conversion_factor'
+            )
+            ->orderBy('sup.supp_name')
+            ->orderBy('sm.description')
             ->get();
 
         return response()->json($rows);

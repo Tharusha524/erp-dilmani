@@ -9,7 +9,7 @@ class PosShiftController extends Controller
 {
     public function index(Request $request)
     {
-        $query = PosShift::with(['user:id,name', 'salesPos:id,pos_name'])->orderByDesc('id');
+        $query = PosShift::with(['user:id,first_name,last_name', 'salesPos:id,pos_name'])->orderByDesc('id');
 
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));
@@ -24,7 +24,7 @@ class PosShiftController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'required|exists:user_managements,id',
             'sales_pos_id' => 'nullable|exists:sales_pos,id',
             'opening_float' => 'required|numeric|min:0',
             'notes' => 'nullable|string',
@@ -44,7 +44,7 @@ class PosShiftController extends Controller
 
     public function show(string $id)
     {
-        $shift = PosShift::with(['user:id,name', 'salesPos:id,pos_name'])->find($id);
+        $shift = PosShift::with(['user:id,first_name,last_name', 'salesPos:id,pos_name'])->find($id);
         if (!$shift) {
             return response()->json(['message' => 'Shift not found'], 404);
         }

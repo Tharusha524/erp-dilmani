@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StockMasterRequest;
+use App\Models\ItemCode;
+use App\Models\SalesPricing;
 use App\Models\StockMaster;
 use App\Repositories\All\StockMaster\StockMasterInterface;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class StockMasterController extends Controller
 {
@@ -37,6 +41,166 @@ class StockMasterController extends Controller
         $stockMaster = $this->stockMasterRepo->create($data);
 
         return response()->json($stockMaster, 201);
+    }
+
+    /**
+     * Bulk product creation from a spreadsheet — deliberately only asks for
+     * the fields a store owner actually understands (name, category,
+     * subcategory, brand, unit, cost, price, barcode). Every accounting/GL
+     * field a product still legally needs (tax type, item type, sales/COGS/
+     * inventory/adjustment/WIP accounts, depreciation fields) is copied
+     * behind the scenes from one designated "template" product — normally
+     * the first active product in stock_master — through the exact same
+     * StockMasterRequest validation the manual Add Product form uses. No
+     * new accounting logic: the row is only ever as valid as that template
+     * product already was, and a row is skipped (not silently forced
+     * through) if its own fields don't resolve.
+     */
+    public function bulkStore(Request $request)
+    {
+        $rows = $request->input('rows', []);
+        if (!is_array($rows) || $rows === []) {
+            return response()->json(['message' => 'No rows provided.'], 422);
+        }
+
+        $template = StockMaster::where('inactive', false)->orderBy('stock_id')->first();
+        if (!$template) {
+            return response()->json([
+                'message' => 'No existing product to copy accounting setup from yet — add one product manually first.',
+            ], 422);
+        }
+
+        $accountingDefaults = [
+            'tax_type_id' => $template->tax_type_id,
+            'mb_flag' => $template->mb_flag,
+            'sales_account' => $template->sales_account,
+            'cogs_account' => $template->cogs_account,
+            'inventory_account' => $template->inventory_account,
+            'adjustment_account' => $template->adjustment_account,
+            'wip_account' => $template->wip_account,
+            'material_cost' => 0,
+            'labour_cost' => 0,
+            'overhead_cost' => 0,
+            'depreciation_rate' => 0,
+            'depreciation_factor' => 0,
+            'depreciation_start' => now()->toDateString(),
+            'depreciation_date' => now()->toDateString(),
+        ];
+
+        $rules = (new StockMasterRequest())->rules();
+        unset($rules['image'], $rules['category_id'], $rules['subcategory_id'], $rules['brand_id'], $rules['units']);
+        foreach (array_keys($accountingDefaults) as $key) {
+            unset($rules[$key]);
+        }
+        $rules['category_id'] = 'required|integer|exists:item_category,category_id';
+        $rules['subcategory_id'] = 'nullable|integer|exists:subcategories,id';
+        $rules['brand_id'] = 'nullable|integer|exists:brands,id';
+        $rules['units'] = 'required|integer|exists:item_units,id';
+
+        $created = 0;
+        $errors = [];
+
+        foreach ($rows as $index => $row) {
+            $rowNo = $index + 1;
+            $stockId = $row['stock_id'] ?? null;
+
+            $categoryId = $this->resolveByName('item_category', 'description', 'category_id', $row['category'] ?? null);
+            if (($row['category'] ?? '') !== '' && $categoryId === null) {
+                $errors[] = ['row' => $rowNo, 'stock_id' => $stockId, 'message' => "Category \"{$row['category']}\" not found."];
+                continue;
+            }
+
+            $subcategoryId = $this->resolveByName('subcategories', 'name', 'id', $row['subcategory'] ?? null);
+            $brandId = $this->resolveByName('brands', 'name', 'id', $row['brand'] ?? null);
+
+            $unitsId = $this->resolveByName('item_units', 'name', 'id', $row['units'] ?? null)
+                ?? $this->resolveByName('item_units', 'abbr', 'id', $row['units'] ?? null);
+            if (($row['units'] ?? '') !== '' && $unitsId === null) {
+                $errors[] = ['row' => $rowNo, 'stock_id' => $stockId, 'message' => "Unit \"{$row['units']}\" not found."];
+                continue;
+            }
+
+            $data = array_merge($accountingDefaults, [
+                'stock_id' => $row['stock_id'] ?? null,
+                'description' => $row['description'] ?? null,
+                'long_description' => $row['description'] ?? null,
+                'category_id' => $categoryId,
+                'subcategory_id' => $subcategoryId,
+                'brand_id' => $brandId,
+                'units' => $unitsId,
+                'purchase_cost' => $row['purchase_cost'] ?? 0,
+                'mrp_price' => $row['mrp_price'] ?? null,
+            ]);
+
+            $validator = Validator::make($data, $rules);
+            if ($validator->fails()) {
+                $errors[] = ['row' => $rowNo, 'stock_id' => $stockId, 'message' => $validator->errors()->first()];
+                continue;
+            }
+
+            $stockMaster = $this->stockMasterRepo->create($validator->validated());
+            $this->applyBulkAddExtras($stockMaster->stock_id, $row);
+            $created++;
+        }
+
+        return response()->json([
+            'created' => $created,
+            'errors' => $errors,
+        ]);
+    }
+
+    /**
+     * Case-insensitive "find this thing by its human name" lookup used only
+     * to translate a spreadsheet's readable category/brand/unit names into
+     * the ids stock_master actually stores. Returns null for a blank input
+     * or no match — callers decide whether that's fatal for the row.
+     */
+    private function resolveByName(string $table, string $nameColumn, string $idColumn, ?string $name)
+    {
+        $name = trim((string) $name);
+        if ($name === '') {
+            return null;
+        }
+
+        return DB::table($table)->whereRaw("LOWER({$nameColumn}) = ?", [mb_strtolower($name)])->value($idColumn);
+    }
+
+    /**
+     * Optional selling price + barcode for a just-created product — same
+     * sales_pricing / item_codes writes Set Price already makes for an
+     * existing product, just run once right after creation. Best-effort:
+     * the product itself is already created successfully by this point.
+     */
+    private function applyBulkAddExtras(string $stockId, array $row): void
+    {
+        try {
+            $sellingPrice = $row['selling_price'] ?? null;
+            if ($sellingPrice !== null && $sellingPrice !== '' && (float) $sellingPrice > 0) {
+                SalesPricing::create([
+                    'stock_id' => $stockId,
+                    'currency_id' => 8,
+                    'sales_type_id' => 3,
+                    'price' => (float) $sellingPrice,
+                ]);
+            }
+
+            $barcode = trim((string) ($row['barcode'] ?? ''));
+            if ($barcode !== '' && !ItemCode::where('item_code', $barcode)->exists()) {
+                $stock = StockMaster::find($stockId);
+                if ($stock) {
+                    ItemCode::create([
+                        'item_code' => $barcode,
+                        'stock_id' => $stockId,
+                        'description' => $stock->description,
+                        'category_id' => $stock->category_id,
+                        'quantity' => 1,
+                        'is_foreign' => true,
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     public function show(string $id)

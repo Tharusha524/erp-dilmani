@@ -26,7 +26,7 @@ import { getSubcategories } from "../../../api/Subcategories/SubcategoriesApi";
 import { createStockAdjustment, getStockAdjustments } from "../../../api/Pos/posOpsApi";
 import { getStockDamages, recordStockDamage, deleteStockDamage } from "../../../api/Pos/posApi";
 import { getInventoryLocations } from "../../../api/InventoryLocation/InventoryLocationApi";
-import { getItems } from "../../../api/Item/ItemApi";
+import { getItems, bulkCreateStockMasters } from "../../../api/Item/ItemApi";
 import { bulkUpsertSalesPricing } from "../../../api/SalesPricing/SalesPricingApi";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
@@ -48,7 +48,7 @@ import {
  * inside this same row instead of a separate screen/tab.
  */
 export default function StockPage() {
-  const [tab, setTab] = useState<"products" | "damage" | "bulk-price">("products");
+  const [tab, setTab] = useState<"products" | "damage" | "bulk-price" | "bulk-add">("products");
 
   return (
     <FormPageLayout>
@@ -64,10 +64,12 @@ export default function StockPage() {
         <Tab value="products" label="Products" />
         <Tab value="damage" label="Stock Damage" />
         <Tab value="bulk-price" label="Bulk Price Update" />
+        <Tab value="bulk-add" label="Bulk Add Products" />
       </Tabs>
 
       {tab === "products" && <ProductsTab />}
       {tab === "damage" && <StockDamageTab />}
+      {tab === "bulk-add" && <BulkAddProductsTab />}
       {tab === "bulk-price" && <BulkPriceUpdateTab />}
     </FormPageLayout>
   );
@@ -800,6 +802,152 @@ function BulkPriceUpdateTab() {
         {result && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2">Created: {result.created} · Updated: {result.updated} · Skipped: {result.errors?.length ?? 0}</Typography>
+            {result.errors?.length > 0 && (
+              <TableContainer component={Paper} elevation={0} sx={{ mt: 1, maxHeight: 200 }}>
+                <Table size="small">
+                  <TableHead><TableRow><TableCell>Row</TableCell><TableCell>Stock ID</TableCell><TableCell>Error</TableCell></TableRow></TableHead>
+                  <TableBody>
+                    {result.errors.map((e: any, i: number) => (
+                      <TableRow key={i}><TableCell>{e.row}</TableCell><TableCell>{e.stock_id}</TableCell><TableCell>{e.message}</TableCell></TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// "Bulk Add Products" tab: create brand-new products from an .xlsx. The
+// sheet only ever asks for fields a store owner actually understands — name,
+// category, subcategory, brand, unit, cost, price, barcode. Every
+// accounting/GL field a product still needs (tax type, item type, GL
+// accounts, depreciation) is filled in automatically on the server from an
+// existing product's setup — never shown here, never typed by hand.
+// ---------------------------------------------------------------------------
+const BULK_ADD_COLUMNS = [
+  "stock_id", "description", "category", "subcategory", "brand", "units",
+  "purchase_cost", "selling_price", "mrp_price", "barcode",
+];
+
+function BulkAddProductsTab() {
+  const [rows, setRows] = useState<Record<string, any>[]>([]);
+  const [fileName, setFileName] = useState("");
+  const [result, setResult] = useState<{ created: number; errors: any[] } | null>(null);
+
+  const bulkAddMutation = useMutation({
+    mutationFn: () => bulkCreateStockMasters(rows),
+    onSuccess: (data) => {
+      setResult(data);
+      notify.success(`Products created: ${data.created}${data.errors?.length ? `, ${data.errors.length} skipped` : ""}`);
+    },
+    onError: (err: any) => notify.error(err?.response?.data?.message || "Bulk add failed"),
+  });
+
+  const handleFile = (file: File) => {
+    setFileName(file.name);
+    setResult(null);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const parsed: any[] = XLSX.utils.sheet_to_json(sheet);
+      const mapped = parsed
+        .filter((r) => String(r.stock_id ?? "").trim() && String(r.description ?? "").trim())
+        .map((r) => {
+          const row: Record<string, any> = {};
+          for (const col of BULK_ADD_COLUMNS) {
+            if (r[col] === undefined || r[col] === "") continue;
+            row[col] = r[col];
+          }
+          return row;
+        });
+      setRows(mapped);
+      if (mapped.length === 0) {
+        notify.error("No valid rows found — each row needs at least stock_id and description");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const downloadTemplate = () => {
+    const exampleRow = {
+      stock_id: "NEWITEM001", description: "New Product Name", category: "", subcategory: "", brand: "",
+      units: "", purchase_cost: 0, selling_price: 0, mrp_price: "", barcode: "",
+    };
+    const worksheet = XLSX.utils.json_to_sheet([exampleRow], { header: BULK_ADD_COLUMNS });
+    worksheet["!cols"] = BULK_ADD_COLUMNS.map(() => ({ wch: 16 }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "New Products");
+    XLSX.writeFile(workbook, "bulk-add-products-template.xlsx");
+  };
+
+  return (
+    <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
+      <CardContent>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Bulk Add Products</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+          Creates brand-new products — download the template, fill in <b>stock_id</b>, <b>description</b> and{" "}
+          <b>purchase_cost</b> (required), plus optional <b>category</b>, <b>subcategory</b>, <b>brand</b>,{" "}
+          <b>units</b> (by name — e.g. "Beverages", "kg"), <b>selling_price</b>, <b>mrp_price</b>, and{" "}
+          <b>barcode</b>, then upload it back.
+        </Typography>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <Button variant="outlined" startIcon={<UploadFileIcon />} component="label">
+            Choose File
+            <input
+              type="file" hidden accept=".xlsx,.xls"
+              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+            />
+          </Button>
+          {fileName && <Typography variant="body2">{fileName} — {rows.length} valid row(s)</Typography>}
+          <Button variant="contained" size="small" onClick={downloadTemplate}>Download Template</Button>
+        </Stack>
+
+        {rows.length > 0 && (
+          <>
+            <TableContainer component={Paper} elevation={0} sx={{ maxHeight: 320, mb: 2 }}>
+              <Table size="small" stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Stock ID</TableCell><TableCell>Description</TableCell><TableCell>Category</TableCell>
+                    <TableCell>Brand</TableCell><TableCell>Units</TableCell>
+                    <TableCell align="right">Cost</TableCell><TableCell align="right">Selling Price</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rows.map((r, i) => (
+                    <TableRow key={i}>
+                      <TableCell>{r.stock_id}</TableCell>
+                      <TableCell>{r.description}</TableCell>
+                      <TableCell>{r.category ?? "—"}</TableCell>
+                      <TableCell>{r.brand ?? "—"}</TableCell>
+                      <TableCell>{r.units ?? "—"}</TableCell>
+                      <TableCell align="right">{r.purchase_cost ?? "—"}</TableCell>
+                      <TableCell align="right">{r.selling_price ?? "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <Button
+              variant="contained" disabled={bulkAddMutation.isPending}
+              onClick={() => bulkAddMutation.mutate()}
+            >
+              {bulkAddMutation.isPending ? "Creating..." : `Create ${rows.length} Product(s)`}
+            </Button>
+          </>
+        )}
+
+        {result && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2">Created: {result.created} · Skipped: {result.errors?.length ?? 0}</Typography>
             {result.errors?.length > 0 && (
               <TableContainer component={Paper} elevation={0} sx={{ mt: 1, maxHeight: 200 }}>
                 <Table size="small">

@@ -41,7 +41,11 @@ export const getPayablesAging = async () =>
   (await api.get("/sales-analytics/payables-aging")).data;
 export const getSalesByCashierShift = async (params?: { from_date?: string; to_date?: string }) =>
   (await api.get("/sales-analytics/sales-by-cashier-shift", { params })).data;
+export const getShiftDayEndSummary = async (shiftId: number | string) =>
+  (await api.get(`/sales-analytics/shift-day-end/${shiftId}`)).data;
 export const getVoidReport = async (params?: { from_date?: string; to_date?: string }) =>
   (await api.get("/sales-analytics/void-report", { params })).data;
 export const getPriceOverrideAudit = async (params?: { from_date?: string; to_date?: string }) =>
   (await api.get("/sales-analytics/price-override-audit", { params })).data;
+export const getSupplierItemList = async (supplierId?: number | string) =>
+  (await api.get("/sales-analytics/supplier-item-list", { params: { supplier_id: supplierId } })).data;

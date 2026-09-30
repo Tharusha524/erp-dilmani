@@ -108,10 +108,26 @@ class BarcodeLookupController extends Controller
     /**
      * The real Selling Price for this product (Retail price list, LKR),
      * from the ERP's Sales Pricing feature — null when none has been set,
-     * so callers can fall back to purchase_cost themselves.
+     * so callers can fall back to purchase_cost themselves. If an active
+     * promotional price exists for today, it overrides the normal price
+     * here only — Set Price and the Sales Pricing table itself are
+     * untouched, so nothing needs to be manually reverted when the
+     * promotion's date range ends.
      */
     private function resolveSalePrice(string $stockId): ?float
     {
+        $today = now()->toDateString();
+        $promoPrice = DB::table('promotional_prices')
+            ->where('stock_id', $stockId)
+            ->where('active', true)
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->value('promo_price');
+
+        if ($promoPrice !== null) {
+            return (float) $promoPrice;
+        }
+
         $price = DB::table('sales_pricing')
             ->where('stock_id', $stockId)
             ->where('currency_id', self::LKR_CURRENCY_ID)

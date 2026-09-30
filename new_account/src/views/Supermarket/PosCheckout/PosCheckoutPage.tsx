@@ -49,6 +49,7 @@ import {
   getFrequentlyBoughtTogether, getPosSettings,
 } from "../../../api/Pos/posOpsApi";
 import { deductVariantStock } from "../../../api/Pos/posAdvancedApi";
+import { getLoyaltyCards, redeemLoyaltyPoints } from "../../../api/Loyalty/loyaltyApi";
 import PosReceiptDialog from "../../../components/PosReceiptDialog";
 import QuickAddCustomerDialog from "../../../components/QuickAddCustomerDialog";
 import { useOnlineStatus, getOrCreateTerminalId } from "../../../offline/useOnlineStatus";
@@ -102,6 +103,14 @@ export default function PosCheckoutPage() {
   const currentShiftId: number | undefined = openShifts?.[0]?.id;
 
   const [customer, setCustomer] = useState<any>(null);
+
+  // Loyalty card for the selected customer — read-only lookup, purely to
+  // show/limit how many points they can redeem right here at checkout.
+  const { data: loyaltyCards } = useQuery({ queryKey: ["loyalty-cards"], queryFn: getLoyaltyCards });
+  const customerLoyaltyCard = (loyaltyCards ?? []).find(
+    (c: any) => c.debtor_no === customer?.debtor_no && c.status === "active"
+  );
+  const loyaltyRedemptionRate = Number(customerLoyaltyCard?.tier?.redemption_rate) || 0;
   const [branchCode, setBranchCode] = useState<string>("");
   const [locCode, setLocCode] = useState<string>("");
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -167,6 +176,14 @@ export default function PosCheckoutPage() {
   const [voucherCode, setVoucherCode] = useState("");
   const [voucherAmount, setVoucherAmount] = useState("");
   const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; amount: number } | null>(null);
+
+  // Loyalty points redemption — same "flat amount deducted from the total"
+  // shape as appliedVoucher above, so it folds into extraDiscountPercent the
+  // same way. The points themselves are only actually deducted from the
+  // customer's balance after the sale succeeds (see redeemLoyaltyPoints call
+  // in checkoutMutation's onSuccess), same pattern as voucher redemption.
+  const [redeemPointsInput, setRedeemPointsInput] = useState("");
+  const [appliedLoyaltyRedemption, setAppliedLoyaltyRedemption] = useState<{ points: number; amount: number } | null>(null);
 
   // Split payments
   const [paymentLines, setPaymentLines] = useState<PaymentLine[]>([{ id: "p1", bank_account_id: "", amount: "0" }]);
@@ -397,9 +414,10 @@ export default function PosCheckoutPage() {
   );
 
   const voucherApplied = appliedVoucher?.amount ?? 0;
+  const loyaltyRedemptionApplied = appliedLoyaltyRedemption?.amount ?? 0;
 
   const subtotal = lineSubtotal;
-  const grandTotal = Math.max(0, lineSubtotal - cartDiscountAmount - couponDiscountAmount - voucherApplied);
+  const grandTotal = Math.max(0, lineSubtotal - cartDiscountAmount - couponDiscountAmount - voucherApplied - loyaltyRedemptionApplied);
 
   // Combined extra discount, expressed as a single equivalent percent applied
   // uniformly across every cart line (multiplicatively, so it never exceeds
@@ -583,6 +601,8 @@ export default function PosCheckoutPage() {
     setVoucherCode("");
     setVoucherAmount("");
     setAppliedVoucher(null);
+    setRedeemPointsInput("");
+    setAppliedLoyaltyRedemption(null);
     setPaymentLines([{ id: "p1", bank_account_id: cashAccount?.id ?? "", amount: "0" }]);
     // Reset to Walk-in for the next sale — never carry a customer over.
     const walkIn = (customers ?? []).find((c: any) => c.name === "Walk-in Customer");
@@ -647,7 +667,7 @@ export default function PosCheckoutPage() {
       }
       if (e.key === "F2") {
         e.preventDefault();
-        if (!checkoutMutation.isPending && customer && cart.length > 0) handleCheckout();
+        if (!checkoutMutation.isPending && customer && cart.length > 0 && cashAccount) handleCheckout();
         return;
       }
       if (e.key === "F3") {
@@ -685,7 +705,7 @@ export default function PosCheckoutPage() {
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
-      if (checkoutMutation.isPending || !customer || cart.length === 0) return;
+      if (checkoutMutation.isPending || !customer || cart.length === 0 || !cashAccount) return;
       e.preventDefault();
       handleCheckout();
     };
@@ -828,6 +848,18 @@ export default function PosCheckoutPage() {
             });
           } catch {
             notify.error("Sale completed, but the voucher redemption failed to record — please redeem it manually.");
+          }
+        }
+        if (appliedLoyaltyRedemption && customer?.debtor_no) {
+          try {
+            await redeemLoyaltyPoints({
+              debtor_no: customer.debtor_no,
+              points: appliedLoyaltyRedemption.points,
+              debtor_trans_no: result.trans_no,
+              debtor_trans_type: result.trans_type,
+            });
+          } catch {
+            notify.error("Sale completed, but the loyalty points redemption failed to record — please redeem it manually.");
           }
         }
         if (appliedCoupon) {
@@ -1504,17 +1536,49 @@ export default function PosCheckoutPage() {
                 )}
               </Stack>
 
+              {customerLoyaltyCard && (
+                <Stack spacing={0.5} sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Loyalty Points: {customerLoyaltyCard.points_balance} available
+                    {loyaltyRedemptionRate > 0 ? ` (worth ${formatCurrency(customerLoyaltyCard.points_balance * loyaltyRedemptionRate)})` : ""}
+                  </Typography>
+                  <Stack direction="row" spacing={1}>
+                    <TextField
+                      label="Redeem Points" type="number" size="small" fullWidth
+                      value={redeemPointsInput}
+                      onChange={(e) => setRedeemPointsInput(e.target.value)}
+                      disabled={!!appliedLoyaltyRedemption || loyaltyRedemptionRate <= 0}
+                      helperText={loyaltyRedemptionRate <= 0 ? "This tier has no redemption rate set" : undefined}
+                    />
+                    {appliedLoyaltyRedemption ? (
+                      <Button variant="outlined" color="error" onClick={() => { setAppliedLoyaltyRedemption(null); setRedeemPointsInput(""); }}>Remove</Button>
+                    ) : (
+                      <Button
+                        variant="contained" color="success"
+                        disabled={loyaltyRedemptionRate <= 0 || !redeemPointsInput || Number(redeemPointsInput) <= 0 || Number(redeemPointsInput) > customerLoyaltyCard.points_balance}
+                        onClick={() => {
+                          const points = Number(redeemPointsInput);
+                          setAppliedLoyaltyRedemption({ points, amount: Math.round(points * loyaltyRedemptionRate * 100) / 100 });
+                        }}
+                      >
+                        Apply
+                      </Button>
+                    )}
+                  </Stack>
+                </Stack>
+              )}
+
               <Divider sx={{ my: 2 }} />
 
               {/* Payment / totals */}
               <Stack spacing={1}>
                 <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2" color="text.secondary">Tot # Itm</Typography>
-                  <Typography variant="body2">{cart.reduce((sum, l) => sum + l.quantity, 0)}</Typography>
+                  <Typography variant="body1" fontWeight={700} color="text.secondary">Total Items</Typography>
+                  <Typography variant="body1" fontWeight={700}>{cart.reduce((sum, l) => sum + l.quantity, 0)}</Typography>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
-                  <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-                  <Typography variant="body2" fontWeight={700}>{formatCurrency(subtotal, 2)}</Typography>
+                  <Typography variant="body1" fontWeight={700} color="text.secondary">Subtotal</Typography>
+                  <Typography variant="body1" fontWeight={700}>{formatCurrency(subtotal, 2)}</Typography>
                 </Stack>
                 {cartDiscountAmount > 0 && (
                   <Stack direction="row" justifyContent="space-between">
@@ -1532,6 +1596,12 @@ export default function PosCheckoutPage() {
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="body2" color="text.secondary">Voucher ({appliedVoucher?.code})</Typography>
                     <Typography variant="body2" color="error">-{formatCurrency(voucherApplied, 2)}</Typography>
+                  </Stack>
+                )}
+                {loyaltyRedemptionApplied > 0 && (
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="body2" color="text.secondary">Loyalty Points ({appliedLoyaltyRedemption?.points} pts)</Typography>
+                    <Typography variant="body2" color="error">-{formatCurrency(loyaltyRedemptionApplied, 2)}</Typography>
                   </Stack>
                 )}
                 <Divider />
@@ -1559,7 +1629,7 @@ export default function PosCheckoutPage() {
                 </Tooltip>
                 <Button
                   variant="contained" startIcon={<ReceiptLongIcon />}
-                  disabled={checkoutMutation.isPending || !customer || cart.length === 0}
+                  disabled={checkoutMutation.isPending || !customer || cart.length === 0 || !cashAccount}
                   onClick={handleCheckout}
                   sx={{ flex: 1, whiteSpace: "nowrap", px: 1, fontSize: "0.72rem" }}
                 >

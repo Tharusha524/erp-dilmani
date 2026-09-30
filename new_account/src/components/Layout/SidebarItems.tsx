@@ -102,6 +102,7 @@ const baseSidebarItems: Array<SidebarItem> = [
       { title: "Set Price", href: "/supermarket/set-price", icon: <PriceChangeIcon fontSize="small" /> },
       { title: "Weigh & Print", href: "/supermarket/weigh-and-print", icon: <ScaleIcon fontSize="small" /> },
       { title: "Price Labels", href: "/supermarket/price-labels", icon: <PrintIcon fontSize="small" /> },
+      { title: "Promotional Prices", href: "/supermarket/promotional-prices", icon: <LocalOfferIcon fontSize="small" /> },
       // Product Variants — disabled per request, feature/page code kept as-is.
       // { title: "Product Variants", href: "/supermarket/product-variants", icon: <StyleIcon fontSize="small" /> },
     ],

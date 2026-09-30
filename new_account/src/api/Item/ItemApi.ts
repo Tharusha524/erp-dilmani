@@ -82,6 +82,11 @@ export const getExpiryList = async (withinDays = 90) => {
   return response.data;
 };
 
+export const bulkCreateStockMasters = async (rows: Record<string, unknown>[]) => {
+  const response = await api.post(`${API_URL}/bulk`, { rows });
+  return response.data;
+};
+
 export const updateItem = async (
   id: string | number,
   data: Record<string, unknown>,

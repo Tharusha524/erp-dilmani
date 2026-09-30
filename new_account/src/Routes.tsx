@@ -60,6 +60,7 @@ import PendingOfflineSalesPage from "./views/Supermarket/PendingOfflineSales/Pen
 import SupermarketReportsPage from "./views/Supermarket/Reports/SupermarketReportsPage";
 import WeighAndPrintPage from "./views/Supermarket/WeighAndPrint/WeighAndPrintPage";
 import PriceLabelsPage from "./views/Supermarket/PriceLabels/PriceLabelsPage";
+import PromotionalPricesPage from "./views/Supermarket/PromotionalPrices/PromotionalPricesPage";
 import CompanySetup from "./views/Setup/CompanySetup/CompanySetup";
 import Miscellaneous from "./views/Setup/Miscellaneous/Miscellaneous";
 import FixedAssestsMaintenance from "./views/FixedAssets/Maintenance/FixedAssestsMaintenance";
@@ -566,6 +567,7 @@ const AppRoutes = () => {
         <Route path="/supermarket/reports" element={withLayout(MainLayout, SupermarketReportsPage)} />
         <Route path="/supermarket/weigh-and-print" element={withLayout(MainLayout, WeighAndPrintPage)} />
         <Route path="/supermarket/price-labels" element={withLayout(MainLayout, PriceLabelsPage)} />
+        <Route path="/supermarket/promotional-prices" element={withLayout(MainLayout, PromotionalPricesPage)} />
         <Route path="/supermarket/set-price" element={withLayout(MainLayout, SetPricePage)} />
         <Route path="/supermarket/suppliers" element={withLayout(MainLayout, SuppliersPage)} />
         <Route path="/supermarket/category" element={withLayout(MainLayout, SupermarketCategoriesPage)} />

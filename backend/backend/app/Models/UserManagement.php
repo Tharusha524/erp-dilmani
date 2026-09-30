@@ -32,6 +32,8 @@ class UserManagement extends Authenticatable
         'status'
     ];
 
+    protected $appends = ['name'];
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -68,6 +70,18 @@ class UserManagement extends Authenticatable
     {
         return Attribute::make(
             get: fn($value, array $attributes) => !empty($attributes['image']) ? asset('storage/' . $attributes['image']) : null,
+        );
+    }
+
+    /**
+     * Several screens built against the old `users` table expect a single
+     * `name` field (POS Shifts, cashier/void/price-override reports).
+     * Rather than touch every one of them, expose the same shape here.
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            get: fn($value, array $attributes) => trim(($attributes['first_name'] ?? '') . ' ' . ($attributes['last_name'] ?? '')),
         );
     }
 }

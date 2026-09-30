@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Box, Card, CardContent, Typography, Stack, TextField, Button, Autocomplete, IconButton,
-  Table, TableHead, TableRow, TableCell, TableBody, Grid,
+  Table, TableHead, TableRow, TableCell, TableBody, Grid, FormControl, InputLabel, Select, MenuItem,
 } from "@mui/material";
 import PrintIcon from "@mui/icons-material/Print";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -20,6 +20,15 @@ const RETAIL_SALES_TYPE_ID = 3;
 
 type LabelLine = { product: any; qty: number };
 
+type TemplateKey = "standard" | "shelf-strip" | "gondola-header" | "vegetable-fruit";
+
+const TEMPLATES: Record<TemplateKey, { label: string; width: number; height?: number; priceFontSize: number; showMrp: boolean; showBarcode: boolean }> = {
+  "standard": { label: "Standard Tag", width: 200, priceFontSize: 15, showMrp: true, showBarcode: true },
+  "shelf-strip": { label: "Shelf Strip (long, low)", width: 320, height: 60, priceFontSize: 18, showMrp: true, showBarcode: true },
+  "gondola-header": { label: "Gondola Header (large)", width: 260, height: 140, priceFontSize: 28, showMrp: false, showBarcode: false },
+  "vegetable-fruit": { label: "Vegetable / Fruit (small, no barcode)", width: 140, priceFontSize: 16, showMrp: false, showBarcode: false },
+};
+
 /**
  * Print sheets of price tags/labels for packaged products — barcode, name,
  * MRP and selling price, printed N-up per product. Read-only over existing
@@ -31,6 +40,7 @@ export default function PriceLabelsPage() {
   const [lines, setLines] = useState<LabelLine[]>([]);
   const [pendingProduct, setPendingProduct] = useState<any>(null);
   const [pendingQty, setPendingQty] = useState("1");
+  const [template, setTemplate] = useState<TemplateKey>("standard");
 
   const { data: items } = useQuery({ queryKey: ["items-all"], queryFn: getItems });
 
@@ -57,6 +67,17 @@ export default function PriceLabelsPage() {
 
       <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mb: 2 }} className="pos-receipt-no-print">
         <CardContent>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center" sx={{ mb: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 260 }}>
+              <InputLabel>Label Template</InputLabel>
+              <Select value={template} label="Label Template" onChange={(e) => setTemplate(e.target.value as TemplateKey)}>
+                {(Object.keys(TEMPLATES) as TemplateKey[]).map((key) => (
+                  <MenuItem key={key} value={key}>{TEMPLATES[key].label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
             <Autocomplete
               sx={{ flex: 1, minWidth: 260 }}
@@ -118,7 +139,7 @@ export default function PriceLabelsPage() {
             {lines.flatMap((l, li) =>
               Array.from({ length: l.qty }).map((_, copy) => (
                 <Grid item key={`${li}-${copy}`}>
-                  <PriceLabel product={l.product} formatCurrency={formatCurrency} />
+                  <PriceLabel product={l.product} formatCurrency={formatCurrency} template={template} />
                 </Grid>
               ))
             )}
@@ -129,8 +150,9 @@ export default function PriceLabelsPage() {
   );
 }
 
-function PriceLabel({ product, formatCurrency }: { product: any; formatCurrency: (v: number) => string }) {
+function PriceLabel({ product, formatCurrency, template }: { product: any; formatCurrency: (v: number) => string; template: TemplateKey }) {
   const barcodeRef = useRef<SVGSVGElement>(null);
+  const spec = TEMPLATES[template];
 
   const { data: pricingRows } = useQuery({
     queryKey: ["sales-pricing", product.stock_id],
@@ -143,7 +165,7 @@ function PriceLabel({ product, formatCurrency }: { product: any; formatCurrency:
   const barcodeValue = product.barcode || product.stock_id;
 
   useEffect(() => {
-    if (barcodeRef.current && barcodeValue) {
+    if (spec.showBarcode && barcodeRef.current && barcodeValue) {
       try {
         JsBarcode(barcodeRef.current, String(barcodeValue), {
           format: "CODE128",
@@ -156,24 +178,28 @@ function PriceLabel({ product, formatCurrency }: { product: any; formatCurrency:
         // Non-fatal — label still prints without a scannable barcode.
       }
     }
-  }, [barcodeValue]);
+  }, [barcodeValue, spec.showBarcode]);
 
   return (
     <Box
       sx={{
-        width: 200, p: 1, border: "1px dashed", borderColor: "divider", borderRadius: 1,
-        textAlign: "center", fontFamily: "monospace",
+        width: spec.width, height: spec.height, p: 1, border: "1px dashed", borderColor: "divider", borderRadius: 1,
+        textAlign: "center", fontFamily: "monospace", display: "flex", flexDirection: "column", justifyContent: "center",
       }}
     >
       <Typography fontSize={12} fontWeight={700} noWrap>{product.description}</Typography>
-      {product.mrp_price != null && (
+      {spec.showMrp && product.mrp_price != null && (
         <Typography fontSize={10} color="text.secondary">MRP: {formatCurrency(product.mrp_price)}</Typography>
       )}
-      <Typography fontSize={15} fontWeight={800}>{formatCurrency(sellingPrice)}</Typography>
-      <Box sx={{ mt: 0.5 }}>
-        <svg ref={barcodeRef} style={{ maxWidth: "100%", height: "auto" }} />
-      </Box>
-      <Typography fontSize={9} color="text.secondary">{barcodeValue}</Typography>
+      <Typography fontSize={spec.priceFontSize} fontWeight={800}>{formatCurrency(sellingPrice)}</Typography>
+      {spec.showBarcode && (
+        <>
+          <Box sx={{ mt: 0.5 }}>
+            <svg ref={barcodeRef} style={{ maxWidth: "100%", height: "auto" }} />
+          </Box>
+          <Typography fontSize={9} color="text.secondary">{barcodeValue}</Typography>
+        </>
+      )}
     </Box>
   );
 }
