@@ -24,6 +24,7 @@ class StockListController extends Controller
             ->leftJoin('item_category as ic', 'ic.category_id', '=', 'sm.category_id')
             ->leftJoin('subcategories as sub', 'sub.id', '=', 'sm.subcategory_id')
             ->leftJoin('brands as br', 'br.id', '=', 'sm.brand_id')
+            ->leftJoin('item_units as iu', 'iu.id', '=', 'sm.units')
             ->leftJoin(DB::raw('(select stock_id, sum(quantity) as total_qty from loc_stock group by stock_id) as ls'), 'ls.stock_id', '=', 'sm.stock_id')
             ->leftJoin(DB::raw('(select stock_id, min(item_code) as barcode from item_codes group by stock_id) as codes'), 'codes.stock_id', '=', 'sm.stock_id')
             ->leftJoin('sales_pricing as sp', function ($join) {
@@ -41,6 +42,8 @@ class StockListController extends Controller
                 'sub.name as subcategory_name',
                 'sm.brand_id',
                 'br.name as brand_name',
+                'sm.units',
+                'iu.name as unit_name',
                 'sm.purchase_cost',
                 'sm.mrp_price',
                 'sm.expiry_date',

@@ -35,6 +35,13 @@ class BarcodeLookupController extends Controller
         if ($code === '') {
             return response()->json(['message' => 'No code provided'], 422);
         }
+        // The selected customer's price list (e.g. a Wholesale customer) —
+        // when given, charge that price list's rate instead of always
+        // Retail. Falls back to Retail if that customer has none set, or
+        // if this product has no price entry under their price list.
+        $salesTypeId = $request->query('sales_type_id') !== null
+            ? (int) $request->query('sales_type_id')
+            : null;
 
         if (str_starts_with($code, 'WT|')) {
             $parts = explode('|', $code);
@@ -60,7 +67,7 @@ class BarcodeLookupController extends Controller
             if ($stock) {
                 $stockArray = $stock->toArray();
                 $stockArray['matched_variant'] = $variant->only(['id', 'variant_name', 'price_adjustment']);
-                $baseSalePrice = $this->resolveSalePrice($stock->stock_id) ?? (float) ($stockArray['purchase_cost'] ?? 0);
+                $baseSalePrice = $this->resolveSalePrice($stock->stock_id, $salesTypeId) ?? (float) ($stockArray['purchase_cost'] ?? 0);
                 $stockArray['sale_price'] = $baseSalePrice + (float) $variant->price_adjustment;
                 return response()->json($stockArray);
             }
@@ -74,13 +81,13 @@ class BarcodeLookupController extends Controller
         $itemCodes = ItemCode::where('item_code', $code)->where('inactive', false)->get();
         if ($itemCodes->isNotEmpty()) {
             $matches = $itemCodes
-                ->map(function ($itemCode) {
+                ->map(function ($itemCode) use ($salesTypeId) {
                     $stock = StockMaster::where('stock_id', $itemCode->stock_id)->where('inactive', false)->first();
                     if (!$stock) {
                         return null;
                     }
                     $stockArray = $stock->toArray();
-                    $stockArray['sale_price'] = $this->resolveSalePrice($stock->stock_id);
+                    $stockArray['sale_price'] = $this->resolveSalePrice($stock->stock_id, $salesTypeId);
                     return $stockArray;
                 })
                 ->filter()
@@ -98,7 +105,7 @@ class BarcodeLookupController extends Controller
         $stock = StockMaster::where('stock_id', $code)->where('inactive', false)->first();
         if ($stock) {
             $stockArray = $stock->toArray();
-            $stockArray['sale_price'] = $this->resolveSalePrice($stock->stock_id);
+            $stockArray['sale_price'] = $this->resolveSalePrice($stock->stock_id, $salesTypeId);
             return response()->json($stockArray);
         }
 
@@ -114,7 +121,7 @@ class BarcodeLookupController extends Controller
      * untouched, so nothing needs to be manually reverted when the
      * promotion's date range ends.
      */
-    private function resolveSalePrice(string $stockId): ?float
+    private function resolveSalePrice(string $stockId, ?int $salesTypeId = null): ?float
     {
         $today = now()->toDateString();
         $promoPrice = DB::table('promotional_prices')
@@ -126,6 +133,21 @@ class BarcodeLookupController extends Controller
 
         if ($promoPrice !== null) {
             return (float) $promoPrice;
+        }
+
+        // Try the customer's own price list first (e.g. Wholesale) — fall
+        // back to Retail if they have none set, or this product has no
+        // price entry under their price list yet.
+        if ($salesTypeId !== null && $salesTypeId !== self::RETAIL_SALES_TYPE_ID) {
+            $price = DB::table('sales_pricing')
+                ->where('stock_id', $stockId)
+                ->where('currency_id', self::LKR_CURRENCY_ID)
+                ->where('sales_type_id', $salesTypeId)
+                ->value('price');
+
+            if ($price !== null) {
+                return (float) $price;
+            }
         }
 
         $price = DB::table('sales_pricing')

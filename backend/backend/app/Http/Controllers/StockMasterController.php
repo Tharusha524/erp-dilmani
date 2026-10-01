@@ -23,7 +23,9 @@ class StockMasterController extends Controller
 
     public function index(Request $request)
     {
-        $query = StockMaster::query()->orderBy('stock_id');
+        // "unit" (kg/pcs/...) is needed on the Set Price -> Wholesale Pricing
+        // tab, to label the quantity threshold correctly for weighed items.
+        $query = StockMaster::with('unit')->orderBy('stock_id');
 
         return $this->jsonList($request, $query);
     }
@@ -254,6 +256,53 @@ class StockMasterController extends Controller
         ]);
 
         $stockMaster->mrp_price = $validated['mrp_price'] ?? null;
+        $stockMaster->save();
+
+        return response()->json($stockMaster);
+    }
+
+    /**
+     * Set the Unit of Measure for many products at once — e.g. tick 20
+     * products on the Stock page and apply "KG" to all of them in one go,
+     * instead of opening each product's full edit form individually. Same
+     * isolated single-field pattern as updateMrpPrice() below, just over
+     * a list of ids.
+     */
+    public function bulkUpdateUnits(Request $request)
+    {
+        $validated = $request->validate([
+            'stock_ids' => ['required', 'array', 'min:1'],
+            'stock_ids.*' => ['string'],
+            'units' => ['required', 'integer', 'exists:item_units,id'],
+        ]);
+
+        $updated = StockMaster::whereIn('stock_id', $validated['stock_ids'])
+            ->update(['units' => $validated['units']]);
+
+        return response()->json(['updated' => $updated]);
+    }
+
+    /**
+     * Set the Wholesale Qty Threshold + Wholesale Price for a product —
+     * same isolated single-purpose pattern as updateMrpPrice() above.
+     * Checkout only ever switches a line to this price after the cashier
+     * enters the Wholesale Authorization PIN (see PosSettingsController) —
+     * this endpoint just stores the two numbers, nothing else.
+     */
+    public function updateWholesalePricing(Request $request, string $id)
+    {
+        $stockMaster = $this->stockMasterRepo->find($id);
+        if (!$stockMaster) {
+            return response()->json(['message' => 'Stock Master not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'wholesale_qty_threshold' => ['nullable', 'integer', 'min:1'],
+            'wholesale_price' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $stockMaster->wholesale_qty_threshold = $validated['wholesale_qty_threshold'] ?? null;
+        $stockMaster->wholesale_price = $validated['wholesale_price'] ?? null;
         $stockMaster->save();
 
         return response()->json($stockMaster);

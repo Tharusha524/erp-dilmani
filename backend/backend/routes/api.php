@@ -355,8 +355,10 @@ Route::apiResource('subcategories', \App\Http\Controllers\SubcategoryController:
 Route::apiResource('item-types', ItemTypeController::class);
 
 Route::post('stock-masters/bulk', [StockMasterController::class, 'bulkStore']);
+Route::patch('stock-masters/bulk-units', [StockMasterController::class, 'bulkUpdateUnits']);
 Route::apiResource('stock-masters', StockMasterController::class);
 Route::patch('stock-masters/{id}/mrp-price', [StockMasterController::class, 'updateMrpPrice']);
+Route::patch('stock-masters/{id}/wholesale-pricing', [StockMasterController::class, 'updateWholesalePricing']);
 Route::patch('stock-masters/{id}/expiry-date', [StockMasterController::class, 'updateExpiryDate']);
 Route::get('stock-masters-expiry-list', [StockMasterController::class, 'expiryList']);
 

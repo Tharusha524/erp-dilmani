@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Box, Card, CardContent, Typography, Stack, Switch, FormControlLabel, Button, Divider } from "@mui/material";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Box, Card, CardContent, Typography, Stack, Switch, FormControlLabel, Button, Divider, TextField,
+  Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, IconButton, Chip,
+  Dialog, DialogTitle, DialogContent, DialogActions,
+} from "@mui/material";
 import SaveIcon from "@mui/icons-material/Save";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
 import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
 import PageLoader from "../../../components/PageLoader";
+import ConfirmDialog from "../../../components/ConfirmDialog";
 import { getPosSettings, updatePosSettings } from "../../../api/Pos/posOpsApi";
+import { getItemUnits, createItemUnit, updateItemUnit, deleteItemUnit } from "../../../api/ItemUnit/ItemUnitApi";
 import { notify } from "../../../services/notificationService";
 
 const TOGGLES: { key: string; label: string; helper: string }[] = [
@@ -18,15 +27,60 @@ const TOGGLES: { key: string; label: string; helper: string }[] = [
   { key: "edit_cart_line_total", label: "Allow Editing Cart Line Total", helper: "Staff can type a line's total on the cart (back-calculates unit price)" },
 ];
 
+const emptyUnitForm = { id: null as number | string | null, abbr: "", name: "", decimals: "0", inactive: false };
+
 export default function PosSettingsPage() {
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["pos-settings"], queryFn: getPosSettings });
   const [values, setValues] = useState<Record<string, any>>({});
   const [receiptPaperSize, setReceiptPaperSize] = useState("80mm Thermal");
+  const [wholesalePin, setWholesalePin] = useState("");
+
+  // Item Units — Add/Edit/Delete the units (KG, PCS, LTR, ...) products are
+  // measured in, same list used on Stock's "Apply Unit to Selected" and Set
+  // Price's Wholesale Pricing tab. Plain master-data CRUD, no accounting impact.
+  const { data: units, isLoading: unitsLoading } = useQuery({ queryKey: ["item-units"], queryFn: () => getItemUnits() });
+  const [unitDialogOpen, setUnitDialogOpen] = useState(false);
+  const [unitForm, setUnitForm] = useState(emptyUnitForm);
+  const [confirmDeleteUnitId, setConfirmDeleteUnitId] = useState<number | string | null>(null);
+
+  const openCreateUnit = () => { setUnitForm(emptyUnitForm); setUnitDialogOpen(true); };
+  const openEditUnit = (u: any) => {
+    setUnitForm({ id: u.id, abbr: u.abbr ?? "", name: u.name ?? "", decimals: String(u.decimals ?? 0), inactive: !!u.inactive });
+    setUnitDialogOpen(true);
+  };
+
+  const saveUnitMutation = useMutation({
+    mutationFn: () => {
+      const payload = { abbr: unitForm.abbr.trim(), name: unitForm.name.trim(), decimals: Number(unitForm.decimals) || 0, inactive: unitForm.inactive };
+      return unitForm.id ? updateItemUnit(unitForm.id, payload) : createItemUnit(payload);
+    },
+    onSuccess: () => {
+      notify.success(unitForm.id ? "Unit updated" : "Unit created");
+      queryClient.invalidateQueries({ queryKey: ["item-units"] });
+      setUnitDialogOpen(false);
+    },
+    onError: (err: any) => notify.error(err?.response?.data?.message || "Failed to save unit"),
+  });
+
+  const deleteUnitMutation = useMutation({
+    mutationFn: (id: number | string) => deleteItemUnit(id),
+    onSuccess: () => {
+      notify.success("Unit deleted");
+      queryClient.invalidateQueries({ queryKey: ["item-units"] });
+      setConfirmDeleteUnitId(null);
+    },
+    onError: (err: any) => {
+      notify.error(err?.response?.data?.message || "Failed to delete unit — it may still be used by a product");
+      setConfirmDeleteUnitId(null);
+    },
+  });
 
   useEffect(() => {
     if (data) {
       setValues(data);
       setReceiptPaperSize(data.receipt_paper_size ?? "80mm Thermal");
+      setWholesalePin(data.wholesale_pin ?? "");
     }
   }, [data]);
 
@@ -39,6 +93,7 @@ export default function PosSettingsPage() {
     saveMutation.mutate({
       ...values,
       receipt_paper_size: receiptPaperSize,
+      wholesale_pin: wholesalePin,
     });
   };
 
@@ -105,6 +160,117 @@ export default function PosSettingsPage() {
           </Stack>
         </CardContent>
       </Card>
+
+      <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mt: 2 }}>
+        <CardContent>
+          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Wholesale Pricing</Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+            When a cart line's quantity passes a product's Wholesale Qty Threshold (set per product on Set Price),
+            the cashier can apply its Wholesale Price at checkout — but only after entering this PIN. It's a single
+            shared authorization PIN, not tied to any user login.
+          </Typography>
+          <TextField
+            label="Wholesale Authorization PIN" type="password" size="small" sx={{ width: 260 }}
+            value={wholesalePin}
+            onChange={(e) => setWholesalePin(e.target.value)}
+          />
+        </CardContent>
+      </Card>
+
+      <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mt: 2 }}>
+        <CardContent>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700}>Item Units</Typography>
+              <Typography variant="caption" color="text.secondary">
+                The units (KG, PCS, LTR, ...) products are measured in — used across Stock, Set Price, and item setup.
+              </Typography>
+            </Box>
+            <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={openCreateUnit}>Add Unit</Button>
+          </Stack>
+
+          {unitsLoading ? <PageLoader /> : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Abbreviation</TableCell>
+                    <TableCell align="right">Decimal Places</TableCell>
+                    <TableCell align="center">Status</TableCell>
+                    <TableCell align="center">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(units ?? []).map((u: any) => (
+                    <TableRow key={u.id} hover>
+                      <TableCell>{u.name}</TableCell>
+                      <TableCell>{u.abbr}</TableCell>
+                      <TableCell align="right">{u.decimals}</TableCell>
+                      <TableCell align="center">
+                        <Chip size="small" label={u.inactive ? "Inactive" : "Active"} color={u.inactive ? "default" : "success"} />
+                      </TableCell>
+                      <TableCell align="center">
+                        <IconButton size="small" onClick={() => openEditUnit(u)}><EditIcon fontSize="small" /></IconButton>
+                        <IconButton size="small" color="error" onClick={() => setConfirmDeleteUnitId(u.id)}><DeleteIcon fontSize="small" /></IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!units || units.length === 0) && (
+                    <TableRow><TableCell colSpan={5} align="center"><Typography variant="body2">No units yet.</Typography></TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={unitDialogOpen} onClose={() => setUnitDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>{unitForm.id ? "Edit Unit" : "Add Unit"}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Name" size="small" fullWidth
+              placeholder="e.g. Kilogram"
+              value={unitForm.name} onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })}
+            />
+            <TextField
+              label="Abbreviation" size="small" fullWidth
+              placeholder="e.g. KG"
+              value={unitForm.abbr} onChange={(e) => setUnitForm({ ...unitForm, abbr: e.target.value })}
+            />
+            <TextField
+              label="Decimal Places" type="number" size="small" fullWidth
+              helperText="0 for whole-count items (pcs), e.g. 2 or 3 for weighed items (kg)"
+              value={unitForm.decimals} onChange={(e) => setUnitForm({ ...unitForm, decimals: e.target.value })}
+            />
+            <FormControlLabel
+              control={<Switch checked={unitForm.inactive} onChange={(e) => setUnitForm({ ...unitForm, inactive: e.target.checked })} />}
+              label="Inactive"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setUnitDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!unitForm.name.trim() || !unitForm.abbr.trim() || saveUnitMutation.isPending}
+            onClick={() => saveUnitMutation.mutate()}
+          >
+            {saveUnitMutation.isPending ? "Saving..." : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!confirmDeleteUnitId}
+        title="Delete this unit?"
+        message="Products currently using this unit will keep it until changed — this only removes it from the list for new selections."
+        onClose={() => setConfirmDeleteUnitId(null)}
+        onConfirm={() => confirmDeleteUnitId != null && deleteUnitMutation.mutate(confirmDeleteUnitId)}
+        loading={deleteUnitMutation.isPending}
+      />
     </FormPageLayout>
   );
 }

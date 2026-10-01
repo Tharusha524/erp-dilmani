@@ -29,7 +29,7 @@ import { getInventoryLocations } from "../../../api/InventoryLocation/InventoryL
 import { getShippingCompanies } from "../../../api/ShippingCompany/ShippingCompanyApi";
 import { getBankAccounts } from "../../../api/BankAccount/BankAccountApi";
 import { directSalesInvoice, DirectSalesInvoicePayload } from "../../../api/SalesInvoice/SalesInvoiceApi";
-import { createQuotation, printQuotationPdf } from "../../../api/Quotations/QuotationsApi";
+import { createQuotation } from "../../../api/Quotations/QuotationsApi";
 import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 import { getApplicableOffers } from "../../../api/Loyalty/loyaltyApi";
 import { lookupBarcode, getLowStock, getPosShifts } from "../../../api/Pos/posApi";
@@ -69,12 +69,23 @@ interface CartLine {
   quantity: number;
   unit_price: number;
   discount_percent: number;
+  // UI-only: lets the cashier type the line discount as a flat amount
+  // instead of a percentage — discount_percent (above) stays the single
+  // source of truth used for Net Price/Line Total and what's posted.
+  discount_mode?: "percent" | "amount";
+  discount_input?: string;
   variant_id?: number;
   variant_name?: string;
   mrp_price?: number;
   // The catalog price this line was added at — never shown or edited, kept
   // only so a manual unit_price edit can be flagged as a price override.
   original_unit_price?: number;
+  // Wholesale — set from the product master (Set Price -> Wholesale
+  // Pricing tab). wholesale_applied is only ever true after the cashier
+  // enters the Wholesale Authorization PIN at checkout, never automatic.
+  wholesale_qty_threshold?: number;
+  wholesale_price?: number;
+  wholesale_applied?: boolean;
 }
 
 interface PaymentLine {
@@ -88,7 +99,10 @@ interface PaymentLine {
 const parseFormattedNumber = (value: string): number => Number(value.replace(/,/g, "")) || 0;
 
 export default function PosCheckoutPage() {
-  const { formatCurrency } = useHomeCurrency();
+  const { formatCurrency, symbol: currencySymbol } = useHomeCurrency();
+  // Cart table cells show the currency once in the column header instead of
+  // repeating "LKR" on every row — plain number formatting for those cells.
+  const formatNumber = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const { user } = useCurrentUser();
   const queryClient = useQueryClient();
 
@@ -103,6 +117,10 @@ export default function PosCheckoutPage() {
   const currentShiftId: number | undefined = openShifts?.[0]?.id;
 
   const [customer, setCustomer] = useState<any>(null);
+  // Which price list to charge — a Wholesale customer gets the Wholesale
+  // price list instead of always Retail. Falls back to undefined (backend
+  // defaults to Retail) when the customer has no price list assigned.
+  const customerSalesTypeId = Number(customer?.sales_type?.id ?? customer?.sales_type) || undefined;
 
   // Loyalty card for the selected customer — read-only lookup, purely to
   // show/limit how many points they can redeem right here at checkout.
@@ -142,11 +160,24 @@ export default function PosCheckoutPage() {
   // can pick the right one.
   const [barcodeMatches, setBarcodeMatches] = useState<any[] | null>(null);
   const scanInputRef = useRef<HTMLInputElement>(null);
+  const itemSearchInputRef = useRef<HTMLInputElement>(null);
   const qtyInputRef = useRef<HTMLInputElement>(null);
+  const lineDiscountInputRef = useRef<HTMLInputElement>(null);
+  // Selling Price / Discount shown next to manual item search once an item
+  // is picked — keyboard flow: Item -> Enter -> Discount -> Enter -> Qty ->
+  // Enter -> added to cart. Discount starts blank (treated as 0 if left as is).
+  const [manualSellingPrice, setManualSellingPrice] = useState("");
+  const [manualSellingPriceTouched, setManualSellingPriceTouched] = useState(false);
+  const [manualDiscountInput, setManualDiscountInput] = useState("");
+  const [manualDiscountMode2, setManualDiscountMode2] = useState<"percent" | "amount">("percent");
   const customerInputRef = useRef<HTMLInputElement>(null);
   const paymentAmountInputRef = useRef<HTMLInputElement>(null);
   const [lastReceipt, setLastReceipt] = useState<any>(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [isQuoteReceipt, setIsQuoteReceipt] = useState(false);
+  // Wholesale — which cart line (if any) is currently waiting on PIN entry.
+  const [wholesalePinTarget, setWholesalePinTarget] = useState<string | null>(null);
+  const [wholesalePinInput, setWholesalePinInput] = useState("");
   const [quickAddCustomerOpen, setQuickAddCustomerOpen] = useState(false);
 
   // Offline mode (desktop app only): when the connection drops, sales are
@@ -169,6 +200,8 @@ export default function PosCheckoutPage() {
 
   // Quick discount / coupon / voucher
   const [cartDiscountPercent, setCartDiscountPercent] = useState(0);
+  const [manualDiscountMode, setManualDiscountMode] = useState<"percent" | "amount">("percent");
+  const [manualDiscountValue, setManualDiscountValue] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponChecking, setCouponChecking] = useState(false);
@@ -455,12 +488,19 @@ export default function PosCheckoutPage() {
     }
   }, [grandTotal]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const addItemToCart = (item: any, quantity: number) => {
+  const addItemToCart = (
+    item: any,
+    quantity: number,
+    overrides?: { unitPrice?: number; discountPercent?: number }
+  ) => {
     const variant = item.matched_variant;
     // A specific variant (size/color/etc.) is tracked as its own cart line —
     // it must never merge into the base product's line, since it needs its
     // own variant_id for stock deduction after checkout.
     const lineKey = variant ? `variant:${variant.id}` : item.stock_id;
+    const catalogPrice = Number(item.sale_price ?? item.purchase_cost) || 0;
+    const unitPrice = overrides?.unitPrice ?? catalogPrice;
+    const discountPercent = overrides?.discountPercent ?? 0;
 
     setCart((prev) => {
       const existing = prev.find((l) => (l.variant_id ? `variant:${l.variant_id}` : l.stock_id) === lineKey);
@@ -481,12 +521,15 @@ export default function PosCheckoutPage() {
           // purchase_cost is what we paid the supplier, never what the
           // customer should be charged. Falls back to purchase_cost only
           // when no Selling Price has been configured for this product yet.
-          unit_price: Number(item.sale_price ?? item.purchase_cost) || 0,
-          discount_percent: 0,
+          // The cashier can override it manually at add-time (overrides.unitPrice).
+          unit_price: unitPrice,
+          discount_percent: discountPercent,
           variant_id: variant?.id,
           variant_name: variant?.variant_name,
           mrp_price: item.mrp_price != null ? Number(item.mrp_price) : undefined,
-          original_unit_price: Number(item.sale_price ?? item.purchase_cost) || 0,
+          original_unit_price: catalogPrice,
+          wholesale_qty_threshold: item.wholesale_qty_threshold != null ? Number(item.wholesale_qty_threshold) : undefined,
+          wholesale_price: item.wholesale_price != null ? Number(item.wholesale_price) : undefined,
         },
       ];
     });
@@ -508,14 +551,41 @@ export default function PosCheckoutPage() {
     if (!isOffline) {
       try {
         const pricing = await getSalesPricingByStockId(selectedItem.stock_id);
-        salePrice = (pricing ?? []).find((p: any) => p.sales_type_id === 3 && p.currency_id === 8)?.price;
+        const rows = (pricing ?? []).filter((p: any) => p.currency_id === 8);
+        // Charge the customer's own price list (e.g. Wholesale) when they
+        // have one and this product has a price under it — otherwise fall
+        // back to Retail (sales_type_id 3), same as before this existed.
+        salePrice = (customerSalesTypeId && rows.find((p: any) => p.sales_type_id === customerSalesTypeId)?.price)
+          ?? rows.find((p: any) => p.sales_type_id === 3)?.price;
       } catch {
         // Non-fatal — falls back to purchase_cost below, same as before this existed.
       }
     }
-    addItemToCart({ ...selectedItem, sale_price: salePrice }, Number(qty) || 1);
+    // The cashier can override the Selling Price shown after picking the
+    // item — only honor that override if they actually typed into it,
+    // otherwise keep using the real fetched/catalog price above.
+    const finalUnitPrice = manualSellingPriceTouched && manualSellingPrice !== ""
+      ? Number(manualSellingPrice) || 0
+      : Number(salePrice ?? selectedItem.purchase_cost) || 0;
+    const discountRaw = Math.max(0, Number(manualDiscountInput) || 0);
+    const finalDiscountPercent = manualDiscountMode2 === "percent"
+      ? Math.min(100, discountRaw)
+      : (finalUnitPrice > 0 ? Math.min(100, (discountRaw / finalUnitPrice) * 100) : 0);
+
+    addItemToCart(
+      { ...selectedItem, sale_price: salePrice },
+      Number(qty) || 1,
+      { unitPrice: finalUnitPrice, discountPercent: finalDiscountPercent }
+    );
     setSelectedItem(null);
     setQty("1");
+    setManualSellingPrice("");
+    setManualSellingPriceTouched(false);
+    setManualDiscountInput("");
+    setManualDiscountMode2("percent");
+    // Keyboard-only flow (no mouse/scanner): Code -> Enter -> Qty -> Enter ->
+    // added to cart -> back to Code automatically, ready for the next item.
+    setTimeout(() => itemSearchInputRef.current?.focus(), 0);
   };
 
   /**
@@ -549,7 +619,7 @@ export default function PosCheckoutPage() {
     }
 
     try {
-      const result = await lookupBarcode(trimmed);
+      const result = await lookupBarcode(trimmed, customerSalesTypeId);
       if (result?.matches) {
         setBarcodeMatches(result.matches);
         return;
@@ -593,6 +663,25 @@ export default function PosCheckoutPage() {
     setCart((prev) => prev.filter((l) => l.stock_id !== stockId));
   };
 
+  const confirmWholesalePin = () => {
+    if (!wholesalePinTarget) return;
+    const correctPin = posSettings?.wholesale_pin;
+    if (!correctPin) {
+      notify.error("No Wholesale Authorization PIN has been set — set one under Supermarket → POS Settings");
+      return;
+    }
+    if (wholesalePinInput !== correctPin) {
+      notify.error("Incorrect PIN");
+      return;
+    }
+    const line = cart.find((l) => l.stock_id === wholesalePinTarget);
+    if (line?.wholesale_price != null) {
+      updateLine(wholesalePinTarget, { unit_price: line.wholesale_price, wholesale_applied: true });
+    }
+    setWholesalePinTarget(null);
+    setWholesalePinInput("");
+  };
+
   const resetSaleState = () => {
     setCart([]);
     setCartDiscountPercent(0);
@@ -633,6 +722,11 @@ export default function PosCheckoutPage() {
   // code, or any other free-text input/textarea).
   useEffect(() => {
     const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      // Always read the latest cart/customer/payment state through the ref
+      // (see keyboardShortcutStateRef above) instead of closing over it
+      // here, since this listener is registered once on mount.
+      const s = keyboardShortcutStateRef.current;
+
       // F9/F12/Esc — familiar function-key shortcuts from the old till
       // software the client is used to. These work regardless of focus,
       // same as Enter below, since a scanner/keyboard-only cashier
@@ -642,6 +736,26 @@ export default function PosCheckoutPage() {
         scanInputRef.current?.focus();
         return;
       }
+      if (e.key === "Home") {
+        // Matches the client's old till software: Home swaps focus between
+        // the Barcode Scanner and the manual Item Code/Search field — away
+        // from whichever one you're currently on, toward the other. Doesn't
+        // touch Home's normal cursor behavior in any other input (Qty,
+        // Payment Amount, Customer, Coupon/Voucher, Discount, ...).
+        const active = document.activeElement;
+        const target = e.target as HTMLElement | null;
+        const isOtherInput =
+          (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") &&
+          active !== scanInputRef.current && active !== itemSearchInputRef.current;
+        if (isOtherInput) return;
+        e.preventDefault();
+        if (active === scanInputRef.current) {
+          itemSearchInputRef.current?.focus();
+        } else {
+          scanInputRef.current?.focus();
+        }
+        return;
+      }
       if (e.key === "F11") {
         e.preventDefault();
         setIsFullScreen((v) => !v);
@@ -649,30 +763,30 @@ export default function PosCheckoutPage() {
       }
       if (e.key === "F12") {
         e.preventDefault();
-        if (cart.length === 0 || window.confirm("Start a new bill? Current cart will be cleared.")) {
-          resetSaleState();
+        if (s.cart.length === 0 || window.confirm("Start a new bill? Current cart will be cleared.")) {
+          s.resetSaleState();
         }
         return;
       }
       if (e.key === "Escape") {
-        if (cart.length > 0 && window.confirm("Clear the current bill? This does not undo a completed sale.")) {
-          resetSaleState();
+        if (s.cart.length > 0 && window.confirm("Clear the current bill? This does not undo a completed sale.")) {
+          s.resetSaleState();
         }
         return;
       }
       if (e.key === "F10") {
         e.preventDefault();
-        if (cart.length > 0) handleHoldSale();
+        if (s.cart.length > 0) s.handleHoldSale();
         return;
       }
       if (e.key === "F2") {
         e.preventDefault();
-        if (!checkoutMutation.isPending && customer && cart.length > 0 && cashAccount) handleCheckout();
+        if (!s.checkoutPending && s.customer && s.cart.length > 0 && s.cashAccount) s.handleCheckout();
         return;
       }
       if (e.key === "F3") {
         e.preventDefault();
-        if (!quoteMutation.isPending && customer && cart.length > 0) handleGiveQuote();
+        if (!s.quotePending && s.customer && s.cart.length > 0) s.handleGiveQuote();
         return;
       }
       if (e.key === "F4") {
@@ -697,7 +811,7 @@ export default function PosCheckoutPage() {
       }
       if (e.ctrlKey && e.key === "Delete") {
         e.preventDefault();
-        if (cart.length > 0) removeLine(cart[cart.length - 1].stock_id);
+        if (s.cart.length > 0) s.removeLine(s.cart[s.cart.length - 1].stock_id);
         return;
       }
 
@@ -705,14 +819,13 @@ export default function PosCheckoutPage() {
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
-      if (checkoutMutation.isPending || !customer || cart.length === 0 || !cashAccount) return;
+      if (s.checkoutPending || !s.customer || s.cart.length === 0 || !s.cashAccount) return;
       e.preventDefault();
-      handleCheckout();
+      s.handleCheckout();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customer, cart, checkoutMutation.isPending]);
+  }, []);
 
   const handleCheckout = () => {
     if (!customer || !branchCode || cart.length === 0) {
@@ -807,6 +920,7 @@ export default function PosCheckoutPage() {
       });
 
       notify.success("Sale saved offline — it will sync automatically once the connection is back");
+      setIsQuoteReceipt(false);
       setLastReceipt({
         trans_no: uuid.slice(0, 8).toUpperCase(),
         lines: cart,
@@ -836,6 +950,7 @@ export default function PosCheckoutPage() {
           }
         }
 
+        setIsQuoteReceipt(false);
         setReceiptOpen(true);
 
         if (appliedVoucher) {
@@ -887,13 +1002,18 @@ export default function PosCheckoutPage() {
   // it's later converted into an actual sale.
   const quoteMutation = useMutation({
     mutationFn: createQuotation,
-    onSuccess: async (result) => {
+    onSuccess: (result) => {
       notify.success(`Quotation #${result?.quotation?.order_no ?? ""} created — not a sale, no stock or accounts affected`);
-      try {
-        await printQuotationPdf(result?.quotation?.order_no);
-      } catch {
-        notify.error("Quotation created, but the printable copy failed to open — it's still saved and retrievable");
-      }
+      // Printed on the same receipt layout/printer as a sale — there's only
+      // one printer on site, so a separate PDF quotation format isn't usable.
+      setIsQuoteReceipt(true);
+      setLastReceipt({
+        trans_no: result?.quotation?.order_no ?? "",
+        lines: cart,
+        subtotal: grandTotal,
+        customer,
+      });
+      setReceiptOpen(true);
     },
     onError: (err: any) => {
       notify.error(err?.response?.data?.message || err?.response?.data?.error || "Failed to create quotation");
@@ -1044,6 +1164,28 @@ export default function PosCheckoutPage() {
     }
   };
 
+  // The global keydown listener below is registered once (so it doesn't
+  // thrash the DOM listener on every keystroke) but still needs to act on
+  // whatever is on screen *right now* — cart edits, a newly-typed payment
+  // amount, the cash account finishing its load, etc. Closing over those
+  // directly in the listener would freeze them at registration time, so
+  // instead we keep a ref that's refreshed every render and read through
+  // it inside the listener.
+  const keyboardShortcutStateRef = useRef({
+    cart, customer, cashAccount,
+    checkoutPending: checkoutMutation.isPending,
+    quotePending: quoteMutation.isPending,
+    handleCheckout, handleGiveQuote, handleHoldSale, resetSaleState, removeLine,
+  });
+  useEffect(() => {
+    keyboardShortcutStateRef.current = {
+      cart, customer, cashAccount,
+      checkoutPending: checkoutMutation.isPending,
+      quotePending: quoteMutation.isPending,
+      handleCheckout, handleGiveQuote, handleHoldSale, resetSaleState, removeLine,
+    };
+  });
+
   const handleRecall = (held: any) => {
     const snap = held.cart_snapshot;
     setCart(snap.cart ?? []);
@@ -1192,7 +1334,6 @@ export default function PosCheckoutPage() {
                     placeholder="Scan a barcode — cursor here, scan, item adds automatically"
                     size="small"
                     fullWidth
-                    autoFocus
                     value={scanCode}
                     onChange={(e) => setScanCode(e.target.value)}
                     onKeyDown={handleScanKeyDown}
@@ -1204,8 +1345,20 @@ export default function PosCheckoutPage() {
                     sx={{ flex: 2 }}
                     options={items ?? []}
                     getOptionLabel={(i: any) => `${i.stock_id} — ${i.description}`}
+                    autoHighlight
                     value={selectedItem}
-                    onChange={(_, val) => { setSelectedItem(val); setLastViewedProduct(val); }}
+                    onChange={(_, val) => {
+                      setSelectedItem(val);
+                      setLastViewedProduct(val);
+                      // Prefill Selling Price with the catalog price — the
+                      // cashier can still override it, tracked via "touched".
+                      setManualSellingPrice(val ? String(Number(val.sale_price ?? val.purchase_cost) || 0) : "");
+                      setManualSellingPriceTouched(false);
+                      setManualDiscountInput("");
+                      setManualDiscountMode2("percent");
+                      // Keyboard-only flow: pick item -> Enter -> Discount -> Enter -> Qty.
+                      if (val) setTimeout(() => { lineDiscountInputRef.current?.focus(); lineDiscountInputRef.current?.select(); }, 0);
+                    }}
                     renderOption={(props, option: any) => (
                       <Box component="li" {...props} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1 }}>
                         <span>{option.stock_id} — {option.description}</span>
@@ -1214,9 +1367,67 @@ export default function PosCheckoutPage() {
                         )}
                       </Box>
                     )}
-                    renderInput={(params) => <TextField {...params} label="Or Search Product Manually" size="small" />}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Item Code / Search Product"
+                        size="small"
+                        autoFocus
+                        inputRef={(node) => {
+                          const paramsInputRef = (params as any).inputRef;
+                          if (typeof paramsInputRef === "function") paramsInputRef(node);
+                          else if (paramsInputRef) paramsInputRef.current = node;
+                          itemSearchInputRef.current = node;
+                        }}
+                        onKeyDown={(e) => {
+                          // "END" — old till software's shortcut to finish item
+                          // entry and jump straight to the payment amount,
+                          // same as pressing F6. Only fires when the field is
+                          // empty and ready for the next item (not mid-type).
+                          if (e.key === "End" && !selectedItem && !itemSearchInputRef.current?.value) {
+                            e.preventDefault();
+                            paymentAmountInputRef.current?.focus();
+                          }
+                        }}
+                      />
+                    )}
                   />
-                  <TextField inputRef={qtyInputRef} label="Qty" type="number" size="small" sx={{ width: 90 }} value={qty} onChange={(e) => setQty(e.target.value)} />
+                  {selectedItem && (
+                    <>
+                      <TextField
+                        label="Selling Price" type="number" size="small" sx={{ width: 110 }}
+                        value={manualSellingPrice}
+                        onChange={(e) => { setManualSellingPrice(e.target.value); setManualSellingPriceTouched(true); }}
+                      />
+                      <TextField
+                        inputRef={lineDiscountInputRef}
+                        label="Discount" type="number" size="small" sx={{ width: 90 }}
+                        placeholder="0"
+                        value={manualDiscountInput}
+                        onChange={(e) => setManualDiscountInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          qtyInputRef.current?.focus();
+                          qtyInputRef.current?.select();
+                        }}
+                      />
+                      <FormControl size="small" sx={{ width: 68 }}>
+                        <Select
+                          value={manualDiscountMode2}
+                          onChange={(e) => setManualDiscountMode2(e.target.value as "percent" | "amount")}
+                        >
+                          <MenuItem value="percent">%</MenuItem>
+                          <MenuItem value="amount">Rs</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </>
+                  )}
+                  <TextField
+                    inputRef={qtyInputRef} label="Qty" type="number" size="small" sx={{ width: 90 }} value={qty}
+                    onChange={(e) => setQty(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && selectedItem) { e.preventDefault(); addToCart(); } }}
+                  />
                   <Button variant="contained" startIcon={<AddShoppingCartIcon />} onClick={addToCart} disabled={!selectedItem}>
                     Add
                   </Button>
@@ -1245,11 +1456,11 @@ export default function PosCheckoutPage() {
                   <TableCell>Item</TableCell>
                   <TableCell align="right">Stock</TableCell>
                   <TableCell align="center">Qty</TableCell>
-                  <TableCell align="right">MRP</TableCell>
-                  <TableCell align="right">Unit Price</TableCell>
+                  <TableCell align="right">MRP ({currencySymbol})</TableCell>
+                  <TableCell align="right">Unit Price ({currencySymbol})</TableCell>
                   <TableCell align="right">Disc %</TableCell>
-                  <TableCell align="right">Net Price</TableCell>
-                  <TableCell align="right">Line Total</TableCell>
+                  <TableCell align="right">Net Price ({currencySymbol})</TableCell>
+                  <TableCell align="right">Line Total ({currencySymbol})</TableCell>
                   <TableCell align="center">—</TableCell>
                 </TableRow>
               </TableHead>
@@ -1285,29 +1496,75 @@ export default function PosCheckoutPage() {
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" color="text.secondary">
-                        {l.mrp_price != null ? formatCurrency(l.mrp_price, 2) : "—"}
+                        {l.mrp_price != null ? formatNumber(l.mrp_price) : "—"}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
                       <TextField
                         type="text" inputMode="numeric" size="small" value={l.unit_price.toLocaleString()} sx={{ width: 140 }}
+                        inputProps={{ style: { textAlign: "right" } }}
                         onChange={(e) => updateLine(l.stock_id, { unit_price: parseFormattedNumber(e.target.value) })}
                       />
+                      {/* Wholesale — only offered once quantity passes this
+                          product's threshold, and only ever applied after
+                          the Wholesale Authorization PIN is entered; never
+                          automatic. */}
+                      {l.wholesale_price != null && l.wholesale_qty_threshold != null && l.quantity > l.wholesale_qty_threshold && (
+                        l.wholesale_applied ? (
+                          <Stack direction="row" spacing={0.5} justifyContent="flex-end" alignItems="center" sx={{ mt: 0.5 }}>
+                            <Chip label="WHOLESALE" size="small" color="success" />
+                            <Button
+                              size="small" variant="text"
+                              onClick={() => updateLine(l.stock_id, { unit_price: l.original_unit_price ?? l.unit_price, wholesale_applied: false })}
+                            >
+                              Revert
+                            </Button>
+                          </Stack>
+                        ) : (
+                          <Button
+                            size="small" variant="outlined" sx={{ mt: 0.5 }}
+                            onClick={() => { setWholesalePinTarget(l.stock_id); setWholesalePinInput(""); }}
+                          >
+                            Apply Wholesale
+                          </Button>
+                        )
+                      )}
                     </TableCell>
                     <TableCell align="right">
-                      <TextField
-                        type="number" size="small" value={l.discount_percent} sx={{ width: 70 }}
-                        onChange={(e) => updateLine(l.stock_id, { discount_percent: Number(e.target.value) || 0 })}
-                      />
+                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                        <TextField
+                          type="number" size="small" sx={{ width: 70 }}
+                          value={l.discount_input ?? (l.discount_percent || "")}
+                          inputProps={{ style: { textAlign: "right" } }}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const mode = l.discount_mode ?? "percent";
+                            const val = Math.max(0, Number(raw) || 0);
+                            const pct = mode === "percent" ? Math.min(100, val) : (l.unit_price > 0 ? Math.min(100, (val / l.unit_price) * 100) : 0);
+                            updateLine(l.stock_id, { discount_input: raw, discount_percent: pct });
+                          }}
+                        />
+                        <FormControl size="small" sx={{ width: 68 }}>
+                          <Select
+                            value={l.discount_mode ?? "percent"}
+                            onChange={(e) => {
+                              updateLine(l.stock_id, { discount_mode: e.target.value as "percent" | "amount", discount_input: "", discount_percent: 0 });
+                            }}
+                          >
+                            <MenuItem value="percent">%</MenuItem>
+                            <MenuItem value="amount">Rs</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Stack>
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2">
-                        {formatCurrency(l.unit_price * (1 - l.discount_percent / 100), 2)}
+                        {formatNumber(l.unit_price * (1 - l.discount_percent / 100))}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" fontWeight={700}>
-                        {formatCurrency(l.quantity * l.unit_price * (1 - l.discount_percent / 100), 2)}
+                        {formatNumber(l.quantity * l.unit_price * (1 - l.discount_percent / 100))}
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
@@ -1328,77 +1585,47 @@ export default function PosCheckoutPage() {
             Works with any USB/handheld barcode scanner — it types the code and presses Enter for you.
           </Typography>
 
-          {/* Payment / checkout — a fixed-size box under the cart. It never
-              grows, shrinks, or moves as the cart fills up; the cart above
-              has its own scrollbar for that instead. */}
+          {/* Coupon / Voucher — moved here from the right-side Discounts
+              panel, sitting at the bottom of the left column where the
+              Payment Method(s) box used to be before that moved to the
+              right panel. */}
           <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mt: 2, flexShrink: 0 }}>
-            <CardContent sx={{ maxHeight: 320, overflowY: "auto" }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={700}>PAYMENT METHOD(S)</Typography>
-
-              {/* One-tap payment buttons — same familiar shortcut the old
-                  till software had per bank/payment method (Cash, Cheque,
-                  Seylan, BOC, ...). Just pre-fills the first payment line
-                  with that account and whatever balance is still owed —
-                  the actual payment/accounting logic is unchanged. */}
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ my: 1 }}>
-                {(bankAccounts ?? []).map((a: any) => (
-                  <Chip
-                    key={a.id}
-                    label={a.bank_account_name}
-                    clickable
-                    size="small"
-                    color="info"
-                    onClick={() => updatePaymentLine(paymentLines[0].id, { bank_account_id: a.id, amount: String(balanceRemaining || grandTotal) })}
-                  />
-                ))}
-              </Stack>
-
-              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
-                {paymentLines.map((p, pIndex) => (
-                  <Stack direction="row" spacing={1} key={p.id} alignItems="center">
-                    <FormControl size="small" sx={{ width: 180 }}>
-                      <InputLabel>Account</InputLabel>
-                      <Select
-                        value={p.bank_account_id}
-                        label="Account"
-                        onChange={(e) => updatePaymentLine(p.id, { bank_account_id: Number(e.target.value) })}
-                      >
-                        {(bankAccounts ?? []).map((a: any) => (
-                          <MenuItem key={a.id} value={a.id}>{a.bank_account_name}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <TextField
-                      inputRef={pIndex === 0 ? paymentAmountInputRef : undefined}
-                      label="Amount" type="number" size="small" sx={{ width: 110 }}
-                      value={p.amount}
-                      onChange={(e) => updatePaymentLine(p.id, { amount: e.target.value })}
-                    />
-                    {paymentLines.length > 1 && (
-                      <IconButton size="small" color="error" onClick={() => removePaymentLine(p.id)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    )}
-                  </Stack>
-                ))}
-                <Button variant="contained" color="secondary" size="small" startIcon={<AddIcon />} onClick={addPaymentLine}>
-                  Split into another payment method
-                </Button>
-              </Stack>
-
-              <Stack direction="row" spacing={4} alignItems="center" sx={{ mt: 1.5 }}>
-                <Stack direction="row" spacing={1} alignItems="baseline">
-                  <Typography variant="body2" color="text.secondary">Change Due</Typography>
-                  <Typography variant="body2" fontWeight={700}>{formatCurrency(changeDue, 2)}</Typography>
-                </Stack>
-                {balanceRemaining > 0.01 && (
-                  <Typography variant="caption" color="error">
-                    {formatCurrency(balanceRemaining, 2)} still needs to be covered by a payment method
-                  </Typography>
+            <CardContent>
+              <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                <TextField
+                  label="Coupon Code" size="small" fullWidth value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  disabled={!!appliedCoupon}
+                />
+                {appliedCoupon ? (
+                  <Button variant="outlined" color="error" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}>Remove</Button>
+                ) : (
+                  <Button variant="contained" color="success" onClick={handleApplyCoupon} disabled={couponChecking}>Apply</Button>
                 )}
               </Stack>
-
-
+              <Stack direction="row" spacing={1}>
+                <TextField
+                  label="Voucher Code (scan or type)" size="small" value={voucherCode}
+                  onChange={(e) => setVoucherCode(e.target.value)}
+                  onKeyDown={handleVoucherCodeKeyDown}
+                  disabled={!!appliedVoucher}
+                  sx={{ flex: 1 }}
+                />
+                <TextField
+                  label="Amount" type="number" size="small" value={voucherAmount}
+                  onChange={(e) => setVoucherAmount(e.target.value)}
+                  disabled={!!appliedVoucher}
+                  placeholder="Full balance"
+                  sx={{ width: 110 }}
+                />
+                {appliedVoucher ? (
+                  <Button variant="outlined" color="error" onClick={() => { setAppliedVoucher(null); setVoucherCode(""); setVoucherAmount(""); }}>Remove</Button>
+                ) : (
+                  <Button variant="contained" color="success" onClick={() => handleApplyVoucher()} disabled={voucherChecking}>
+                    {voucherChecking ? "Checking..." : "Apply"}
+                  </Button>
+                )}
+              </Stack>
             </CardContent>
           </Card>
         </Grid>
@@ -1500,42 +1727,35 @@ export default function PosCheckoutPage() {
                 ))}
                 <Chip label="Clear" variant="outlined" onClick={() => setCartDiscountPercent(0)} clickable />
               </Stack>
-              <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+              <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
                 <TextField
-                  label="Coupon Code" size="small" fullWidth value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  disabled={!!appliedCoupon}
+                  label={manualDiscountMode === "percent" ? "Manual Discount %" : "Manual Discount (LKR)"}
+                  type="number" size="small" fullWidth
+                  value={manualDiscountValue}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setManualDiscountValue(raw);
+                    const val = Math.max(0, Number(raw) || 0);
+                    const pct = manualDiscountMode === "percent"
+                      ? Math.min(100, val)
+                      : (subtotal > 0 ? Math.min(100, (val / subtotal) * 100) : 0);
+                    setCartDiscountPercent(pct);
+                  }}
                 />
-                {appliedCoupon ? (
-                  <Button variant="outlined" color="error" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}>Remove</Button>
-                ) : (
-                  <Button variant="contained" color="success" onClick={handleApplyCoupon} disabled={couponChecking}>Apply</Button>
-                )}
+                <FormControl size="small" sx={{ width: 90 }}>
+                  <Select
+                    value={manualDiscountMode}
+                    onChange={(e) => {
+                      setManualDiscountMode(e.target.value as "percent" | "amount");
+                      setManualDiscountValue("");
+                      setCartDiscountPercent(0);
+                    }}
+                  >
+                    <MenuItem value="percent">%</MenuItem>
+                    <MenuItem value="amount">LKR</MenuItem>
+                  </Select>
+                </FormControl>
               </Stack>
-              <Stack direction="row" spacing={1}>
-                <TextField
-                  label="Voucher Code (scan or type)" size="small" value={voucherCode}
-                  onChange={(e) => setVoucherCode(e.target.value)}
-                  onKeyDown={handleVoucherCodeKeyDown}
-                  disabled={!!appliedVoucher}
-                  sx={{ flex: 1 }}
-                />
-                <TextField
-                  label="Amount" type="number" size="small" value={voucherAmount}
-                  onChange={(e) => setVoucherAmount(e.target.value)}
-                  disabled={!!appliedVoucher}
-                  placeholder="Full balance"
-                  sx={{ width: 110 }}
-                />
-                {appliedVoucher ? (
-                  <Button variant="outlined" color="error" onClick={() => { setAppliedVoucher(null); setVoucherCode(""); setVoucherAmount(""); }}>Remove</Button>
-                ) : (
-                  <Button variant="contained" color="success" onClick={() => handleApplyVoucher()} disabled={voucherChecking}>
-                    {voucherChecking ? "Checking..." : "Apply"}
-                  </Button>
-                )}
-              </Stack>
-
               {customerLoyaltyCard && (
                 <Stack spacing={0.5} sx={{ mt: 1 }}>
                   <Typography variant="caption" color="text.secondary">
@@ -1566,6 +1786,58 @@ export default function PosCheckoutPage() {
                     )}
                   </Stack>
                 </Stack>
+              )}
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Payment method(s) — moved next to Customer/Discounts/Totals
+                  so the cashier enters tendered amount right where the
+                  Total and Change Due are shown, instead of scrolling down
+                  to a separate box under the cart. */}
+              <Typography variant="caption" color="text.secondary" fontWeight={700}>PAYMENT METHOD(S)</Typography>
+
+              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center" sx={{ mt: 1 }}>
+                {paymentLines.map((p, pIndex) => (
+                  <Stack direction="row" spacing={1} key={p.id} alignItems="center">
+                    <FormControl size="small" sx={{ width: 180 }}>
+                      <InputLabel>Account</InputLabel>
+                      <Select
+                        value={p.bank_account_id}
+                        label="Account"
+                        onChange={(e) => updatePaymentLine(p.id, { bank_account_id: Number(e.target.value) })}
+                      >
+                        {(bankAccounts ?? []).map((a: any) => (
+                          <MenuItem key={a.id} value={a.id}>{a.bank_account_name}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      inputRef={pIndex === 0 ? paymentAmountInputRef : undefined}
+                      label="Amount" type="number" size="small" sx={{ width: 110 }}
+                      value={p.amount}
+                      onChange={(e) => updatePaymentLine(p.id, { amount: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (pIndex !== 0 || e.key !== "Enter") return;
+                        e.preventDefault();
+                        if (!checkoutMutation.isPending && customer && cart.length > 0 && cashAccount) handleCheckout();
+                      }}
+                    />
+                    {paymentLines.length > 1 && (
+                      <IconButton size="small" color="error" onClick={() => removePaymentLine(p.id)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Stack>
+                ))}
+                <Button variant="contained" color="secondary" size="small" startIcon={<AddIcon />} onClick={addPaymentLine}>
+                  Split into another payment method
+                </Button>
+              </Stack>
+
+              {balanceRemaining > 0.01 && (
+                <Typography variant="caption" color="error" sx={{ display: "block", mt: 1 }}>
+                  {formatCurrency(balanceRemaining, 2)} still needs to be covered by a payment method
+                </Typography>
               )}
 
               <Divider sx={{ my: 2 }} />
@@ -1609,6 +1881,18 @@ export default function PosCheckoutPage() {
                   <Typography variant="h6">Total</Typography>
                   <Typography variant="h5" fontWeight={800} color="primary.main">{formatCurrency(grandTotal, 2)}</Typography>
                 </Stack>
+                {totalPaid > 0 && (
+                  <>
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body1" fontWeight={700} color="text.secondary">Cash Received</Typography>
+                      <Typography variant="body1" fontWeight={700}>{formatCurrency(totalPaid, 2)}</Typography>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between" alignItems="baseline">
+                      <Typography variant="h6">Change Due</Typography>
+                      <Typography variant="h5" fontWeight={800} color="success.main">{formatCurrency(changeDue, 2)}</Typography>
+                    </Stack>
+                  </>
+                )}
               </Stack>
 
               {/* Complete Sale / Give Quote sit at the bottom of the right panel,
@@ -1676,6 +1960,25 @@ export default function PosCheckoutPage() {
         </DialogActions>
       </Dialog>
 
+      <Dialog open={!!wholesalePinTarget} onClose={() => setWholesalePinTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Wholesale Authorization Required</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Enter the Wholesale Authorization PIN to charge this line at the wholesale price.
+          </Typography>
+          <TextField
+            label="PIN" type="password" size="small" fullWidth autoFocus
+            value={wholesalePinInput}
+            onChange={(e) => setWholesalePinInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") confirmWholesalePin(); }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setWholesalePinTarget(null)}>Cancel</Button>
+          <Button variant="contained" onClick={confirmWholesalePin}>Confirm</Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={!!barcodeMatches} onClose={() => setBarcodeMatches(null)} maxWidth="sm" fullWidth>
         <DialogTitle>Multiple products share this barcode — pick one</DialogTitle>
         <DialogContent>
@@ -1711,6 +2014,7 @@ export default function PosCheckoutPage() {
         payments={lastReceipt?.payments}
         cashReceived={lastReceipt?.cashReceived}
         paperSize={posSettings?.receipt_paper_size}
+        isQuote={isQuoteReceipt}
       />
 
       <QuickAddCustomerDialog

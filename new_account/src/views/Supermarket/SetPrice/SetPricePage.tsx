@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Card, CardContent, Stack, TextField, Autocomplete, Button, Typography, Divider,
-  InputAdornment, Table, TableHead, TableRow, TableCell, TableBody, Chip,
+  InputAdornment, Table, TableHead, TableRow, TableCell, TableBody, Chip, Tabs, Tab,
 } from "@mui/material";
 import PriceChangeIcon from "@mui/icons-material/PriceChange";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
@@ -10,7 +10,7 @@ import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
 import { getStockList } from "../../../api/Inventory/StockListApi";
 import { createItemCode } from "../../../api/ItemCodes/ItemCodesApi";
-import { updateMrpPrice, updateExpiryDate } from "../../../api/Item/ItemApi";
+import { updateMrpPrice, updateExpiryDate, updateWholesalePricing } from "../../../api/Item/ItemApi";
 import { useNavigate } from "react-router-dom";
 import { getSalesPricingByStockId, createSalesPricing, updateSalesPricing } from "../../../api/SalesPricing/SalesPricingApi";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
@@ -40,6 +40,9 @@ export default function SetPricePage() {
   const [newBarcode, setNewBarcode] = useState("");
   const [mrpPrice, setMrpPrice] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
+  const [activeTab, setActiveTab] = useState<"retail" | "wholesale">("retail");
+  const [wholesaleQty, setWholesaleQty] = useState("");
+  const [wholesalePrice, setWholesalePrice] = useState("");
 
   const { data: results } = useQuery({
     queryKey: ["stock-search", search],
@@ -58,6 +61,10 @@ export default function SetPricePage() {
   );
 
   const cost = Number(product?.purchase_cost) || 0;
+  // Weighed items (kg, g, ...) vs counted items (pcs, unit, ...) — labels
+  // the Wholesale Threshold field with whichever this product actually uses,
+  // instead of assuming it's always a plain piece count.
+  const productUnitName: string | null = product?.unit_name ?? null;
 
   // Selling price and margin stay in sync with each other — editing either
   // one recalculates the other, whichever the user touched last wins.
@@ -85,6 +92,8 @@ export default function SetPricePage() {
     setNewBarcode("");
     setMrpPrice(p.mrp_price != null ? String(p.mrp_price) : "");
     setExpiryDate(p.expiry_date ? String(p.expiry_date).slice(0, 10) : "");
+    setWholesaleQty(p.wholesale_qty_threshold != null ? String(p.wholesale_qty_threshold) : "");
+    setWholesalePrice(p.wholesale_price != null ? String(p.wholesale_price) : "");
   };
 
   const saveMrpMutation = useMutation({
@@ -105,6 +114,20 @@ export default function SetPricePage() {
       queryClient.invalidateQueries({ queryKey: ["stock-list"] });
     },
     onError: (err: any) => notify.error(err?.response?.data?.message || "Failed to save expiry date"),
+  });
+
+  const saveWholesaleMutation = useMutation({
+    mutationFn: () => updateWholesalePricing(
+      product.stock_id,
+      wholesaleQty ? Number(wholesaleQty) : null,
+      wholesalePrice ? Number(wholesalePrice) : null
+    ),
+    onSuccess: () => {
+      notify.success("Wholesale pricing saved");
+      queryClient.invalidateQueries({ queryKey: ["stock-search"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-list"] });
+    },
+    onError: (err: any) => notify.error(err?.response?.data?.message || "Failed to save wholesale pricing"),
   });
 
   const saveMutation = useMutation({
@@ -226,66 +249,113 @@ export default function SetPricePage() {
                   Manage all barcodes for this product
                 </Button>
 
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                  <TextField
-                    label="Purchase Cost" size="small" sx={{ flex: 1 }}
-                    value={formatCurrency(cost)} disabled
-                  />
-                  <TextField
-                    label="Profit Margin" type="number" size="small" sx={{ flex: 1 }}
-                    value={margin}
-                    onChange={(e) => { setLastEdited("margin"); setMargin(e.target.value); }}
-                    InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }}
-                  />
-                  <TextField
-                    label="Selling Price" type="number" size="small" sx={{ flex: 1 }}
-                    value={sellingPrice}
-                    onChange={(e) => { setLastEdited("price"); setSellingPrice(e.target.value); }}
-                  />
-                  <TextField
-                    label="MRP Price" type="number" size="small" sx={{ flex: 1 }}
-                    value={mrpPrice}
-                    onChange={(e) => setMrpPrice(e.target.value)}
-                    helperText="Shown to the cashier during checkout"
-                  />
-                  <TextField
-                    label="Expiry Date" type="date" size="small" sx={{ flex: 1 }}
-                    value={expiryDate}
-                    onChange={(e) => setExpiryDate(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    helperText="Optional — feeds the Expiry List report"
-                  />
-                </Stack>
+                <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
+                  <Tab value="retail" label="Retail Pricing" />
+                  <Tab value="wholesale" label="Wholesale Pricing" />
+                </Tabs>
 
-                {currentPricing && (
-                  <Typography variant="caption" color="text.secondary">
-                    Current selling price on file: {formatCurrency(currentPricing.price)}
-                  </Typography>
+                {activeTab === "retail" && (
+                  <>
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                      <TextField
+                        label="Purchase Cost" size="small" sx={{ flex: 1 }}
+                        value={formatCurrency(cost)} disabled
+                      />
+                      <TextField
+                        label="Profit Margin" type="number" size="small" sx={{ flex: 1 }}
+                        value={margin}
+                        onChange={(e) => { setLastEdited("margin"); setMargin(e.target.value); }}
+                        InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }}
+                      />
+                      <TextField
+                        label="Selling Price" type="number" size="small" sx={{ flex: 1 }}
+                        value={sellingPrice}
+                        onChange={(e) => { setLastEdited("price"); setSellingPrice(e.target.value); }}
+                      />
+                      <TextField
+                        label="MRP Price" type="number" size="small" sx={{ flex: 1 }}
+                        value={mrpPrice}
+                        onChange={(e) => setMrpPrice(e.target.value)}
+                        helperText="Shown to the cashier during checkout"
+                      />
+                      <TextField
+                        label="Expiry Date" type="date" size="small" sx={{ flex: 1 }}
+                        value={expiryDate}
+                        onChange={(e) => setExpiryDate(e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                        helperText="Optional — feeds the Expiry List report"
+                      />
+                    </Stack>
+
+                    {currentPricing && (
+                      <Typography variant="caption" color="text.secondary">
+                        Current selling price on file: {formatCurrency(currentPricing.price)}
+                      </Typography>
+                    )}
+
+                    <Stack direction="row" spacing={2}>
+                      <Button
+                        variant="contained" size="large" startIcon={<PriceChangeIcon />}
+                        disabled={!sellingPrice || Number(sellingPrice) <= 0 || saveMutation.isPending}
+                        onClick={() => saveMutation.mutate()}
+                      >
+                        {saveMutation.isPending ? "Saving..." : "Save Selling Price"}
+                      </Button>
+                      <Button
+                        variant="outlined" size="large"
+                        disabled={saveMrpMutation.isPending}
+                        onClick={() => saveMrpMutation.mutate()}
+                      >
+                        {saveMrpMutation.isPending ? "Saving..." : "Save MRP Price"}
+                      </Button>
+                      <Button
+                        variant="outlined" size="large"
+                        disabled={saveExpiryMutation.isPending}
+                        onClick={() => saveExpiryMutation.mutate()}
+                      >
+                        {saveExpiryMutation.isPending ? "Saving..." : "Save Expiry Date"}
+                      </Button>
+                    </Stack>
+                  </>
                 )}
 
-                <Stack direction="row" spacing={2}>
-                  <Button
-                    variant="contained" size="large" startIcon={<PriceChangeIcon />}
-                    disabled={!sellingPrice || Number(sellingPrice) <= 0 || saveMutation.isPending}
-                    onClick={() => saveMutation.mutate()}
-                  >
-                    {saveMutation.isPending ? "Saving..." : "Save Selling Price"}
-                  </Button>
-                  <Button
-                    variant="outlined" size="large"
-                    disabled={saveMrpMutation.isPending}
-                    onClick={() => saveMrpMutation.mutate()}
-                  >
-                    {saveMrpMutation.isPending ? "Saving..." : "Save MRP Price"}
-                  </Button>
-                  <Button
-                    variant="outlined" size="large"
-                    disabled={saveExpiryMutation.isPending}
-                    onClick={() => saveExpiryMutation.mutate()}
-                  >
-                    {saveExpiryMutation.isPending ? "Saving..." : "Save Expiry Date"}
-                  </Button>
-                </Stack>
+                {activeTab === "wholesale" && (
+                  <>
+                    <Typography variant="caption" color="text.secondary">
+                      Once a cart line's {productUnitName ? productUnitName.toLowerCase() : "quantity"} passes the
+                      threshold below, the cashier can apply this Wholesale Price at POS Checkout — only after
+                      entering the Wholesale Authorization PIN (set under Supermarket → POS Settings).
+                    </Typography>
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                      <TextField
+                        label={`Wholesale Threshold${productUnitName ? ` (${productUnitName})` : ""}`}
+                        type="number" size="small" sx={{ flex: 1 }}
+                        value={wholesaleQty}
+                        onChange={(e) => setWholesaleQty(e.target.value)}
+                        helperText={
+                          productUnitName
+                            ? `e.g. 10 ${productUnitName} — buying more than this unlocks the wholesale price`
+                            : "e.g. 10 — buying more than this unlocks the wholesale price"
+                        }
+                      />
+                      <TextField
+                        label={`Wholesale Price${productUnitName ? ` (per ${productUnitName})` : ""}`}
+                        type="number" size="small" sx={{ flex: 1 }}
+                        value={wholesalePrice}
+                        onChange={(e) => setWholesalePrice(e.target.value)}
+                        helperText="Price once the threshold is passed"
+                      />
+                    </Stack>
+                    <Button
+                      variant="contained" size="large" startIcon={<PriceChangeIcon />}
+                      disabled={saveWholesaleMutation.isPending}
+                      onClick={() => saveWholesaleMutation.mutate()}
+                      sx={{ alignSelf: "flex-start" }}
+                    >
+                      {saveWholesaleMutation.isPending ? "Saving..." : "Save Wholesale Pricing"}
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </Stack>

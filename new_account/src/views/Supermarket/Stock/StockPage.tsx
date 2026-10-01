@@ -4,7 +4,7 @@ import {
   Box, Card, CardContent, Stack, TextField, Autocomplete, Table, TableHead, TableRow,
   TableCell, TableBody, TableContainer, Paper, Typography, Chip, InputAdornment, IconButton,
   Collapse, Button, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel,
-  Select, MenuItem, Grid, Tabs, Tab, Tooltip,
+  Select, MenuItem, Grid, Tabs, Tab, Tooltip, Checkbox,
 } from "@mui/material";
 import * as XLSX from "xlsx";
 import SearchIcon from "@mui/icons-material/Search";
@@ -26,7 +26,8 @@ import { getSubcategories } from "../../../api/Subcategories/SubcategoriesApi";
 import { createStockAdjustment, getStockAdjustments } from "../../../api/Pos/posOpsApi";
 import { getStockDamages, recordStockDamage, deleteStockDamage } from "../../../api/Pos/posApi";
 import { getInventoryLocations } from "../../../api/InventoryLocation/InventoryLocationApi";
-import { getItems, bulkCreateStockMasters } from "../../../api/Item/ItemApi";
+import { getItems, bulkCreateStockMasters, bulkUpdateUnits } from "../../../api/Item/ItemApi";
+import { getItemUnits } from "../../../api/ItemUnit/ItemUnitApi";
 import { bulkUpsertSalesPricing } from "../../../api/SalesPricing/SalesPricingApi";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
@@ -85,12 +86,16 @@ function ProductsTab() {
   const [brand, setBrand] = useState<any>(null);
   const [subcategory, setSubcategory] = useState<any>(null);
   const [expandedStockId, setExpandedStockId] = useState<string | null>(null);
+  const [selectedStockIds, setSelectedStockIds] = useState<Set<string>>(new Set());
+  const [bulkUnitId, setBulkUnitId] = useState<number | "">("");
   const isOnline = useOnlineStatus();
   const isOffline = isDesktopApp() && !isOnline;
+  const queryClient = useQueryClient();
 
   const { data: categories } = useQuery({ queryKey: ["item-categories"], queryFn: () => getItemCategories() });
   const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: () => getBrands() });
   const { data: subcategories } = useQuery({ queryKey: ["subcategories"], queryFn: () => getSubcategories() });
+  const { data: itemUnits } = useQuery({ queryKey: ["item-units"], queryFn: () => getItemUnits() });
   const { data: stockFromApi, isLoading } = useQuery({
     queryKey: ["stock-list", search, category?.category_id, brand?.id, subcategory?.id],
     queryFn: () => getStockList({
@@ -131,6 +136,30 @@ function ProductsTab() {
       })
     : (stockFromApi ?? []);
 
+  const toggleSelected = (stockId: string) => {
+    setSelectedStockIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(stockId)) next.delete(stockId); else next.add(stockId);
+      return next;
+    });
+  };
+
+  const allVisibleSelected = (stock ?? []).length > 0 && (stock ?? []).every((s: any) => selectedStockIds.has(s.stock_id));
+  const toggleSelectAll = () => {
+    setSelectedStockIds(allVisibleSelected ? new Set() : new Set((stock ?? []).map((s: any) => s.stock_id)));
+  };
+
+  const bulkUnitMutation = useMutation({
+    mutationFn: () => bulkUpdateUnits(Array.from(selectedStockIds), Number(bulkUnitId)),
+    onSuccess: () => {
+      notify.success(`Unit applied to ${selectedStockIds.size} product(s)`);
+      setSelectedStockIds(new Set());
+      setBulkUnitId("");
+      queryClient.invalidateQueries({ queryKey: ["stock-list"] });
+    },
+    onError: (err: any) => notify.error(err?.response?.data?.message || "Failed to apply unit"),
+  });
+
   const handleExportExcel = () => {
     const rows = (stock ?? []).map((s: any) => ({
       Product: s.description,
@@ -158,6 +187,38 @@ function ProductsTab() {
           Export Excel
         </Button>
       </Stack>
+
+      {selectedStockIds.size > 0 && (
+        <Card elevation={0} sx={{ border: "1px solid", borderColor: "primary.main", borderRadius: 3, mb: 2 }}>
+          <CardContent>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
+              <Typography variant="body2" fontWeight={600}>
+                {selectedStockIds.size} product(s) selected
+              </Typography>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Unit</InputLabel>
+                <Select
+                  label="Unit"
+                  value={bulkUnitId}
+                  onChange={(e) => setBulkUnitId(e.target.value as number)}
+                >
+                  {(itemUnits ?? []).map((u: any) => (
+                    <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Button
+                variant="contained"
+                disabled={!bulkUnitId || bulkUnitMutation.isPending}
+                onClick={() => bulkUnitMutation.mutate()}
+              >
+                {bulkUnitMutation.isPending ? "Applying..." : "Apply Unit to Selected"}
+              </Button>
+              <Button variant="text" onClick={() => setSelectedStockIds(new Set())}>Clear Selection</Button>
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
 
       <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mb: 2 }}>
         <CardContent>
@@ -205,10 +266,14 @@ function ProductsTab() {
           <Table size="small">
             <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
               <TableRow>
+                <TableCell padding="checkbox">
+                  <Checkbox size="small" checked={allVisibleSelected} onChange={toggleSelectAll} />
+                </TableCell>
                 <TableCell width={48} />
                 <TableCell>Product</TableCell>
                 <TableCell>Stock ID</TableCell>
                 <TableCell>Category</TableCell>
+                <TableCell>Unit</TableCell>
                 <TableCell align="right">Price</TableCell>
                 <TableCell align="right">Quantity on Hand</TableCell>
               </TableRow>
@@ -218,7 +283,10 @@ function ProductsTab() {
                 const isOpen = expandedStockId === s.stock_id;
                 return (
                   <Fragment key={s.stock_id}>
-                    <TableRow hover>
+                    <TableRow hover selected={selectedStockIds.has(s.stock_id)}>
+                      <TableCell padding="checkbox">
+                        <Checkbox size="small" checked={selectedStockIds.has(s.stock_id)} onChange={() => toggleSelected(s.stock_id)} />
+                      </TableCell>
                       <TableCell>
                         <IconButton size="small" onClick={() => setExpandedStockId(isOpen ? null : s.stock_id)}>
                           {isOpen ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
@@ -227,13 +295,14 @@ function ProductsTab() {
                       <TableCell>{s.description}</TableCell>
                       <TableCell>{s.stock_id}</TableCell>
                       <TableCell>{s.category_name ?? "—"}</TableCell>
+                      <TableCell>{s.unit_name ?? "—"}</TableCell>
                       <TableCell align="right">{formatCurrency(s.purchase_cost)}</TableCell>
                       <TableCell align="right">
                         <Chip size="small" label={s.quantity} color={s.quantity <= 0 ? "error" : "default"} />
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell colSpan={6} sx={{ py: 0, borderBottom: isOpen ? undefined : "none" }}>
+                      <TableCell colSpan={8} sx={{ py: 0, borderBottom: isOpen ? undefined : "none" }}>
                         <Collapse in={isOpen} timeout="auto" unmountOnExit>
                           <ProductDetailPanel product={s} />
                         </Collapse>
@@ -243,7 +312,7 @@ function ProductsTab() {
                 );
               })}
               {(!stock || stock.length === 0) && (
-                <TableRow><TableCell colSpan={6} align="center"><Typography variant="body2">No matching products.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} align="center"><Typography variant="body2">No matching products.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -502,6 +571,10 @@ function ProductDetailPanel({ product }: { product: any }) {
         <Grid item xs={6} sm={3}>
           <Typography variant="caption" color="text.secondary">Barcode</Typography>
           <Typography variant="body2">{product.barcode ?? "No barcode linked"}</Typography>
+        </Grid>
+        <Grid item xs={6} sm={3}>
+          <Typography variant="caption" color="text.secondary">Unit</Typography>
+          <Typography variant="body2">{product.unit_name ?? "—"}</Typography>
         </Grid>
         <Grid item xs={6} sm={3}>
           <Typography variant="caption" color="text.secondary">Purchase Cost</Typography>

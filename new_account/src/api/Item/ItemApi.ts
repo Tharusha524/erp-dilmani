@@ -77,6 +77,23 @@ export const updateExpiryDate = async (stockId: string, expiryDate: string | nul
   return response.data;
 };
 
+export const bulkUpdateUnits = async (stockIds: string[], unitId: number) => {
+  const response = await api.patch(`${API_URL}/bulk-units`, { stock_ids: stockIds, units: unitId });
+  return response.data;
+};
+
+export const updateWholesalePricing = async (
+  stockId: string,
+  wholesaleQtyThreshold: number | null,
+  wholesalePrice: number | null
+) => {
+  const response = await api.patch(`${API_URL}/${stockId}/wholesale-pricing`, {
+    wholesale_qty_threshold: wholesaleQtyThreshold,
+    wholesale_price: wholesalePrice,
+  });
+  return response.data;
+};
+
 export const getExpiryList = async (withinDays = 90) => {
   const response = await api.get("/stock-masters-expiry-list", { params: { within_days: withinDays } });
   return response.data;

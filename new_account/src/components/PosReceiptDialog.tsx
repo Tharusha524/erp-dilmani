@@ -30,6 +30,9 @@ interface PosReceiptDialogProps {
   payments?: ReceiptPaymentLine[];
   cashReceived?: number;
   paperSize?: string;
+  /** Printed on the same receipt layout/printer as a sale, but labeled as a
+   * price estimate — no payment info, since nothing's actually been paid. */
+  isQuote?: boolean;
 }
 
 /**
@@ -42,7 +45,7 @@ interface PosReceiptDialogProps {
  * POS-only logo field.
  */
 export default function PosReceiptDialog({
-  open, onClose, transNo, customerName, lines, total, payments, cashReceived, paperSize = "80mm Thermal",
+  open, onClose, transNo, customerName, lines, total, payments, cashReceived, paperSize = "80mm Thermal", isQuote = false,
 }: PosReceiptDialogProps) {
   const { formatCurrency } = useHomeCurrency();
   const { user } = useCurrentUser();
@@ -88,7 +91,7 @@ export default function PosReceiptDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle className="pos-receipt-no-print">Receipt — Invoice #{transNo}</DialogTitle>
+      <DialogTitle className="pos-receipt-no-print">{isQuote ? `Quotation #${transNo}` : `Receipt — Invoice #${transNo}`}</DialogTitle>
       <DialogContent>
         <style>{`
           @media print {
@@ -139,8 +142,13 @@ export default function PosReceiptDialog({
 
           <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary" }} />
 
+          {isQuote && (
+            <Typography align="center" fontWeight={800} fontSize={14} sx={{ mb: 0.5 }}>
+              PRICE QUOTATION
+            </Typography>
+          )}
           <Stack spacing={0.25} sx={{ my: 1, fontSize: 13 }}>
-            <Typography variant="caption" fontSize={13}>Invoice ID: {transNo}</Typography>
+            <Typography variant="caption" fontSize={13}>{isQuote ? "Quotation ID" : "Invoice ID"}: {transNo}</Typography>
             <Typography variant="caption" fontSize={13}>Cashier: {user?.first_name || user?.email || "—"}</Typography>
           </Stack>
 
@@ -194,28 +202,32 @@ export default function PosReceiptDialog({
             <Typography fontWeight={800} fontSize={20}>{formatCurrency(total)}</Typography>
           </Box>
 
-          <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary", mt: 1.5 }} />
+          {!isQuote && (
+            <>
+              <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary", mt: 1.5 }} />
 
-          {/* Payment Info */}
-          <Typography variant="caption" fontWeight={700} fontSize={13} sx={{ mt: 1.5, display: "block" }}>PAYMENT INFO</Typography>
-          <Stack spacing={0.25} sx={{ mt: 0.5, fontSize: 14 }}>
-            {paymentLines.map((p, i) => (
-              <Box key={i} sx={{ display: "flex", justifyContent: "space-between" }}>
-                <span>{p.method.toUpperCase()}</span>
-                <Typography fontWeight={700} fontSize={14}>{formatCurrency(p.amount)}</Typography>
-              </Box>
-            ))}
-            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-              <span>CASH RECEIVED</span>
-              <Typography fontWeight={700} fontSize={14}>{formatCurrency(received)}</Typography>
-            </Box>
-            {change > 0.001 && (
-              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                <span>CHANGE</span>
-                <Typography fontWeight={700} fontSize={14}>{formatCurrency(change)}</Typography>
-              </Box>
-            )}
-          </Stack>
+              {/* Payment Info */}
+              <Typography variant="caption" fontWeight={700} fontSize={13} sx={{ mt: 1.5, display: "block" }}>PAYMENT INFO</Typography>
+              <Stack spacing={0.25} sx={{ mt: 0.5, fontSize: 14 }}>
+                {paymentLines.map((p, i) => (
+                  <Box key={i} sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>{p.method.toUpperCase()}</span>
+                    <Typography fontWeight={700} fontSize={14}>{formatCurrency(p.amount)}</Typography>
+                  </Box>
+                ))}
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>CASH RECEIVED</span>
+                  <Typography fontWeight={700} fontSize={14}>{formatCurrency(received)}</Typography>
+                </Box>
+                {change > 0.001 && (
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>CHANGE</span>
+                    <Typography fontWeight={700} fontSize={14}>{formatCurrency(change)}</Typography>
+                  </Box>
+                )}
+              </Stack>
+            </>
+          )}
 
           <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary", mt: 1.5 }} />
 
@@ -225,9 +237,11 @@ export default function PosReceiptDialog({
 
           <Divider sx={{ borderStyle: "dashed", borderBottomWidth: 1.5, borderColor: "text.primary", mt: 1.5 }} />
 
-          <Typography align="center" fontWeight={700} fontSize={14} sx={{ mt: 2 }}>
-            THANK YOU FOR YOUR BUSINESS!
-          </Typography>
+          {!isQuote && (
+            <Typography align="center" fontWeight={700} fontSize={14} sx={{ mt: 2 }}>
+              THANK YOU FOR YOUR BUSINESS!
+            </Typography>
+          )}
 
           <Typography align="center" variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block", fontSize: 10 }}>
             Developed by DIO Solutions
