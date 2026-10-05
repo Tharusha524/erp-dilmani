@@ -715,6 +715,7 @@ type BulkPriceRow = {
   subcategory?: string;
   brand?: string;
   barcode?: string;
+  purchase_cost?: number;
 };
 
 function BulkPriceUpdateTab() {
@@ -748,10 +749,11 @@ function BulkPriceUpdateTab() {
       const mapped: BulkPriceRow[] = parsed
         .map((r) => ({
           stock_id: String(r.stock_id ?? r.Stock_ID ?? r["Stock ID"] ?? "").trim(),
-          price: Number(r.price ?? r.Price ?? 0),
-          currency_id: Number(r.currency_id ?? BULK_PRICE_LKR_CURRENCY_ID),
-          sales_type_id: Number(r.sales_type_id ?? BULK_PRICE_RETAIL_SALES_TYPE_ID),
+          price: Number(r.selling_price ?? r.price ?? r.Price ?? 0),
+          currency_id: BULK_PRICE_LKR_CURRENCY_ID,
+          sales_type_id: BULK_PRICE_RETAIL_SALES_TYPE_ID,
           description: r.description ? String(r.description).trim() : undefined,
+          purchase_cost: r.purchase_cost !== undefined && r.purchase_cost !== "" ? Number(r.purchase_cost) : undefined,
           mrp_price: r.mrp_price !== undefined && r.mrp_price !== "" ? Number(r.mrp_price) : undefined,
           expiry_date: r.expiry_date ? String(r.expiry_date).slice(0, 10) : undefined,
           category: r.category ? String(r.category).trim() : undefined,
@@ -762,7 +764,7 @@ function BulkPriceUpdateTab() {
         .filter((r) => r.stock_id && r.price > 0);
       setRows(mapped);
       if (mapped.length === 0) {
-        notify.error("No valid rows found — the sheet needs stock_id and price columns");
+        notify.error("No valid rows found — the sheet needs stock_id and selling_price columns");
       }
     };
     reader.readAsArrayBuffer(file);
@@ -773,15 +775,14 @@ function BulkPriceUpdateTab() {
   // write their columns in.
   const BULK_PRICE_COLUMN_WIDTHS = [
     { wch: 12 }, // stock_id
-    { wch: 10 }, // price
-    { wch: 14 }, // sales_type_id
     { wch: 30 }, // description
-    { wch: 12 }, // mrp_price
-    { wch: 12 }, // expiry_date
-    { wch: 12 }, // category_id
-    { wch: 14 }, // subcategory_id
-    { wch: 10 }, // brand_id
+    { wch: 14 }, // category
+    { wch: 14 }, // subcategory
+    { wch: 12 }, // brand
     { wch: 18 }, // barcode
+    { wch: 14 }, // purchase_cost
+    { wch: 14 }, // selling_price
+    { wch: 12 }, // mrp_price
   ];
 
   // The one people actually want: every existing product with its real
@@ -795,15 +796,14 @@ function BulkPriceUpdateTab() {
     }
     const sheetRows = list.map((s: any) => ({
       stock_id: s.stock_id,
-      price: s.selling_price ?? "",
-      sales_type_id: "",
       description: s.description ?? "",
-      mrp_price: s.mrp_price ?? "",
-      expiry_date: s.expiry_date ?? "",
       category: s.category_name ?? "",
       subcategory: s.subcategory_name ?? "",
       brand: s.brand_name ?? "",
       barcode: s.barcode ?? "",
+      purchase_cost: s.purchase_cost ?? "",
+      selling_price: s.selling_price ?? "",
+      mrp_price: s.mrp_price ?? "",
     }));
     const worksheet = XLSX.utils.json_to_sheet(sheetRows);
     worksheet["!cols"] = BULK_PRICE_COLUMN_WIDTHS;
@@ -817,11 +817,10 @@ function BulkPriceUpdateTab() {
       <CardContent>
         <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Bulk Price Update</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
-          Click <b>Download Current Products</b> to get every product already in the system with its real values
-          filled in, edit whichever cells need to change, then upload that same file back. Columns:
-          {" "}<b>stock_id</b> and <b>price</b> (required), plus optional <b>description</b>, <b>sales_type_id</b>,
-          {" "}<b>mrp_price</b>, <b>expiry_date</b>, <b>category</b>, <b>subcategory</b>, <b>brand</b> (typed by name,
-          {" "}not ID), and <b>barcode</b> — leave any of them blank to leave that field unchanged.
+          Click <b>Download Current Products</b> to get every product with its current values, edit whichever
+          cells need to change, then upload that same file back. Required: <b>stock_id</b> and <b>selling_price</b>.
+          Optional: <b>purchase_cost</b>, <b>mrp_price</b>, <b>description</b>, <b>category</b>, <b>subcategory</b>,
+          {" "}<b>brand</b>, <b>barcode</b> — leave blank to keep unchanged.
         </Typography>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center" sx={{ mb: 2 }}>
