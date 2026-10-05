@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StockMasterRequest;
 use App\Models\ItemCode;
-use App\Models\SalesPricing;
 use App\Models\StockMaster;
 use App\Repositories\All\StockMaster\StockMasterInterface;
 use Illuminate\Http\Request;
@@ -204,16 +203,6 @@ class StockMasterController extends Controller
     private function applyBulkAddExtras(string $stockId, array $row): void
     {
         try {
-            $sellingPrice = $row['selling_price'] ?? null;
-            if ($sellingPrice !== null && $sellingPrice !== '' && (float) $sellingPrice > 0) {
-                SalesPricing::create([
-                    'stock_id' => $stockId,
-                    'currency_id' => 8,
-                    'sales_type_id' => 3,
-                    'price' => (float) $sellingPrice,
-                ]);
-            }
-
             $barcode = trim((string) ($row['barcode'] ?? ''));
             if ($barcode !== '' && !ItemCode::where('item_code', $barcode)->exists()) {
                 $stock = StockMaster::find($stockId);
