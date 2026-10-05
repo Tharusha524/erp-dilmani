@@ -42,6 +42,15 @@
                     </tr>
                 @endforeach
             </tbody>
+            @if(!empty($totals))
+                <tfoot>
+                    <tr style="font-weight: bold; border-top: 1px solid #333;">
+                        @foreach($totals as $cell)
+                            <td>{{ $cell }}</td>
+                        @endforeach
+                    </tr>
+                </tfoot>
+            @endif
         </table>
     @elseif(empty($parameters))
         <div class="erp-empty">No transaction data matched the selected criteria.</div>

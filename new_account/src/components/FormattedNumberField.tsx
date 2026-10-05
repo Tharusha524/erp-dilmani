@@ -4,6 +4,8 @@ import { TextField, TextFieldProps } from "@mui/material";
 export interface FormattedNumberFieldProps
   extends Omit<TextFieldProps, "type"> {
   value?: number | string | undefined | null;
+  /** Force this many decimal places when not focused (opt-in — default keeps existing behavior). */
+  fixedDecimals?: number;
 }
 
 function formatWithCommas(raw: string): string {
@@ -24,13 +26,28 @@ export default function FormattedNumberField({
   onChange,
   onFocus,
   onBlur,
+  fixedDecimals,
   ...rest
 }: FormattedNumberFieldProps) {
   const [text, setText] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
-    setText(value === "" || value === null || value === undefined ? "" : formatWithCommas(String(value)));
-  }, [value]);
+    // Skip re-formatting while the user is actively typing — otherwise every
+    // keystroke round-trips through the parent's state and gets forced back
+    // into "X.00" shape mid-edit, making it impossible to type more digits.
+    if (isFocused) return;
+
+    if (value === "" || value === null || value === undefined) {
+      setText("");
+      return;
+    }
+    const num = Number(value);
+    const raw = fixedDecimals !== undefined && Number.isFinite(num)
+      ? num.toFixed(fixedDecimals)
+      : String(value);
+    setText(formatWithCommas(raw));
+  }, [value, fixedDecimals, isFocused]);
 
   return (
     <TextField
@@ -39,11 +56,18 @@ export default function FormattedNumberField({
       helperText={typeof rest.error === 'string' ? rest.error : rest.helperText}
       value={text}
       inputMode="decimal"
-      onFocus={onFocus}
+      onFocus={(e) => {
+        setIsFocused(true);
+        onFocus?.(e);
+      }}
       onBlur={(e) => {
+        setIsFocused(false);
         const raw = text.replace(/,/g, "");
         const num = Number(raw);
-        setText(Number.isFinite(num) ? formatWithCommas(String(num)) : "");
+        const formatted = fixedDecimals !== undefined && Number.isFinite(num)
+          ? num.toFixed(fixedDecimals)
+          : String(num);
+        setText(Number.isFinite(num) ? formatWithCommas(formatted) : "");
         onBlur?.(e);
       }}
       onChange={(e) => {

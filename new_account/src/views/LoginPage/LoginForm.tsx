@@ -17,8 +17,6 @@ import groupLogo from "../../assets/group-logo.png";
 import { useForm } from "react-hook-form";
 import CustomButton from "../../components/CustomButton";
 import LoginIcon from "@mui/icons-material/Login";
-import SettingsIcon from "@mui/icons-material/Settings";
-import { getApiBaseUrl, getStoredApiBaseUrl } from "../../config/backendConfig";
 import ForgotPasswordDialog from "./ForgotPasswordDialog";
 import { useSnackbar } from "notistack";
 import { useNavigate, useLocation } from "react-router";
@@ -53,9 +51,6 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [openForgotPasswordDialog, setOpenForgotPasswordDialog] =
     useState(false);
-
-  const apiBase = getApiBaseUrl();
-  const isCustomBackend = Boolean(getStoredApiBaseUrl());
 
   const {
     register,
@@ -255,22 +250,6 @@ function LoginForm() {
           >
             Forgot Password
           </CustomButton>
-        </Box>
-
-        <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid", borderColor: "divider" }}>
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-            API: {apiBase}
-            {isCustomBackend ? " (custom)" : " (default)"}
-          </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<SettingsIcon />}
-            onClick={() => navigate("/configure")}
-            fullWidth
-          >
-            Configure backend
-          </Button>
         </Box>
       </form>
       <ForgotPasswordDialog

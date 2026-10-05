@@ -62,6 +62,7 @@ import { customerCurrencyCode } from "../../../../utils/relationId";
 import { resolveSalesItemLinePrices } from "../../../../utils/resolveSalesItemPrice";
 import { useHomeCurrency } from "../../../../hooks/useHomeCurrency";
 import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
 import { useAuth } from "../../../../context/AuthContext";
 
@@ -82,6 +83,11 @@ export default function SalesOrderEntryQuotation() {
     const [payment, setPayment] = useState("");
     const [priceList, setPriceList] = useState("");
     const [orderDate, setOrderDate] = useState(new Date().toISOString().split("T")[0]);
+
+    // Saved as trans_type 30 (Sales Order) — see trans_type: 30 below.
+    const { reference: nextOrderReference } = useNextFiscalYearReference(30, {
+        asOfDate: orderDate,
+    });
     const [deliverFrom, setDeliverFrom] = useState("");
     const [cashAccount, setCashAccount] = useState("");
     const [comments, setComments] = useState("");
@@ -354,46 +360,15 @@ export default function SalesOrderEntryQuotation() {
         }
     }, [salesOrders]);
 
-    // Determine fiscal year and build next reference number for the fiscal year (for sales orders, trans_type = 30)
+    // Auto-generate reference based on fiscal year — uses the shared
+    // TransactionReferenceService (via useNextFiscalYearReference) so this follows
+    // the Sales Order type's configured Prefix/Pattern under Setup > Transaction
+    // References, instead of a hardcoded "NNN/year" format.
     useEffect(() => {
-        if (!orderDate || fiscalYears.length === 0) return;
-        const dateObj = new Date(orderDate);
-        if (isNaN(dateObj.getTime())) return;
-
-        const matching = fiscalYears.find((fy: any) => {
-            if (!fy.fiscal_year_from || !fy.fiscal_year_to) return false;
-            const from = new Date(fy.fiscal_year_from);
-            const to = new Date(fy.fiscal_year_to);
-            if (isNaN(from.getTime()) || isNaN(to.getTime())) return false;
-            return dateObj >= from && dateObj <= to; // inclusive
-        });
-
-        // If not found, choose the one whose from date is closest but not after the orderDate.
-        const chosen = matching || [...fiscalYears]
-            .filter((fy: any) => fy.fiscal_year_from && !isNaN(new Date(fy.fiscal_year_from).getTime()))
-            .sort((a: any, b: any) => new Date(b.fiscal_year_from).getTime() - new Date(a.fiscal_year_from).getTime())
-            .find((fy: any) => new Date(fy.fiscal_year_from) <= dateObj) || fiscalYears[0];
-
-        if (chosen) {
-            // Preferred label: explicit fiscal_year field if exists, else derive from from/to years.
-            const fromYear = chosen.fiscal_year_from ? new Date(chosen.fiscal_year_from).getFullYear() : dateObj.getFullYear();
-            const toYear = chosen.fiscal_year_to ? new Date(chosen.fiscal_year_to).getFullYear() : fromYear;
-            const yearLabel = chosen.fiscal_year || (fromYear === toYear ? fromYear : `${fromYear}-${toYear}`);
-
-            // Find existing references for this fiscal year and for sales orders only (trans_type = 30)
-            const relevantRefs = salesOrders.filter((o: any) =>
-                Number(o.trans_type) === 30 && o.reference && o.reference.endsWith(`/${yearLabel}`)
-            );
-            const numbers = relevantRefs.map((o: any) => {
-                const match = o.reference.match(/^(\d{3})\/.+$/);
-                return match ? parseInt(match[1], 10) : 0;
-            });
-            const maxNum = numbers.length > 0 ? Math.max(...numbers) : 0;
-            const nextNum = maxNum + 1;
-            const nextRef = `${nextNum.toString().padStart(3, '0')}/${yearLabel}`;
-            setReference(nextRef);
+        if (nextOrderReference) {
+            setReference(nextOrderReference);
         }
-    }, [orderDate, fiscalYears, salesOrders]);
+    }, [nextOrderReference]);
 
     // Handle quotation data if coming from quotation success
     useEffect(() => {

@@ -42,6 +42,7 @@ import { findFaItemByStockId } from "../../../../utils/fixedAssetsScreenCopy";
 import theme from "../../../../theme";
 import { postFaSale } from "../../../../api/FixedAssets/FaTransactionApi";
 import { useSnackbar } from "notistack";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 import { useCustomerCredit } from "../../../../hooks/useCustomerCredit";
 import CustomerCreditSummaryFields from "../../../../components/CustomerCreditSummaryFields";
 import { relationId, bankAccountLabel, sortCashBankAccounts } from "../../../../utils/cashBankAccount";
@@ -100,6 +101,13 @@ export default function FixedAssetsSale() {
     const [payment, setPayment] = useState("");
     const [priceList, setPriceList] = useState("");
     const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split("T")[0]);
+
+    // A fixed asset sale posts as a Sales Invoice (trans_type 10) under the hood
+    // (see trans_type: res?.invoice_trans_type ?? 10 below), so it shares that
+    // type's reference sequence via the shared TransactionReferenceService.
+    const { reference: nextSaleReference } = useNextFiscalYearReference(10, {
+        asOfDate: invoiceDate,
+    });
     const [deliverFrom, setDeliverFrom] = useState("");
     const [cashAccount, setCashAccount] = useState("");
     const [comments, setComments] = useState("");
@@ -233,14 +241,15 @@ export default function FixedAssetsSale() {
         }
     };
 
-    // ===== Auto-generate reference =====
+    // ===== Auto-generate reference based on fiscal year =====
+    // Uses the shared TransactionReferenceService (via useNextFiscalYearReference) so
+    // this follows the Sales Invoice type's configured Prefix/Pattern under
+    // Setup > Transaction References, instead of a random placeholder number.
     useEffect(() => {
-        const year = new Date().getFullYear();
-        const random = Math.floor(Math.random() * 1000)
-            .toString()
-            .padStart(3, "0");
-        setReference(`${random}/${year}`);
-    }, []);
+        if (nextSaleReference) {
+            setReference(nextSaleReference);
+        }
+    }, [nextSaleReference]);
 
     // Default branch when customer changes
     useEffect(() => {

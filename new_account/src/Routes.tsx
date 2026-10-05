@@ -29,6 +29,7 @@ import BankingTransactions from "./views/BankindAndGeneralLedger/Transactions/Ba
 import BankingInquiriesAndReports from "./views/BankindAndGeneralLedger/InquiriesAndReports/BankingInquiriesAndReports";
 import BankingMaintenance from "./views/BankindAndGeneralLedger/Maintenance/BankingMaintenance";
 import SetupMaintenance from "./views/Setup/Maintenance/SetupMaintenance";
+import SlideshowImagesTable from "./views/Setup/Maintenance/SlideshowImages/SlideshowImagesTable";
 import Dashboard from "./views/Dashboard/Dashboard";
 import SupermarketHub from "./views/Supermarket/SupermarketHub";
 import SalesAnalyticsPage from "./views/Supermarket/SalesAnalytics/SalesAnalyticsPage";
@@ -295,7 +296,7 @@ import CustomerPaymentsSuccess from "./views/Sales/Transactions/CustomerPayments
 import ViewCustomerPayments from "./views/Sales/Transactions/CustomerPayments/ViewCustomerPayments";
 import CustomerCreditNotesSuccess from "./views/Sales/Transactions/CustomerCreditNotes/CustomerCreditNotesSuccess";
 import ViewCustomerCreditNotes from "./views/Sales/Transactions/CustomerCreditNotes/ViewCustomerCreditNotes";
-import ViewDirectInvoice from "./views/Sales/Transactions/DirectInvoice/viewDirectInvoice";
+import ViewDirectInvoice from "./views/Sales/Transactions/DirectInvoice/ViewDirectInvoice";
 import ViewSalesGLJournalEntries from "./views/Sales/Transactions/GLJournalEntries/ViewSalesGLJournalEntries";
 import ViewPurchasesGLJournalEntries from "./views/Purchases/Transactions/GLJournalEntries/ViewPurchasesGLJournalEntries";
 import ViewInventoryGLJournalEntries from "./views/ItemsAndInventory/Transactions/GLJournalEntries/ViewInventoryGLJournalEntries";
@@ -1206,6 +1207,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute required={PERMISSION_ID_MAP['User login activity page']}>
                 {withLayout(MainLayout, UserLoginLogs)}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="maintenance/slideshow-images"
+            element={
+              <ProtectedRoute required={PERMISSION_ID_MAP['Login slideshow images']}>
+                {withLayout(MainLayout, SlideshowImagesTable)}
               </ProtectedRoute>
             }
           />
@@ -2449,7 +2458,15 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/transactions/gl-journal-entries"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            // "Inventory Operations" has no checkbox in Access Setup and can
+            // never be granted on its own — accept the permission of the
+            // page that actually links here (Inventory Adjustments) too.
+            <ProtectedRoute
+              required={[
+                PERMISSION_ID_MAP['Inventory adjustments'],
+                PERMISSION_ID_MAP['Inventory Operations'],
+              ]}
+            >
               {withLayout(MainLayout, ViewInventoryGLJournalEntries)}
             </ProtectedRoute>
           }
@@ -2610,7 +2627,18 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/maintenance/items/transactions/view-adjustment"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            // "Inventory Operations" has no checkbox in Access Setup and can
+            // never be granted on its own — accept the permissions of the
+            // pages that actually link here (Stock Transactions view,
+            // Inventory Item Movements, Inventory Adjustments) too.
+            <ProtectedRoute
+              required={[
+                PERMISSION_ID_MAP['Stock transactions view'],
+                PERMISSION_ID_MAP['Items analytical reports and inquiries'],
+                PERMISSION_ID_MAP['Inventory adjustments'],
+                PERMISSION_ID_MAP['Inventory Operations'],
+              ]}
+            >
               {withLayout(MainLayout, ItemAdjustmentDetails)}
             </ProtectedRoute>
           }
@@ -3400,7 +3428,19 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/gl-postings"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute
+              // Accept any permission of a page that can link here (Payments,
+              // Deposits, Journal Inquiry, Bank Account Inquiry), since
+              // "Banking & GL Transactions" itself has no checkbox in Access
+              // Setup and can never be granted on its own.
+              required={[
+                PERMISSION_ID_MAP['Bank payments'],
+                PERMISSION_ID_MAP['Bank deposits'],
+                PERMISSION_ID_MAP['GL analytical reports and inquiries'],
+                PERMISSION_ID_MAP['Bank reports and inquiries'],
+                PERMISSION_ID_MAP['Banking & GL Transactions'],
+              ]}
+            >
               {withLayout(MainLayout, GLPostings)}
             </ProtectedRoute>
           }

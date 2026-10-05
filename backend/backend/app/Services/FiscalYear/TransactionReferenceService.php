@@ -26,6 +26,12 @@ class TransactionReferenceService
         $suffix = ActiveFiscalYear::referenceSuffix($range['fiscal_year_from'], $range['fiscal_year_to']);
         $autoIncrease = CompanySetupSettings::autoIncreaseDocumentReferences();
 
+        $refLine = Schema::hasTable('reflines')
+            ? DB::table('reflines')->where('trans_type', $transType)->where('inactive', 0)->orderByDesc('default')->first()
+            : null;
+        $prefix = $refLine->prefix ?? '';
+        $pattern = $refLine->pattern ?? '{001}/{YYYY}';
+
         if (! $autoIncrease) {
             return [
                 'reference' => null,
@@ -40,22 +46,28 @@ class TransactionReferenceService
             ];
         }
 
+        // A pattern with {MM} resets the sequence every month — only count
+        // references from the current month, not the whole fiscal year.
+        $date = $asOfDate ? \Carbon\Carbon::parse($asOfDate) : \Carbon\Carbon::now();
+        $countFrom = str_contains($pattern, '{MM}') ? $date->copy()->startOfMonth()->toDateString() : $range['fiscal_year_from'];
+        $countTo = str_contains($pattern, '{MM}') ? $date->copy()->endOfMonth()->toDateString() : $range['fiscal_year_to'];
+
         $references = $this->collectReferences(
             $transType,
-            $range['fiscal_year_from'],
-            $range['fiscal_year_to']
+            $countFrom,
+            $countTo
         );
 
         $maxSequence = 0;
         foreach ($references as $reference) {
-            $sequence = $this->parseSequence($reference, $suffix);
+            $sequence = $this->parseSequenceFromPattern($reference, $prefix, $pattern);
             if ($sequence > $maxSequence) {
                 $maxSequence = $sequence;
             }
         }
 
         $nextSequence = $maxSequence + 1;
-        $reference = str_pad((string) $nextSequence, 3, '0', STR_PAD_LEFT).'/'.$suffix;
+        $reference = $this->formatReference($prefix, $pattern, $nextSequence, $range, $asOfDate);
 
         return [
             'reference' => $reference,
@@ -68,6 +80,61 @@ class TransactionReferenceService
             'auto_increase_of_document_references' => true,
             'manual_entry_required' => false,
         ];
+    }
+
+    /** Turn a reflines pattern like "{001}/{MM}/{YY}" into an actual reference string. */
+    private function formatReference(string $prefix, string $pattern, int $sequence, array $range, ?string $asOfDate): string
+    {
+        $date = $asOfDate ? \Carbon\Carbon::parse($asOfDate) : \Carbon\Carbon::now();
+        $fromYear = (string) \Carbon\Carbon::parse($range['fiscal_year_from'])->year;
+        $toYear = (string) \Carbon\Carbon::parse($range['fiscal_year_to'])->year;
+        $yyyySeen = 0;
+
+        return preg_replace_callback('/\{(0*\d*|MM|YY|YYYY)\}/', function ($m) use ($sequence, $date, $fromYear, $toYear, &$yyyySeen) {
+            $token = $m[1];
+
+            return match (true) {
+                $token === 'MM' => $date->format('m'),
+                $token === 'YY' => $date->format('y'),
+                // First {YYYY} in the pattern is the fiscal year's start year, a
+                // second one (e.g. "{YYYY}-{YYYY}") is the fiscal year's end year.
+                $token === 'YYYY' => $yyyySeen++ === 0 ? $fromYear : $toYear,
+                default => str_pad((string) $sequence, max(strlen($token), 1), '0', STR_PAD_LEFT),
+            };
+        }, $prefix.$pattern);
+    }
+
+    /** Extract the sequence number out of an existing reference built from this same pattern. */
+    private function parseSequenceFromPattern(string $reference, string $prefix, string $pattern): int
+    {
+        $template = $prefix.$pattern;
+        $sequenceTokenSeen = false;
+
+        // Quote everything except our {...} tokens, then swap the numeric token for a
+        // capturing group and the date tokens for non-capturing wildcards of the right width.
+        $regex = preg_replace_callback('/\{(0*\d*|MM|YY|YYYY)\}|[^{]+/', function ($m) use (&$sequenceTokenSeen) {
+            if (! isset($m[1])) {
+                return preg_quote($m[0], '/');
+            }
+            $token = $m[1];
+
+            return match (true) {
+                $token === 'MM' => '\d{2}',
+                $token === 'YY' => '\d{2}',
+                $token === 'YYYY' => '\d{4}',
+                default => (function () use (&$sequenceTokenSeen) {
+                    $sequenceTokenSeen = true;
+
+                    return '(\d+)';
+                })(),
+            };
+        }, $template);
+
+        if (! $sequenceTokenSeen || ! preg_match('/^'.$regex.'$/', trim($reference), $matches)) {
+            return 0;
+        }
+
+        return max(0, (int) ($matches[1] ?? 0));
     }
 
     /**

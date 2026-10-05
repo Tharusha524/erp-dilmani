@@ -4,6 +4,7 @@ namespace App\Services\Banking;
 
 use App\Support\CompanySetupSettings;
 use App\Support\AuditTrailRecorder;
+use App\Support\CustomerExchangeRate;
 use App\Support\GlTransHelper;
 use App\Support\JournalEntryDisplay;
 use App\Support\ChartAccountTypeResolver;
@@ -1294,6 +1295,13 @@ class BankingTransactionService
                 continue;
             }
 
+            // $amount is in home currency (gl_trans debit/credit). debtor_trans stores
+            // the customer's own currency, so convert using their exchange rate —
+            // otherwise a foreign-currency customer's opening balance shows the raw
+            // home-currency figure mislabeled as their currency.
+            $rate = CustomerExchangeRate::forDebtor($debtorNo, $date);
+            $ovAmount = $rate > 0.000001 ? $amount / $rate : $amount;
+
             DB::table('debtor_trans')->insert([
                 'trans_no' => $transNo,
                 'trans_type' => self::TYPE_JOURNAL,
@@ -1302,9 +1310,9 @@ class BankingTransactionService
                 'tran_date' => $date,
                 'due_date' => $date,
                 'reference' => $reference,
-                'ov_amount' => round($amount, 2),
+                'ov_amount' => round($ovAmount, 2),
                 'alloc' => 0,
-                'rate' => 1,
+                'rate' => $rate,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

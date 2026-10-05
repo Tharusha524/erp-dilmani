@@ -123,7 +123,11 @@ export async function registerUser({
 }
 
 export async function validateUser(): Promise<User> {
-  const res = await api.get("/user");
+  // This runs silently on every page load (including the login page itself)
+  // to check for an existing session. A 401 here just means "not logged in
+  // yet" — AuthContext already handles it by clearing the stale token, so
+  // don't also pop the global "Unauthenticated." error dialog for it.
+  const res = await api.get("/user", { skipErrorDialog: true } as any);
   return res.data;
 }
 

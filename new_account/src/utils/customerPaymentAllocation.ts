@@ -78,7 +78,8 @@ export function buildCustomerPaymentAllocationRows(
   }
 
   for (const dt of debtorTrans || []) {
-    if (Number(dt.trans_type) !== 10) continue;
+    const transType = Number(dt.trans_type);
+    if (transType !== 10 && transType !== 0) continue;
     if (String(dt.debtor_no) !== String(customerId)) continue;
 
     const total = debtorTransNetTotal(dt);
@@ -86,7 +87,7 @@ export function buildCustomerPaymentAllocationRows(
     if (left <= 0.001) continue;
 
     rows.push({
-      transactionType: "Sales Invoice",
+      transactionType: transType === 0 ? "Journal Entry" : "Sales Invoice",
       number: Number(dt.trans_no),
       ref: dt.reference || "",
       date: dt.tran_date || depositDate,
@@ -95,7 +96,7 @@ export function buildCustomerPaymentAllocationRows(
       otherAllocations: Number(dt.alloc ?? 0),
       leftToAllocate: left,
       thisAllocation: 0,
-      transType: 10,
+      transType: transType,
       all: "All",
       none: "None",
     });

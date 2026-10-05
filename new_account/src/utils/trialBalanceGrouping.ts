@@ -23,7 +23,14 @@ const TYPE_CLASS_HINTS: Record<number, string[]> = {
 };
 
 function normalizeId(value: unknown): string {
-  return String(value ?? "").trim();
+  const trimmed = String(value ?? "").trim();
+  // Chart type/class IDs are sometimes stored zero-padded ("03") while the
+  // account's own type value comes through as a plain number ("3") — strip
+  // leading zeros so both sides compare equal instead of silently missing.
+  if (trimmed !== "" && /^\d+$/.test(trimmed)) {
+    return String(Number(trimmed));
+  }
+  return trimmed;
 }
 
 function findChartClass(

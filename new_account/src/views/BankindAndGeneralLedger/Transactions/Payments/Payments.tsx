@@ -441,6 +441,9 @@ export default function Payments() {
               value={date}
               onChange={(e) => handleDateChange(e.target.value)}
               InputLabelProps={{ shrink: true }}
+              // Native date input's displayed format follows this element's
+              // locale — en-GB shows DD/MM/YYYY instead of the default MM/DD/YYYY.
+              inputProps={{ lang: "en-GB" }}
               error={!!dateError}
               helperText={dateError}
             />

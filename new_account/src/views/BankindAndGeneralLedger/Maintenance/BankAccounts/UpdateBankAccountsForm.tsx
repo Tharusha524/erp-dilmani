@@ -142,6 +142,13 @@ export default function UpdateBankAccountsForm() {
     setErrors({ ...errors, [name]: "" });
   };
 
+  // "Cash"-style accounts (Petty Cash / Cash In Hand) don't have real bank
+  // details, so Bank Name/Account Number/Address are hidden and not required
+  // for them. Matched by name (not a hardcoded id) so it still works
+  // regardless of how a given company's account_types table is set up.
+  const selectedAccountType = accountTypes.find((t: any) => String(t.id) === String(formData.account_type));
+  const isCashAccountType = (selectedAccountType?.type_name || "").toLowerCase().includes("cash");
+
   const validate = () => {
     const newErrors: Partial<BankAccountsFormData> = {};
     if (!formData.bank_account_name) newErrors.bank_account_name = "Bank account name is required";
@@ -149,9 +156,11 @@ export default function UpdateBankAccountsForm() {
     if (!formData.bank_curr_code) newErrors.bank_curr_code = "Select account currency";
     if (!formData.account_gl_code) newErrors.account_gl_code = "Select bank account GL code";
     if (!formData.bank_charges_act) newErrors.bank_charges_act = "Select bank charges account";
-    if (!formData.bank_name) newErrors.bank_name = "Bank name is required";
-    if (!formData.bank_account_number) newErrors.bank_account_number = "Bank account number is required";
-    if (!formData.bank_address) newErrors.bank_address = "Bank address is required";
+    if (!isCashAccountType) {
+      if (!formData.bank_name) newErrors.bank_name = "Bank name is required";
+      if (!formData.bank_account_number) newErrors.bank_account_number = "Bank account number is required";
+      if (!formData.bank_address) newErrors.bank_address = "Bank address is required";
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -276,40 +285,44 @@ export default function UpdateBankAccountsForm() {
             <FormHelperText>{errors.bank_charges_act || " "}</FormHelperText>
           </FormControl>
 
-          <TextField
-            label="Bank Name"
-            name="bank_name"
-            size="small"
-            fullWidth
-            value={formData.bank_name}
-            onChange={handleInputChange}
-            error={!!errors.bank_name}
-            helperText={errors.bank_name || " "}
-          />
+          {!isCashAccountType && (
+            <>
+              <TextField
+                label="Bank Name"
+                name="bank_name"
+                size="small"
+                fullWidth
+                value={formData.bank_name}
+                onChange={handleInputChange}
+                error={!!errors.bank_name}
+                helperText={errors.bank_name || " "}
+              />
 
-          <TextField
-            label="Bank Account Number"
-            name="bank_account_number"
-            size="small"
-            fullWidth
-            value={formData.bank_account_number}
-            onChange={handleInputChange}
-            error={!!errors.bank_account_number}
-            helperText={errors.bank_account_number || " "}
-          />
+              <TextField
+                label="Bank Account Number"
+                name="bank_account_number"
+                size="small"
+                fullWidth
+                value={formData.bank_account_number}
+                onChange={handleInputChange}
+                error={!!errors.bank_account_number}
+                helperText={errors.bank_account_number || " "}
+              />
 
-          <TextField
-            label="Bank Address"
-            name="bank_address"
-            size="small"
-            fullWidth
-            multiline
-            rows={2}
-            value={formData.bank_address}
-            onChange={handleInputChange}
-            error={!!errors.bank_address}
-            helperText={errors.bank_address || " "}
-          />
+              <TextField
+                label="Bank Address"
+                name="bank_address"
+                size="small"
+                fullWidth
+                multiline
+                rows={2}
+                value={formData.bank_address}
+                onChange={handleInputChange}
+                error={!!errors.bank_address}
+                helperText={errors.bank_address || " "}
+              />
+            </>
+          )}
         </Stack>
 
         <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3, flexDirection: isMobile ? "column" : "row", gap: isMobile ? 2 : 0 }}>

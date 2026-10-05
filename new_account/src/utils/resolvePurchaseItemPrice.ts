@@ -16,7 +16,7 @@ export async function resolvePurchaseItemPrice(
   }
 
   try {
-    const purch = await getPurchDataById(supplierId, stockId);
+    const purch = await getPurchDataById(supplierId, stockId, { skipErrorDialog: true });
     if (purch?.price != null && Number.isFinite(Number(purch.price))) {
       return { price: Number(purch.price), material_cost: materialCost };
     }

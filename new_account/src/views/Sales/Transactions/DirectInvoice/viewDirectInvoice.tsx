@@ -255,8 +255,7 @@ export default function ViewDirectInvoice() {
       (c: any) => String(c.debtor_no) === String(debtorNo)
     );
     if (found) {
-      const address = found.address ? ` - ${found.address}` : '';
-      return `${found.name}${address}`;
+      return found.name;
     }
     return debtorNo;
   }, [customers, debtorNo]);

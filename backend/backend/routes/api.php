@@ -198,7 +198,19 @@ Route::get('/user', function (Request $request) {
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
+// Public — the login/signup page itself isn't authenticated yet.
+Route::get('login-slideshow-images', [\App\Http\Controllers\LoginSlideshowImageController::class, 'index']);
+
+// Public — serves files from the "public" storage disk directly, working
+// the same locally and on hosting regardless of whether the storage:link
+// symlink exists (see StorageFileController for why).
+Route::get('storage-file/{path}', [\App\Http\Controllers\StorageFileController::class, 'show'])
+    ->where('path', '.*');
+
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('login-slideshow-images', [\App\Http\Controllers\LoginSlideshowImageController::class, 'store']);
+    Route::delete('login-slideshow-images/{id}', [\App\Http\Controllers\LoginSlideshowImageController::class, 'destroy']);
+    Route::post('login-slideshow-images/reorder', [\App\Http\Controllers\LoginSlideshowImageController::class, 'reorder']);
     Route::get('ai-agent/status', [\App\Http\Controllers\AiAgentController::class, 'status']);
     Route::post('ai-agent/chat', [\App\Http\Controllers\AiAgentController::class, 'chat']);
     Route::post('ai-agent/transcribe', [\App\Http\Controllers\AiAgentController::class, 'transcribe']);
@@ -674,6 +686,7 @@ Route::post('sys-prefs/bulk', [\App\Http\Controllers\SysPrefsController::class, 
 Route::apiResource('sys-prefs', \App\Http\Controllers\SysPrefsController::class);
 
 Route::post('/reports/generate', [\App\Http\Controllers\ReportController::class, 'generate']);
+Route::post('/reports/generate-excel', [\App\Http\Controllers\ReportController::class, 'generateExcel']);
 Route::post('/reports/monthly-sales-summary', [\App\Http\Controllers\ReportController::class, 'monthlySalesSummary']);
 Route::post('/reports/customer-balances', [\App\Http\Controllers\ReportController::class, 'customerBalances']);
 Route::post('/reports/aged-customer-analysis', [\App\Http\Controllers\ReportController::class, 'agedCustomerAnalysis']);

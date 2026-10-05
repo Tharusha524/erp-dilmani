@@ -6,6 +6,7 @@ import { getDesignTokens } from "./theme.ts";
 import { SnackbarProvider } from "notistack";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFnsV3";
+import { enGB } from "date-fns/locale";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { OrganizationHeadSetter } from "../src/utils/index.html";
 import queryClient from "./state/queryClient.ts";
@@ -79,7 +80,7 @@ const InnerApp = () => {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={enGB}>
         <ThemeContextProvider>
           <InnerApp />
         </ThemeContextProvider>

@@ -33,6 +33,10 @@ export interface GLJournalEntriesPageProps {
   transTypeLabel?: string;
   orderNo?: number | string | null;
   orderNoLabel?: string;
+  counterparty?: string;
+  glNumber?: number | string | null;
+  comments?: string;
+  dimensionLabel?: string;
   groups: GlTransactionGroup[];
   emptyMessage?: string;
   isLoading?: boolean;
@@ -61,6 +65,10 @@ export default function GLJournalEntriesPage({
   transTypeLabel,
   orderNo,
   orderNoLabel = "Order #",
+  counterparty,
+  glNumber,
+  comments,
+  dimensionLabel,
   groups,
   emptyMessage,
   isLoading = false,
@@ -146,6 +154,24 @@ export default function GLJournalEntriesPage({
                     <TableCell>{String(orderNo)}</TableCell>
                   </TableRow>
                 )}
+                {counterparty && (
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Counterparty</TableCell>
+                    <TableCell>{counterparty}</TableCell>
+                  </TableRow>
+                )}
+                {glNumber != null && glNumber !== "" && (
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>GL #</TableCell>
+                    <TableCell>{String(glNumber)}</TableCell>
+                  </TableRow>
+                )}
+                {comments && (
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600 }}>Comments</TableCell>
+                    <TableCell>{comments}</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </TableContainer>
@@ -220,6 +246,7 @@ export default function GLJournalEntriesPage({
                     <TableCell>Transaction</TableCell>
                     <TableCell>Account Code</TableCell>
                     <TableCell>Account Name</TableCell>
+                    {dimensionLabel && <TableCell>Dimension</TableCell>}
                     <TableCell align="right">Debit</TableCell>
                     <TableCell align="right">Credit</TableCell>
                     <TableCell>Memo</TableCell>
@@ -232,6 +259,7 @@ export default function GLJournalEntriesPage({
                       <TableCell>{entry.transaction}</TableCell>
                       <TableCell>{entry.accountCode}</TableCell>
                       <TableCell>{entry.accountName}</TableCell>
+                      {dimensionLabel && <TableCell>{dimensionLabel}</TableCell>}
                       <TableCell align="right">
                         {formatJournalColumnAmount(entry.debit)}
                       </TableCell>

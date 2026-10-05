@@ -45,6 +45,7 @@ import auditTrailApi from "../../../../api/AuditTrail/AuditTrailApi";
 import { getFiscalYears } from "../../../../api/FiscalYear/FiscalYearApi";
 import { getCompanies } from "../../../../api/CompanySetup/CompanySetupApi";
 import useCurrentUser from "../../../../hooks/useCurrentUser";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
@@ -79,6 +80,11 @@ export default function CreditInvoice() {
 
     const [originalTransNo, setOriginalTransNo] = useState<string | null>(null);
     const [dateError, setDateError] = useState("");
+
+    // trans_type 11 = Customer Credit Note
+    const { reference: nextCreditNoteReference } = useNextFiscalYearReference(11, {
+        asOfDate: creditNoteDate,
+    });
 
     // ===== Fetch master data =====
     const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: getCustomers });
@@ -227,29 +233,15 @@ export default function CreditInvoice() {
         );
     };
 
-    // ===== Auto-generate reference =====
+    // ===== Auto-generate reference based on fiscal year =====
+    // Uses the shared TransactionReferenceService (via useNextFiscalYearReference) so
+    // this follows the Customer Credit Note type's configured Prefix/Pattern under
+    // Setup > Transaction References, instead of a hardcoded "NNN/year" format.
     useEffect(() => {
-        const fiscalYear = new Date().getFullYear();
-        if (debtorTrans.length === 0) {
-            setReference(`001/${fiscalYear}`);
-            return;
+        if (nextCreditNoteReference) {
+            setReference(nextCreditNoteReference);
         }
-        const refsForType = debtorTrans
-            .filter((d: any) => d.trans_type === 11)
-            .map((d: any) => d.reference)
-            .filter((ref: string) => ref && typeof ref === 'string');
-        const numbers = refsForType.map((ref: string) => {
-            const parts = ref.split('/');
-            if (parts.length === 2 && parts[1] === fiscalYear.toString()) {
-                const num = parseInt(parts[0], 10);
-                return isNaN(num) ? 0 : num;
-            }
-            return 0;
-        });
-        const maxNum = Math.max(...numbers, 0);
-        const nextNum = maxNum + 1;
-        setReference(`${nextNum.toString().padStart(3, '0')}/${fiscalYear}`);
-    }, [debtorTrans]);
+    }, [nextCreditNoteReference]);
 
     // Set branch from debtorTrans if not set
     useEffect(() => {

@@ -24,6 +24,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getBankAccounts } from "../../../../api/BankAccount/BankAccountApi";
+import { getAccountTypes } from "../../../../api/BankAccount/AccountTypesApi";
 import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
@@ -67,10 +68,22 @@ export default function BankAccountInquiry() {
     queryKey: ["bankAccounts"],
     queryFn: getBankAccounts,
   });
+  const { data: accountTypes = [] } = useQuery({
+    queryKey: ["accountTypes"],
+    queryFn: getAccountTypes,
+  });
 
   const [selectedAccount, setSelectedAccount] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+
+  // "Cash"-style accounts (Petty Cash / Cash In Hand) show "Cash book
+  // balance" instead of "Bank book balance" — matched by name, not a
+  // hardcoded id, so it works regardless of a company's account_types setup.
+  const selectedBankAccount = (bankAccounts as any[]).find((acc: any) => String(acc.id) === String(selectedAccount));
+  const selectedAccountType = (accountTypes as any[]).find((t: any) => String(t.id) === String(selectedBankAccount?.account_type));
+  const isCashAccount = (selectedAccountType?.type_name || "").toLowerCase().includes("cash");
+  const today = new Date().toISOString().split("T")[0];
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
 
   const formatMoney = (n: number) =>
     Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -213,7 +226,7 @@ export default function BankAccountInquiry() {
 
         {summary && (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Current book balance (all dates): <strong>{formatMoney(summary.book_balance)}</strong>
+            {isCashAccount ? "Cash book balance" : "Bank book balance"} (all dates): <strong>{formatMoney(summary.book_balance)}</strong>
           </Typography>
         )}
       </Paper>
@@ -281,7 +294,32 @@ export default function BankAccountInquiry() {
                   </Button>
                 </TableCell>
                 <TableCell align="center">
-                  <Button variant="outlined" size="small" onClick={() => console.log("Edit", r.number)}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => {
+                      const transNo = Number(r.transNo ?? r.number);
+                      const transType =
+                        r.transType !== undefined && !Number.isNaN(Number(r.transType))
+                          ? Number(r.transType)
+                          : undefined;
+
+                      // Only Journal Entry (0) and Bank Payment (1) support
+                      // editing today — Bank Deposit and Funds Transfer have
+                      // no edit screen/API yet.
+                      if (transType === 0) {
+                        navigate("/bankingandgeneralledger/transactions/journal-entry", {
+                          state: { trans_no: transNo },
+                        });
+                      } else if (transType === 1) {
+                        navigate("/bankingandgeneralledger/transactions/payments", {
+                          state: { trans_no: transNo },
+                        });
+                      } else {
+                        notify.info(`Editing "${r.type}" transactions isn't supported yet.`);
+                      }
+                    }}
+                  >
                     Edit
                   </Button>
                 </TableCell>
