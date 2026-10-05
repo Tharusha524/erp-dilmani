@@ -35,6 +35,7 @@ import { getApplicableOffers } from "../../../api/Loyalty/loyaltyApi";
 import { lookupBarcode, getLowStock, getPosShifts } from "../../../api/Pos/posApi";
 import { getStockList } from "../../../api/Inventory/StockListApi";
 import { getSalesPricingByStockId } from "../../../api/SalesPricing/SalesPricingApi";
+import { getPromotionalPrices } from "../../../api/PromotionalPrice/PromotionalPriceApi";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
@@ -565,6 +566,27 @@ export default function PosCheckoutPage() {
     });
   };
 
+  const resolveSellingPrice = async (stockId: string): Promise<number | undefined> => {
+    try {
+      const promos = await getPromotionalPrices({ stock_id: stockId, active_only: true });
+      const today = new Date().toISOString().slice(0, 10);
+      const activePromo = (Array.isArray(promos) ? promos : []).find((p: any) =>
+        p.active && p.start_date <= today && p.end_date >= today
+      );
+      if (activePromo) return Number(activePromo.promo_price);
+    } catch { /* fall through */ }
+    try {
+      const pricing = await getSalesPricingByStockId(stockId);
+      // eslint-disable-next-line eqeqeq
+      const rows = (Array.isArray(pricing) ? pricing : []).filter((p: any) => p.currency_id == 8);
+      // eslint-disable-next-line eqeqeq
+      return (customerSalesTypeId && rows.find((p: any) => p.sales_type_id == customerSalesTypeId)?.price)
+        // eslint-disable-next-line eqeqeq
+        ?? rows.find((p: any) => p.sales_type_id == 3)?.price;
+    } catch { /* fall through */ }
+    return undefined;
+  };
+
   const addToCart = async () => {
     if (!selectedItem) return;
     const stockQty = stockQtyByStockId.get(String(selectedItem.stock_id)) ?? 0;
@@ -584,20 +606,8 @@ export default function PosCheckoutPage() {
     // a usable price.
     let salePrice: number | undefined = selectedItem.sale_price;
     if (!isOffline) {
-      try {
-        const pricing = await getSalesPricingByStockId(selectedItem.stock_id);
-        // eslint-disable-next-line eqeqeq
-        const rows = (Array.isArray(pricing) ? pricing : []).filter((p: any) => p.currency_id == 8);
-        // Charge the customer's own price list (e.g. Wholesale) when they
-        // have one and this product has a price under it — otherwise fall
-        // back to Retail (sales_type_id 3), same as before this existed.
-        // eslint-disable-next-line eqeqeq
-        salePrice = (customerSalesTypeId && rows.find((p: any) => p.sales_type_id == customerSalesTypeId)?.price)
-          // eslint-disable-next-line eqeqeq
-          ?? rows.find((p: any) => p.sales_type_id == 3)?.price;
-      } catch {
-        // Non-fatal — falls back to purchase_cost below, same as before this existed.
-      }
+      const resolved = await resolveSellingPrice(String(selectedItem.stock_id));
+      if (resolved !== undefined) salePrice = resolved;
     }
     // The cashier can override the Selling Price shown after picking the
     // item — only honor that override if they actually typed into it,
@@ -1469,13 +1479,7 @@ export default function PosCheckoutPage() {
                   setManualDiscountInput("");
                   setManualDiscountMode2("percent");
                   if (val && !isOffline) {
-                    getSalesPricingByStockId(val.stock_id).then((pricing: any) => {
-                      // eslint-disable-next-line eqeqeq
-                      const rows = (Array.isArray(pricing) ? pricing : []).filter((p: any) => p.currency_id == 8);
-                      // eslint-disable-next-line eqeqeq
-                      const sp = (customerSalesTypeId && rows.find((p: any) => p.sales_type_id == customerSalesTypeId)?.price)
-                        // eslint-disable-next-line eqeqeq
-                        ?? rows.find((p: any) => p.sales_type_id == 3)?.price;
+                    resolveSellingPrice(String(val.stock_id)).then((sp) => {
                       if (sp != null) {
                         setManualSellingPrice(String(Number(sp)));
                         setManualSellingPriceTouched(false);
@@ -1856,13 +1860,7 @@ export default function PosCheckoutPage() {
                       setManualDiscountInput("");
                       setManualDiscountMode2("percent");
                       if (val && !isOffline) {
-                        getSalesPricingByStockId(val.stock_id).then((pricing: any) => {
-                          // eslint-disable-next-line eqeqeq
-                          const rows = (Array.isArray(pricing) ? pricing : []).filter((p: any) => p.currency_id == 8);
-                          // eslint-disable-next-line eqeqeq
-                          const sp = (customerSalesTypeId && rows.find((p: any) => p.sales_type_id == customerSalesTypeId)?.price)
-                            // eslint-disable-next-line eqeqeq
-                            ?? rows.find((p: any) => p.sales_type_id == 3)?.price;
+                        resolveSellingPrice(String(val.stock_id)).then((sp) => {
                           if (sp != null) {
                             setManualSellingPrice(String(Number(sp)));
                             setManualSellingPriceTouched(false);
