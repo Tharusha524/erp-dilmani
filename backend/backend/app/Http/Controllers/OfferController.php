@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Offer;
 use App\Models\OfferRedemption;
 use App\Models\LoyaltyCard;
+use App\Models\DebtorsMaster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -20,7 +21,7 @@ class OfferController extends Controller
         $data = $request->validate([
             'offer_name' => 'required|string|max:150',
             'coupon_code' => 'nullable|string|max:50|unique:offers,coupon_code',
-            'offer_type' => 'required|in:product,category,tier,customer',
+            'offer_type' => 'required|in:product,category,tier,customer,birthday',
             'target_id' => 'nullable|string',
             'discount_type' => 'required|in:percent,fixed',
             'discount_value' => 'required|numeric|min:0',
@@ -53,7 +54,7 @@ class OfferController extends Controller
 
         $data = $request->validate([
             'offer_name' => 'sometimes|required|string|max:150',
-            'offer_type' => 'sometimes|required|in:product,category,tier,customer',
+            'offer_type' => 'sometimes|required|in:product,category,tier,customer,birthday',
             'target_id' => 'nullable|string',
             'discount_type' => 'sometimes|required|in:percent,fixed',
             'discount_value' => 'sometimes|required|numeric|min:0',
@@ -99,11 +100,27 @@ class OfferController extends Controller
                 'category' => $categoryId && $offer->target_id == $categoryId,
                 'customer' => $debtorNo && $offer->target_id == $debtorNo,
                 'tier' => $debtorNo && $this->debtorTierMatches($debtorNo, $offer->target_id),
+                // No target_id to check — just "is it this customer's
+                // birthday today?" Automatically surfaces on checkout
+                // instead of only the reminder chip, so the cashier doesn't
+                // have to remember to apply it manually.
+                'birthday' => $debtorNo && $this->isDebtorBirthdayToday($debtorNo),
                 default => false,
             };
         })->values();
 
         return response()->json($offers);
+    }
+
+    private function isDebtorBirthdayToday($debtorNo): bool
+    {
+        $dob = DebtorsMaster::where('debtor_no', $debtorNo)->value('date_of_birth');
+        if (!$dob) {
+            return false;
+        }
+        $dob = \Carbon\Carbon::parse($dob);
+        $today = now();
+        return $dob->month === $today->month && $dob->day === $today->day;
     }
 
     private function debtorTierMatches($debtorNo, $tierId): bool

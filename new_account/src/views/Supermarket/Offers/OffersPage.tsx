@@ -152,7 +152,8 @@ export default function OffersPage() {
     (form.offer_type === "product" && selectedProducts.length > 0) ||
     (form.offer_type === "category" && !!selectedCategory) ||
     (form.offer_type === "tier" && !!selectedTier) ||
-    (form.offer_type === "customer" && !!selectedCustomer);
+    (form.offer_type === "customer" && !!selectedCustomer) ||
+    form.offer_type === "birthday"; // no target to pick — applies to whoever's birthday it is
 
   const displayTarget = (offer: any) => {
     if (offer.offer_type === "product") {
@@ -233,6 +234,7 @@ export default function OffersPage() {
                 <MenuItem value="category">Category</MenuItem>
                 <MenuItem value="tier">Loyalty Tier</MenuItem>
                 <MenuItem value="customer">Specific Customer</MenuItem>
+                <MenuItem value="birthday">Birthday (any customer, on their birthday)</MenuItem>
               </Select>
             </FormControl>
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PosShift;
+use App\Models\PosShiftFloatMovement;
 use Illuminate\Http\Request;
 
 class PosShiftController extends Controller
@@ -79,5 +80,55 @@ class PosShiftController extends Controller
         $shift->save();
 
         return response()->json($shift);
+    }
+
+    /**
+     * Record a Cash In or Cash Out movement against an open shift.
+     * Only updates the drawer float log — no GL entries, no accounting impact.
+     */
+    public function floatMovement(Request $request, string $id)
+    {
+        $shift = PosShift::find($id);
+        if (!$shift) {
+            return response()->json(['message' => 'Shift not found'], 404);
+        }
+        if ($shift->status !== 'open') {
+            return response()->json(['message' => 'Cannot record movement on a closed shift'], 422);
+        }
+
+        $data = $request->validate([
+            'type'        => 'required|in:cash_in,cash_out',
+            'amount'      => 'required|numeric|min:0.01',
+            'reason'      => 'nullable|string|max:255',
+            'recorded_by' => 'nullable|exists:user_managements,id',
+        ]);
+
+        $movement = PosShiftFloatMovement::create([
+            'pos_shift_id' => $shift->id,
+            'type'         => $data['type'],
+            'amount'       => $data['amount'],
+            'reason'       => $data['reason'] ?? null,
+            'recorded_by'  => $data['recorded_by'] ?? null,
+        ]);
+
+        return response()->json($movement, 201);
+    }
+
+    /**
+     * List all Cash In/Out movements for a shift.
+     */
+    public function floatMovements(string $id)
+    {
+        $shift = PosShift::find($id);
+        if (!$shift) {
+            return response()->json(['message' => 'Shift not found'], 404);
+        }
+
+        $movements = PosShiftFloatMovement::where('pos_shift_id', $id)
+            ->with('recordedBy:id,first_name,last_name')
+            ->orderBy('created_at')
+            ->get();
+
+        return response()->json($movements);
     }
 }

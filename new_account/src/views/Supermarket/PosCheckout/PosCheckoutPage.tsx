@@ -41,6 +41,7 @@ import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import CakeIcon from "@mui/icons-material/Cake";
 import CameraBarcodeScanDialog from "../../../components/CameraBarcodeScanDialog";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
+import { useIsSquareScreen } from "../../../hooks/useScreenAspect";
 import { notify } from "../../../services/notificationService";
 import { getFriendlyApiErrorMessage } from "../../../utils/apiErrorMessage";
 import useCurrentUser from "../../../hooks/useCurrentUser";
@@ -49,6 +50,7 @@ import {
   getFrequentlyBoughtTogether, getPosSettings,
 } from "../../../api/Pos/posOpsApi";
 import { deductVariantStock } from "../../../api/Pos/posAdvancedApi";
+import { getCardTypes, tagPaymentCardType } from "../../../api/CardType/CardTypeApi";
 import { getLoyaltyCards, redeemLoyaltyPoints } from "../../../api/Loyalty/loyaltyApi";
 import PosReceiptDialog from "../../../components/PosReceiptDialog";
 import QuickAddCustomerDialog from "../../../components/QuickAddCustomerDialog";
@@ -92,6 +94,9 @@ interface PaymentLine {
   id: string;
   bank_account_id: number | "";
   amount: string;
+  // Reporting-only tag (Visa/Mastercard/...) — shown only when the chosen
+  // account's name looks like a card account. Never affects the sale.
+  card_type_id?: number | "";
 }
 
 // Strips comma separators back out of a display-formatted number (e.g.
@@ -99,6 +104,10 @@ interface PaymentLine {
 const parseFormattedNumber = (value: string): number => Number(value.replace(/,/g, "")) || 0;
 
 export default function PosCheckoutPage() {
+  // Square POS touchscreens (1024x1024, 1080x1080, ...) get a dedicated
+  // compact layout further down — everything else keeps the existing
+  // wide-screen layout untouched.
+  const isSquareScreen = useIsSquareScreen();
   const { formatCurrency, symbol: currencySymbol } = useHomeCurrency();
   // Cart table cells show the currency once in the column header instead of
   // repeating "LKR" on every row — plain number formatting for those cells.
@@ -197,6 +206,7 @@ export default function PosCheckoutPage() {
   }, [isOnline]);
 
   const { data: posSettings } = useQuery({ queryKey: ["pos-settings"], queryFn: getPosSettings });
+  const { data: cardTypes } = useQuery({ queryKey: ["card-types"], queryFn: () => getCardTypes() });
 
   // Quick discount / coupon / voucher
   const [cartDiscountPercent, setCartDiscountPercent] = useState(0);
@@ -452,6 +462,26 @@ export default function PosCheckoutPage() {
   const subtotal = lineSubtotal;
   const grandTotal = Math.max(0, lineSubtotal - cartDiscountAmount - couponDiscountAmount - voucherApplied - loyaltyRedemptionApplied);
 
+  // Automatic birthday offer — if it's this customer's birthday today and an
+  // active "birthday" offer exists, apply its discount straight away instead
+  // of just showing a reminder chip and relying on the cashier to remember.
+  // Only fires once per customer selection (won't fight a cashier who's
+  // already set/cleared a manual discount).
+  const birthdayOfferAppliedForRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!customer || !applicableOffers) return;
+    const birthdayOffer = applicableOffers.find((o: any) => o.offer_type === "birthday");
+    if (!birthdayOffer || birthdayOfferAppliedForRef.current === customer.debtor_no) return;
+    birthdayOfferAppliedForRef.current = customer.debtor_no;
+    const pct = birthdayOffer.discount_type === "percent"
+      ? Number(birthdayOffer.discount_value) || 0
+      : (lineSubtotal > 0 ? Math.min(100, (Number(birthdayOffer.discount_value) / lineSubtotal) * 100) : 0);
+    if (pct > 0) {
+      setCartDiscountPercent(pct);
+      notify.success(`🎂 Birthday offer applied automatically: ${birthdayOffer.offer_name}`);
+    }
+  }, [customer, applicableOffers, lineSubtotal]);
+
   // Combined extra discount, expressed as a single equivalent percent applied
   // uniformly across every cart line (multiplicatively, so it never exceeds
   // 100%) — this is the only vector the real invoice API exposes for
@@ -537,6 +567,11 @@ export default function PosCheckoutPage() {
 
   const addToCart = async () => {
     if (!selectedItem) return;
+    const stockQty = stockQtyByStockId.get(String(selectedItem.stock_id)) ?? 0;
+    if (stockQty <= 0) {
+      notify.error(`"${selectedItem.description}" is out of stock`);
+      return;
+    }
     // Manual search comes from the shared item list (no sale_price field —
     // that endpoint is used across the whole ERP and must keep
     // purchase_cost meaning real cost). Fetch the real Selling Price
@@ -624,6 +659,10 @@ export default function PosCheckoutPage() {
         setBarcodeMatches(result.matches);
         return;
       }
+      if ((stockQtyByStockId.get(String(result.stock_id)) ?? result.quantity ?? 0) <= 0) {
+        notify.error(`"${result.description}" is out of stock`);
+        return;
+      }
       addItemToCart(result, Number(qty) || 1);
       setLastViewedProduct(result);
       notify.success(`Added: ${result.description}`);
@@ -634,6 +673,11 @@ export default function PosCheckoutPage() {
   };
 
   const handlePickBarcodeMatch = (item: any) => {
+    if ((stockQtyByStockId.get(String(item.stock_id)) ?? item.quantity ?? 0) <= 0) {
+      notify.error(`"${item.description}" is out of stock`);
+      setBarcodeMatches(null);
+      return;
+    }
     addItemToCart(item, Number(qty) || 1);
     setLastViewedProduct(item);
     notify.success(`Added: ${item.description}`);
@@ -682,6 +726,33 @@ export default function PosCheckoutPage() {
     setWholesalePinInput("");
   };
 
+  // Alt+W — open the Wholesale PIN dialog for the last cart line that
+  // qualifies (qty >= threshold, wholesale_applied not yet set).
+  useEffect(() => {
+    const handler = (e: globalThis.KeyboardEvent) => {
+      if (!e.altKey || e.key !== "w") return;
+      e.preventDefault();
+      if (wholesalePinTarget) return; // dialog already open
+      const eligible = [...cart]
+        .reverse()
+        .find(
+          (l) =>
+            !l.wholesale_applied &&
+            l.wholesale_price != null &&
+            l.wholesale_qty_threshold != null &&
+            l.quantity >= l.wholesale_qty_threshold
+        );
+      if (!eligible) {
+        notify.error("No cart line qualifies for wholesale pricing");
+        return;
+      }
+      setWholesalePinTarget(eligible.stock_id);
+      setWholesalePinInput("");
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [cart, wholesalePinTarget]);
+
   const resetSaleState = () => {
     setCart([]);
     setCartDiscountPercent(0);
@@ -708,7 +779,7 @@ export default function PosCheckoutPage() {
           method: (bankAccounts ?? []).find((a: any) => a.id === p.bank_account_id)?.bank_account_name ?? "Payment",
           amount: Number(p.amount) || 0,
         }));
-      setLastReceipt({ ...result, lines: cart, subtotal: grandTotal, customer, payments: receiptPayments, cashReceived: totalPaid });
+      setLastReceipt({ ...result, lines: cart, subtotal: grandTotal, customer, payments: receiptPayments, cashReceived: totalPaid, couponCode: appliedCoupon?.coupon_code, voucherCode: appliedVoucher?.code, shift_id: currentShiftId });
       resetSaleState();
     },
     onError: (error) => {
@@ -928,6 +999,9 @@ export default function PosCheckoutPage() {
         customer,
         payments: receiptPayments,
         cashReceived: totalPaid,
+        couponCode: appliedCoupon?.coupon_code,
+        voucherCode: appliedVoucher?.code,
+        shift_id: currentShiftId,
       });
       setReceiptOpen(true);
       resetSaleState();
@@ -952,6 +1026,22 @@ export default function PosCheckoutPage() {
 
         setIsQuoteReceipt(false);
         setReceiptOpen(true);
+
+        // Card Type tag — purely a reporting label, written after the sale
+        // is already posted. Best-effort: never blocks or undoes the sale.
+        for (const p of validPaymentLines) {
+          if (!p.card_type_id) continue;
+          try {
+            await tagPaymentCardType({
+              debtor_trans_no: result.trans_no,
+              debtor_trans_type: result.trans_type,
+              bank_account_id: Number(p.bank_account_id),
+              card_type_id: Number(p.card_type_id),
+            });
+          } catch {
+            // Non-critical — reporting tag only.
+          }
+        }
 
         if (appliedVoucher) {
           try {
@@ -1218,7 +1308,12 @@ export default function PosCheckoutPage() {
   // the body scroll internally — the whole page never scrolls away from it.
   const headerContent = (
     <>
-      <Box sx={{ p: 2, boxShadow: 2, borderRadius: 1, mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
+      <Box
+        sx={{
+          p: isSquareScreen ? 1 : 2, boxShadow: 2, borderRadius: 1, mb: isSquareScreen ? 1 : 2,
+          display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1,
+        }}
+      >
         <Box>
           {!isFullScreen && (
             <>
@@ -1229,13 +1324,17 @@ export default function PosCheckoutPage() {
           {/* User / Date / Time / Receipt — the always-visible info box the
               old till software kept in its corner. Receipt # is only known
               once the sale actually posts (assigned by the server), so it
-              shows "New" until then instead of a fake number. */}
-          <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
-            <Typography variant="caption" color="text.secondary">User: <b>{user?.first_name || user?.email || "—"}</b></Typography>
-            <Typography variant="caption" color="text.secondary">Date: <b>{now.toLocaleDateString()}</b></Typography>
-            <Typography variant="caption" color="text.secondary">Time: <b>{now.toLocaleTimeString()}</b></Typography>
-            <Typography variant="caption" color="text.secondary">Receipt: <b>{lastReceipt ? `#${lastReceipt.trans_no}` : "New"}</b></Typography>
-          </Stack>
+              shows "New" until then instead of a fake number. Dropped on
+              square screens — not essential to the checkout workflow, and
+              every bit of vertical space matters there. */}
+          {!isSquareScreen && (
+            <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+              <Typography variant="caption" color="text.secondary">User: <b>{user?.first_name || user?.email || "—"}</b></Typography>
+              <Typography variant="caption" color="text.secondary">Date: <b>{now.toLocaleDateString()}</b></Typography>
+              <Typography variant="caption" color="text.secondary">Time: <b>{now.toLocaleTimeString()}</b></Typography>
+              <Typography variant="caption" color="text.secondary">Receipt: <b>{lastReceipt ? `#${lastReceipt.trans_no}` : "New"}</b></Typography>
+            </Stack>
+          )}
           {isOffline && (
             <Chip
               icon={<WifiOffIcon />}
@@ -1246,41 +1345,59 @@ export default function PosCheckoutPage() {
             />
           )}
         </Box>
-        <Stack direction="row" spacing={1}>
-          <Button variant="contained" color="primary" startIcon={<SearchIcon />} onClick={() => scanInputRef.current?.focus()}>
-            Find (F9)
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap justifyContent="flex-end">
+          <Button
+            variant="contained" color="primary" size={isSquareScreen ? "small" : "medium"}
+            startIcon={<SearchIcon />} onClick={() => scanInputRef.current?.focus()}
+            sx={{ minHeight: isSquareScreen ? 34 : 44 }}
+          >
+            {isSquareScreen ? "Find" : "Find (F9)"}
           </Button>
-          <Button variant="contained" color="warning" startIcon={<PauseCircleOutlineIcon />} onClick={handleHoldSale} disabled={cart.length === 0}>
+          <Button
+            variant="contained" color="warning" size={isSquareScreen ? "small" : "medium"}
+            startIcon={<PauseCircleOutlineIcon />} onClick={handleHoldSale} disabled={cart.length === 0}
+            sx={{ minHeight: isSquareScreen ? 34 : 44 }}
+          >
             Hold Sale
           </Button>
-          <Button variant="contained" color="info" startIcon={<RestoreIcon />} onClick={() => setRecallOpen(true)}>
+          <Button
+            variant="contained" color="info" size={isSquareScreen ? "small" : "medium"}
+            startIcon={<RestoreIcon />} onClick={() => setRecallOpen(true)}
+            sx={{ minHeight: isSquareScreen ? 34 : 44 }}
+          >
             Recall Sale {heldSales && heldSales.length > 0 ? `(${heldSales.length})` : ""}
           </Button>
           <Button
-            variant="contained" color="error" startIcon={<CloseIcon />}
+            variant="contained" color="error" size={isSquareScreen ? "small" : "medium"}
+            startIcon={<CloseIcon />}
             onClick={() => {
               if (cart.length === 0 || window.confirm("Clear the current bill? This does not undo a completed sale.")) {
                 resetSaleState();
               }
             }}
+            sx={{ minHeight: isSquareScreen ? 34 : 44 }}
           >
-            Close (Esc)
+            {isSquareScreen ? "Close" : "Close (Esc)"}
           </Button>
           <Button
-            variant="contained" color="success" startIcon={<AddIcon />}
+            variant="contained" color="success" size={isSquareScreen ? "small" : "medium"}
+            startIcon={<AddIcon />}
             onClick={() => {
               if (cart.length === 0 || window.confirm("Start a new bill? Current cart will be cleared.")) {
                 resetSaleState();
               }
             }}
+            sx={{ minHeight: isSquareScreen ? 34 : 44 }}
           >
-            New (F12)
+            {isSquareScreen ? "New" : "New (F12)"}
           </Button>
           <Button
-            variant="contained" color="secondary" startIcon={isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+            variant="contained" color="secondary" size={isSquareScreen ? "small" : "medium"}
+            startIcon={isFullScreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
             onClick={() => setIsFullScreen((v) => !v)}
+            sx={{ minHeight: isSquareScreen ? 34 : 44 }}
           >
-            {isFullScreen ? "Exit Full Screen (F11)" : "Full Screen (F11)"}
+            {isSquareScreen ? (isFullScreen ? "Exit Full Screen" : "Full Screen") : (isFullScreen ? "Exit Full Screen (F11)" : "Full Screen (F11)")}
           </Button>
           <Tooltip title={isFullScreen ? "Exit Full Screen" : "Full Screen"}>
             <IconButton onClick={() => setIsFullScreen((v) => !v)} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1.5 }}>
@@ -1290,6 +1407,370 @@ export default function PosCheckoutPage() {
         </Stack>
       </Box>
     </>
+  );
+
+  // Square POS touchscreens (≈1:1 aspect ratio — 1024x1024, 1080x1080,
+  // 1280x1024, ...) get this dedicated compact layout instead of the
+  // wide-screen Grid below: cart gets the majority of vertical space, and
+  // Customer/Discount/Payment/Coupon/Voucher/Totals sit in one compact
+  // multi-column bottom panel instead of a tall right sidebar, since a
+  // square screen has width to spare but not height. Same state/handlers
+  // as the wide layout — no duplicated business logic, only layout.
+  const squareLayoutContent = (
+    <Box
+      sx={{
+        display: "flex", flexDirection: "column", gap: 1.5,
+        // flex:1 on a direct flex-item child of a flex column parent is a
+        // far more reliable way to fill available vertical space than a
+        // percentage height nested a few levels deep — that's what was
+        // actually failing (content just grew past the screen edge with
+        // nothing to stop it, instead of being capped).
+        ...(isFullScreen ? { flex: "1 1 auto", minHeight: 0, overflowY: "auto" } : { minHeight: 0 }),
+      }}
+    >
+      {/* Compact: size="small" fields + tight padding, so this card leaves
+          as much room as possible for the cart/checkout panel below on a
+          short square screen, while still keeping a real (44px) touch
+          target via minHeight on the inputs — not shrunk to the point of
+          being hard to tap. */}
+      <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, flexShrink: 0 }}>
+        <CardContent sx={{ py: 1, "&:last-child": { pb: 1 } }}>
+          <Stack spacing={0.75}>
+            <TextField
+              inputRef={scanInputRef}
+              label="Barcode Scanner"
+              placeholder="Scan a barcode — cursor here, scan, item adds automatically"
+              size="small"
+              fullWidth
+              value={scanCode}
+              onChange={(e) => setScanCode(e.target.value)}
+              onKeyDown={handleScanKeyDown}
+              InputProps={{
+                startAdornment: <QrCodeScannerIcon sx={{ mr: 1, color: "text.secondary" }} />,
+                sx: { minHeight: 44 },
+              }}
+            />
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Autocomplete
+                size="small"
+                sx={{ flex: "1 1 220px" }}
+                options={items ?? []}
+                getOptionLabel={(i: any) => `${i.stock_id} — ${i.description}`}
+                autoHighlight
+                value={selectedItem}
+                onChange={(_, val) => {
+                  setSelectedItem(val);
+                  setLastViewedProduct(val);
+                  setManualSellingPrice(val ? String(Number(val.sale_price ?? val.purchase_cost) || 0) : "");
+                  setManualSellingPriceTouched(false);
+                  setManualDiscountInput("");
+                  setManualDiscountMode2("percent");
+                  if (val) setTimeout(() => { lineDiscountInputRef.current?.focus(); lineDiscountInputRef.current?.select(); }, 0);
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Item Code / Search Product"
+                    sx={{ "& .MuiInputBase-root": { minHeight: 44 } }}
+                    inputRef={(node) => {
+                      const paramsInputRef = (params as any).inputRef;
+                      if (typeof paramsInputRef === "function") paramsInputRef(node);
+                      else if (paramsInputRef) paramsInputRef.current = node;
+                      itemSearchInputRef.current = node;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "End" && !selectedItem && !itemSearchInputRef.current?.value) {
+                        e.preventDefault();
+                        paymentAmountInputRef.current?.focus();
+                        paymentAmountInputRef.current?.select();
+                      }
+                    }}
+                  />
+                )}
+              />
+              {selectedItem && (
+                <>
+                  <TextField
+                    label="Selling Price" type="number" size="small" sx={{ width: 100, "& .MuiInputBase-root": { minHeight: 44 } }}
+                    value={manualSellingPrice}
+                    onChange={(e) => { setManualSellingPrice(e.target.value); setManualSellingPriceTouched(true); }}
+                  />
+                  <TextField
+                    inputRef={lineDiscountInputRef}
+                    label="Discount" type="number" size="small" sx={{ width: 80, "& .MuiInputBase-root": { minHeight: 44 } }}
+                    placeholder="0"
+                    value={manualDiscountInput}
+                    onChange={(e) => setManualDiscountInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter") return;
+                      e.preventDefault();
+                      qtyInputRef.current?.focus();
+                      qtyInputRef.current?.select();
+                    }}
+                  />
+                  <FormControl size="small" sx={{ width: 64 }}>
+                    <Select
+                      value={manualDiscountMode2}
+                      onChange={(e) => setManualDiscountMode2(e.target.value as "percent" | "amount")}
+                    >
+                      <MenuItem value="percent">%</MenuItem>
+                      <MenuItem value="amount">Rs</MenuItem>
+                    </Select>
+                  </FormControl>
+                </>
+              )}
+              <TextField
+                inputRef={qtyInputRef}
+                label="Qty" type="number" size="small" sx={{ width: 90, "& .MuiInputBase-root": { minHeight: 44 } }} value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && selectedItem) { e.preventDefault(); addToCart(); } }}
+              />
+              <Button
+                variant="contained" startIcon={<AddShoppingCartIcon />} onClick={addToCart} disabled={!selectedItem}
+                sx={{ minHeight: 44, px: 2.5 }}
+              >
+                Add
+              </Button>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {/* Cart — the main working area, gets whatever vertical space is left
+          over after the search card above and checkout panel below. */}
+      <TableContainer
+        component={Paper} elevation={0}
+        sx={{
+          border: "1px solid", borderColor: "divider", borderRadius: 3, overflowY: "auto",
+          // Capped rather than a bare flex:1 — guarantees the checkout
+          // panel below always gets its space, instead of the cart
+          // potentially consuming all of it if the flex-height chain
+          // doesn't resolve cleanly in every browser/zoom combination.
+          // A genuinely FIXED height (not a min/max range) — the cart box
+          // never resizes as items are added or removed, so the checkout
+          // panel below it never moves. Extra items scroll inside this
+          // box instead (sticky header stays put while scrolling).
+          flex: "0 0 auto", height: isFullScreen ? "32vh" : 320,
+        }}
+      >
+        <Table size="small" stickyHeader>
+          <TableHead>
+            <TableRow sx={{ "& .MuiTableCell-root": { backgroundColor: "#79c4faff" } }}>
+              <TableCell>Item</TableCell>
+              <TableCell align="center">Qty</TableCell>
+              <TableCell align="right">Unit Price</TableCell>
+              <TableCell align="right">Disc %</TableCell>
+              <TableCell align="right">Net Price</TableCell>
+              <TableCell align="right">Line Total</TableCell>
+              <TableCell align="center">—</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {cart.map((l) => (
+              <TableRow key={l.stock_id} hover>
+                <TableCell>{l.description}</TableCell>
+                <TableCell align="center">
+                  <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center">
+                    <IconButton size="small" sx={{ width: 44, height: 44 }} onClick={() => updateLine(l.stock_id, { quantity: Math.max(1, l.quantity - 1) })}>
+                      <RemoveIcon fontSize="small" />
+                    </IconButton>
+                    <Typography sx={{ minWidth: 28, textAlign: "center" }}>{l.quantity}</Typography>
+                    <IconButton size="small" sx={{ width: 44, height: 44 }} onClick={() => updateLine(l.stock_id, { quantity: l.quantity + 1 })}>
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                </TableCell>
+                <TableCell align="right">{formatNumber(l.unit_price)}</TableCell>
+                <TableCell align="right">{l.discount_percent || 0}%</TableCell>
+                <TableCell align="right">{formatNumber(l.unit_price * (1 - l.discount_percent / 100))}</TableCell>
+                <TableCell align="right">
+                  <Typography fontWeight={700}>{formatNumber(l.quantity * l.unit_price * (1 - l.discount_percent / 100))}</Typography>
+                </TableCell>
+                <TableCell align="center">
+                  <IconButton size="small" color="error" sx={{ width: 44, height: 44 }} onClick={() => removeLine(l.stock_id)}>
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+            {cart.length === 0 && (
+              <TableRow><TableCell colSpan={7} align="center" sx={{ py: 4 }}><Typography variant="body2" color="text.secondary">Cart is empty — scan or search a product to begin.</Typography></TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Bottom checkout panel — Customer/Location/Discount, Payment +
+          Coupon/Voucher, and Totals arranged in a compact 3-column grid
+          (stacks to 1 column only on a genuinely narrow width), with
+          Complete Sale / Give Quote always visible underneath — never
+          needs scrolling to reach. */}
+      {/* Checkout panel — split in two so the persistent summary/action bar
+          (Total, Change Due, Give Quote, Complete Sale) is NEVER inside a
+          scrollable area and can never disappear off-screen. Customer/
+          Payment/Coupon/Voucher are secondary details — if they don't all
+          fit at once on an 800x800 screen, only THIS smaller section
+          scrolls internally, never the whole page and never the summary. */}
+      <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, flexShrink: 0, display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <Box sx={{ overflowY: "auto", maxHeight: isFullScreen ? "26vh" : 260, p: 1.25 }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
+            <Stack spacing={0.75}>
+              <Typography variant="caption" fontWeight={700} color="text.secondary">CUSTOMER</Typography>
+              <Autocomplete
+                size="small"
+                options={customers ?? []}
+                getOptionLabel={(c: any) => c.name ?? ""}
+                value={customer}
+                onChange={(_, val) => setCustomer(val)}
+                renderInput={(params) => <TextField {...params} label="Customer" size="small" inputRef={customerInputRef} />}
+              />
+              {locations && locations.length > 1 && (
+                <FormControl size="small">
+                  <InputLabel>Stock Location</InputLabel>
+                  <Select value={locCode} label="Stock Location" onChange={(e) => setLocCode(e.target.value)}>
+                    {locations.map((loc: any) => (
+                      <MenuItem key={loc.loc_code} value={loc.loc_code}>{loc.location_name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              <Stack direction="row" spacing={1}>
+                <TextField
+                  label={manualDiscountMode === "percent" ? "Discount %" : "Discount (LKR)"}
+                  type="number" size="small" fullWidth
+                  value={manualDiscountValue}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setManualDiscountValue(raw);
+                    const val = Math.max(0, Number(raw) || 0);
+                    const pct = manualDiscountMode === "percent" ? Math.min(100, val) : (subtotal > 0 ? Math.min(100, (val / subtotal) * 100) : 0);
+                    setCartDiscountPercent(pct);
+                  }}
+                />
+                <FormControl size="small" sx={{ width: 80 }}>
+                  <Select value={manualDiscountMode} onChange={(e) => { setManualDiscountMode(e.target.value as "percent" | "amount"); setManualDiscountValue(""); setCartDiscountPercent(0); }}>
+                    <MenuItem value="percent">%</MenuItem>
+                    <MenuItem value="amount">Rs</MenuItem>
+                  </Select>
+                </FormControl>
+              </Stack>
+            </Stack>
+
+            <Stack spacing={1}>
+              <Typography variant="caption" fontWeight={700} color="text.secondary">PAYMENT / COUPON / VOUCHER</Typography>
+              <Stack spacing={1}>
+                {paymentLines.map((p, pIndex) => (
+                  <Stack direction="row" spacing={1} key={p.id} alignItems="center">
+                    <FormControl size="small" sx={{ minWidth: 110, flex: 1 }}>
+                      <InputLabel>Account</InputLabel>
+                      <Select value={p.bank_account_id} label="Account" onChange={(e) => updatePaymentLine(p.id, { bank_account_id: Number(e.target.value) })}>
+                        {(bankAccounts ?? []).map((a: any) => (
+                          <MenuItem key={a.id} value={a.id}>{a.bank_account_name}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      inputRef={pIndex === 0 ? paymentAmountInputRef : undefined}
+                      label="Amount" size="small" sx={{ width: 100 }}
+                      value={Number(p.amount) ? Number(p.amount).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : p.amount}
+                      onChange={(e) => updatePaymentLine(p.id, { amount: e.target.value.replace(/,/g, "") })}
+                      onFocus={(e) => e.target.select()}
+                    />
+                    {cardTypes && cardTypes.length > 0 && (
+                      <FormControl size="small" sx={{ minWidth: 90 }}>
+                        <InputLabel>Card</InputLabel>
+                        <Select value={p.card_type_id ?? ""} label="Card" onChange={(e) => updatePaymentLine(p.id, { card_type_id: Number(e.target.value) || undefined })}>
+                          <MenuItem value=""><em>None</em></MenuItem>
+                          {cardTypes.map((c: any) => (
+                            <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
+                    {paymentLines.length > 1 && (
+                      <IconButton size="small" color="error" sx={{ width: 44, height: 44 }} onClick={() => removePaymentLine(p.id)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                    {pIndex === paymentLines.length - 1 && (
+                      <IconButton size="small" color="secondary" sx={{ width: 44, height: 44 }} onClick={addPaymentLine}>
+                        <AddIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                  </Stack>
+                ))}
+              </Stack>
+              <Stack direction="row" spacing={1}>
+                <TextField label="Coupon Code" size="small" fullWidth value={couponCode} onChange={(e) => setCouponCode(e.target.value)} disabled={!!appliedCoupon} />
+                {appliedCoupon ? (
+                  <Button variant="outlined" color="error" size="small" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}>Remove</Button>
+                ) : (
+                  <Button variant="contained" color="success" size="small" onClick={handleApplyCoupon} disabled={couponChecking}>Apply</Button>
+                )}
+              </Stack>
+              <Stack direction="row" spacing={1}>
+                <TextField label="Voucher Code" size="small" fullWidth value={voucherCode} onChange={(e) => setVoucherCode(e.target.value)} onKeyDown={handleVoucherCodeKeyDown} disabled={!!appliedVoucher} />
+                {appliedVoucher ? (
+                  <Button variant="outlined" color="error" size="small" onClick={() => { setAppliedVoucher(null); setVoucherCode(""); setVoucherAmount(""); }}>Remove</Button>
+                ) : (
+                  <Button variant="contained" color="success" size="small" onClick={() => handleApplyVoucher()} disabled={voucherChecking}>Apply</Button>
+                )}
+              </Stack>
+            </Stack>
+          </Box>
+        </Box>
+
+        <Divider />
+
+        {/* Pinned summary + action bar — never inside the scroll area above,
+            so Total/Change Due/Complete Sale are always visible. */}
+        <Box sx={{ p: 1.25, flexShrink: 0 }}>
+          <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="baseline" justifyContent="space-between">
+            <Stack direction="row" spacing={2}>
+              <Typography variant="caption" color="text.secondary">Items <b>{cart.reduce((sum, l) => sum + l.quantity, 0)}</b></Typography>
+              <Typography variant="caption" color="text.secondary">Subtotal <b>{formatCurrency(subtotal, 2)}</b></Typography>
+              {totalPaid > 0 && (
+                <Typography variant="caption" color="text.secondary">Cash Received <b>{formatCurrency(totalPaid, 2)}</b></Typography>
+              )}
+            </Stack>
+            <Stack direction="row" spacing={2} alignItems="baseline">
+              <Stack direction="row" spacing={0.5} alignItems="baseline">
+                <Typography variant="body2" fontWeight={700}>Total</Typography>
+                <Typography variant="h6" fontWeight={800} color="primary.main">{formatCurrency(grandTotal, 2)}</Typography>
+              </Stack>
+              {totalPaid > 0 && (
+                <Stack direction="row" spacing={0.5} alignItems="baseline">
+                  <Typography variant="body2" fontWeight={700}>Change</Typography>
+                  <Typography variant="h6" fontWeight={800} color="success.main">{formatCurrency(changeDue, 2)}</Typography>
+                </Stack>
+              )}
+            </Stack>
+          </Stack>
+          {balanceRemaining > 0.01 && (
+            <Typography variant="caption" color="error" sx={{ display: "block", mt: 0.25 }}>{formatCurrency(balanceRemaining, 2)} still needs to be covered</Typography>
+          )}
+
+          <Stack direction="row" spacing={1.5} sx={{ mt: 1 }}>
+            <Button
+              variant="contained" color="warning" startIcon={<RequestQuoteIcon />}
+              disabled={quoteMutation.isPending || !customer || cart.length === 0}
+              onClick={handleGiveQuote}
+              sx={{ flex: 1, minHeight: 48, fontSize: "0.9rem" }}
+            >
+              {quoteMutation.isPending ? "Creating Quote..." : "Give Quote"}
+            </Button>
+            <Button
+              variant="contained" startIcon={<ReceiptLongIcon />}
+              disabled={checkoutMutation.isPending || !customer || cart.length === 0 || !cashAccount}
+              onClick={handleCheckout}
+              sx={{ flex: 2, minHeight: 48, fontSize: "1rem" }}
+            >
+              {checkoutMutation.isPending ? "Processing..." : "Complete Sale"}
+            </Button>
+          </Stack>
+        </Box>
+      </Card>
+    </Box>
   );
 
   const bodyContent = (
@@ -1312,7 +1793,8 @@ export default function PosCheckoutPage() {
         </Tooltip>
       )}
 
-      <Grid container spacing={2} sx={isFullScreen ? { height: "100%" } : undefined}>
+      {isSquareScreen ? squareLayoutContent : (
+      <Grid container spacing={2} sx={isFullScreen ? { height: "100%", minHeight: 0 } : undefined}>
         {/* ---- Left: scan/search + cart (a cashier's main working area) ----
             In full-screen mode this column is a flex column pinned to the
             real available height: the scan card and Payment/Checkout box
@@ -1386,7 +1868,13 @@ export default function PosCheckoutPage() {
                           // empty and ready for the next item (not mid-type).
                           if (e.key === "End" && !selectedItem && !itemSearchInputRef.current?.value) {
                             e.preventDefault();
+                            // Keep it pre-filled to the exact total, but
+                            // select the whole value — one Backspace (or
+                            // just typing) clears it instantly, so the
+                            // cashier can type what cash was actually
+                            // handed over (e.g. 3000 for a 2900 bill).
                             paymentAmountInputRef.current?.focus();
+                            paymentAmountInputRef.current?.select();
                           }
                         }}
                       />
@@ -1588,52 +2076,80 @@ export default function PosCheckoutPage() {
           {/* Coupon / Voucher — moved here from the right-side Discounts
               panel, sitting at the bottom of the left column where the
               Payment Method(s) box used to be before that moved to the
-              right panel. */}
-          <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mt: 2, flexShrink: 0 }}>
-            <CardContent>
-              <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-                <TextField
-                  label="Coupon Code" size="small" fullWidth value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  disabled={!!appliedCoupon}
-                />
-                {appliedCoupon ? (
-                  <Button variant="outlined" color="error" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}>Remove</Button>
-                ) : (
-                  <Button variant="contained" color="success" onClick={handleApplyCoupon} disabled={couponChecking}>Apply</Button>
-                )}
-              </Stack>
-              <Stack direction="row" spacing={1}>
-                <TextField
-                  label="Voucher Code (scan or type)" size="small" value={voucherCode}
-                  onChange={(e) => setVoucherCode(e.target.value)}
-                  onKeyDown={handleVoucherCodeKeyDown}
-                  disabled={!!appliedVoucher}
-                  sx={{ flex: 1 }}
-                />
-                <TextField
-                  label="Amount" type="number" size="small" value={voucherAmount}
-                  onChange={(e) => setVoucherAmount(e.target.value)}
-                  disabled={!!appliedVoucher}
-                  placeholder="Full balance"
-                  sx={{ width: 110 }}
-                />
-                {appliedVoucher ? (
-                  <Button variant="outlined" color="error" onClick={() => { setAppliedVoucher(null); setVoucherCode(""); setVoucherAmount(""); }}>Remove</Button>
-                ) : (
-                  <Button variant="contained" color="success" onClick={() => handleApplyVoucher()} disabled={voucherChecking}>
-                    {voucherChecking ? "Checking..." : "Apply"}
+              right panel. Shares a row with Complete Sale / Give Quote
+              (also moved out of the right panel, which was getting too
+              tall and forcing a scroll) — coupon/voucher fills the space
+              on the left, the two buttons sit on the right. */}
+          <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "flex-end" }} sx={{ mt: 2 }}>
+            <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, flexShrink: 0, flex: 1 }}>
+              <CardContent>
+                <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                  <TextField
+                    label="Coupon Code" size="small" fullWidth value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    disabled={!!appliedCoupon}
+                  />
+                  {appliedCoupon ? (
+                    <Button variant="outlined" color="error" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}>Remove</Button>
+                  ) : (
+                    <Button variant="contained" color="success" onClick={handleApplyCoupon} disabled={couponChecking}>Apply</Button>
+                  )}
+                </Stack>
+                <Stack direction="row" spacing={1}>
+                  <TextField
+                    label="Voucher Code (scan or type)" size="small" value={voucherCode}
+                    onChange={(e) => setVoucherCode(e.target.value)}
+                    onKeyDown={handleVoucherCodeKeyDown}
+                    disabled={!!appliedVoucher}
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    label="Amount" type="number" size="small" value={voucherAmount}
+                    onChange={(e) => setVoucherAmount(e.target.value)}
+                    disabled={!!appliedVoucher}
+                    placeholder="Full balance"
+                    sx={{ width: 110 }}
+                  />
+                  {appliedVoucher ? (
+                    <Button variant="outlined" color="error" onClick={() => { setAppliedVoucher(null); setVoucherCode(""); setVoucherAmount(""); }}>Remove</Button>
+                  ) : (
+                    <Button variant="contained" color="success" onClick={() => handleApplyVoucher()} disabled={voucherChecking}>
+                      {voucherChecking ? "Checking..." : "Apply"}
+                    </Button>
+                  )}
+                </Stack>
+              </CardContent>
+            </Card>
+
+            <Stack direction="row" spacing={2} flexShrink={0}>
+              <Tooltip title="Give the customer a price estimate — not a sale, no payment needed, nothing posted to accounts yet">
+                <span style={{ display: "flex" }}>
+                  <Button
+                    variant="contained" color="warning" startIcon={<RequestQuoteIcon />}
+                    disabled={quoteMutation.isPending || !customer || cart.length === 0}
+                    onClick={handleGiveQuote}
+                    sx={{ whiteSpace: "nowrap", px: 2 }}
+                  >
+                    {quoteMutation.isPending ? "Creating Quote..." : "Give Quote"}
                   </Button>
-                )}
-              </Stack>
-            </CardContent>
-          </Card>
+                </span>
+              </Tooltip>
+              <Button
+                variant="contained" startIcon={<ReceiptLongIcon />}
+                disabled={checkoutMutation.isPending || !customer || cart.length === 0 || !cashAccount}
+                onClick={handleCheckout}
+                sx={{ whiteSpace: "nowrap", px: 2 }}
+              >
+                {checkoutMutation.isPending ? "Processing..." : "Complete Sale"}
+              </Button>
+            </Stack>
+          </Stack>
         </Grid>
 
         {/* ---- Right: one consolidated till panel — customer, discounts, payment, checkout ---- */}
         <Grid
           item xs={12} md={3}
-          sx={isFullScreen ? { height: "100%", overflowY: "auto" } : undefined}
+          sx={isFullScreen ? { height: "100%", minHeight: 0, overflowY: "auto" } : undefined}
         >
           <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, position: { md: isFullScreen ? "static" : "sticky" }, top: { md: 16 } }}>
             <CardContent>
@@ -1715,18 +2231,6 @@ export default function PosCheckoutPage() {
 
               {/* Discounts */}
               <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>Discounts</Typography>
-              <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
-                {QUICK_DISCOUNTS.map((pct) => (
-                  <Chip
-                    key={pct}
-                    label={`${pct}%`}
-                    color={cartDiscountPercent === pct ? "primary" : "default"}
-                    onClick={() => setCartDiscountPercent(pct)}
-                    clickable
-                  />
-                ))}
-                <Chip label="Clear" variant="outlined" onClick={() => setCartDiscountPercent(0)} clickable />
-              </Stack>
               <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
                 <TextField
                   label={manualDiscountMode === "percent" ? "Manual Discount %" : "Manual Discount (LKR)"}
@@ -1813,25 +2317,49 @@ export default function PosCheckoutPage() {
                     </FormControl>
                     <TextField
                       inputRef={pIndex === 0 ? paymentAmountInputRef : undefined}
-                      label="Amount" type="number" size="small" sx={{ width: 110 }}
-                      value={p.amount}
-                      onChange={(e) => updatePaymentLine(p.id, { amount: e.target.value })}
+                      label="Amount" size="small" sx={{ width: 110 }}
+                      value={Number(p.amount) ? Number(p.amount).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : p.amount}
+                      onChange={(e) => updatePaymentLine(p.id, { amount: e.target.value.replace(/,/g, "") })}
+                      onFocus={(e) => e.target.select()}
                       onKeyDown={(e) => {
                         if (pIndex !== 0 || e.key !== "Enter") return;
                         e.preventDefault();
                         if (!checkoutMutation.isPending && customer && cart.length > 0 && cashAccount) handleCheckout();
                       }}
                     />
+                    {(() => {
+                      const acct = (bankAccounts ?? []).find((a: any) => a.id === p.bank_account_id);
+                      const isCardAccount = acct?.bank_account_name?.toLowerCase().includes("card");
+                      if (!isCardAccount) return null;
+                      return (
+                        <FormControl size="small" sx={{ width: 150 }}>
+                          <InputLabel>Card Type</InputLabel>
+                          <Select
+                            value={p.card_type_id ?? ""}
+                            label="Card Type"
+                            onChange={(e) => updatePaymentLine(p.id, { card_type_id: Number(e.target.value) })}
+                          >
+                            {(cardTypes ?? []).map((c: any) => (
+                              <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      );
+                    })()}
                     {paymentLines.length > 1 && (
                       <IconButton size="small" color="error" onClick={() => removePaymentLine(p.id)}>
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     )}
+                    {pIndex === paymentLines.length - 1 && (
+                      <Tooltip title="Split into another payment method">
+                        <IconButton size="small" color="secondary" onClick={addPaymentLine}>
+                          <AddIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </Stack>
                 ))}
-                <Button variant="contained" color="secondary" size="small" startIcon={<AddIcon />} onClick={addPaymentLine}>
-                  Split into another payment method
-                </Button>
               </Stack>
 
               {balanceRemaining > 0.01 && (
@@ -1894,49 +2422,12 @@ export default function PosCheckoutPage() {
                   </>
                 )}
               </Stack>
-
-              {/* Complete Sale / Give Quote sit at the bottom of the right panel,
-                  immediately under the totals. */}
-              <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
-                <Tooltip title="Give the customer a price estimate — not a sale, no payment needed, nothing posted to accounts yet">
-                  <span style={{ flex: 1, display: 'flex' }}>
-                    <Button
-                      variant="contained" color="warning" startIcon={<RequestQuoteIcon />}
-                      disabled={quoteMutation.isPending || !customer || cart.length === 0}
-                      onClick={handleGiveQuote}
-                      fullWidth
-                      sx={{ whiteSpace: "nowrap", px: 1, fontSize: "0.72rem" }}
-                    >
-                      {quoteMutation.isPending ? "Creating Quote..." : "Give Quote"}
-                    </Button>
-                  </span>
-                </Tooltip>
-                <Button
-                  variant="contained" startIcon={<ReceiptLongIcon />}
-                  disabled={checkoutMutation.isPending || !customer || cart.length === 0 || !cashAccount}
-                  onClick={handleCheckout}
-                  sx={{ flex: 1, whiteSpace: "nowrap", px: 1, fontSize: "0.72rem" }}
-                >
-                  {checkoutMutation.isPending ? "Processing..." : "Complete Sale"}
-                </Button>
-              </Stack>
             </CardContent>
           </Card>
 
-          {lastReceipt && (
-            <Card elevation={0} sx={{ border: "1px solid", borderColor: "success.main", borderRadius: 3, mt: 2 }}>
-              <CardContent>
-                <Typography variant="subtitle2" fontWeight={700} color="success.main">
-                  ✓ Invoice #{lastReceipt.trans_no} posted for {lastReceipt.customer?.name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {lastReceipt.lines.length} item(s) · {formatCurrency(lastReceipt.subtotal, 2)}
-                </Typography>
-              </CardContent>
-            </Card>
-          )}
         </Grid>
       </Grid>
+      )}
 
       <Dialog open={recallOpen} onClose={() => setRecallOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Recall Held Sale</DialogTitle>
@@ -2015,6 +2506,10 @@ export default function PosCheckoutPage() {
         cashReceived={lastReceipt?.cashReceived}
         paperSize={posSettings?.receipt_paper_size}
         isQuote={isQuoteReceipt}
+        receiptSettings={(() => { try { return posSettings?.receipt_settings ? JSON.parse(posSettings.receipt_settings) : undefined; } catch { return undefined; } })()}
+        couponCode={lastReceipt?.couponCode}
+        voucherCode={lastReceipt?.voucherCode}
+        shiftId={lastReceipt?.shift_id}
       />
 
       <QuickAddCustomerDialog
@@ -2044,7 +2539,7 @@ export default function PosCheckoutPage() {
             is a fixed size, so nothing here ever needs to move or resize as
             the cart grows. */}
         <Box sx={{ flexShrink: 0 }}>{headerContent}</Box>
-        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+        <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {bodyContent}
         </Box>
       </Box>

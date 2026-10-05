@@ -69,6 +69,7 @@ class BarcodeLookupController extends Controller
                 $stockArray['matched_variant'] = $variant->only(['id', 'variant_name', 'price_adjustment']);
                 $baseSalePrice = $this->resolveSalePrice($stock->stock_id, $salesTypeId) ?? (float) ($stockArray['purchase_cost'] ?? 0);
                 $stockArray['sale_price'] = $baseSalePrice + (float) $variant->price_adjustment;
+                $stockArray['quantity'] = (float) DB::table('loc_stock')->where('stock_id', $stock->stock_id)->sum('quantity');
                 return response()->json($stockArray);
             }
         }
@@ -88,6 +89,7 @@ class BarcodeLookupController extends Controller
                     }
                     $stockArray = $stock->toArray();
                     $stockArray['sale_price'] = $this->resolveSalePrice($stock->stock_id, $salesTypeId);
+                    $stockArray['quantity'] = (float) DB::table('loc_stock')->where('stock_id', $stock->stock_id)->sum('quantity');
                     return $stockArray;
                 })
                 ->filter()
@@ -106,6 +108,7 @@ class BarcodeLookupController extends Controller
         if ($stock) {
             $stockArray = $stock->toArray();
             $stockArray['sale_price'] = $this->resolveSalePrice($stock->stock_id, $salesTypeId);
+            $stockArray['quantity'] = (float) DB::table('loc_stock')->where('stock_id', $stock->stock_id)->sum('quantity');
             return response()->json($stockArray);
         }
 

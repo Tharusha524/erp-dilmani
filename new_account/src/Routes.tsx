@@ -53,9 +53,11 @@ import SetPricePage from "./views/Supermarket/SetPrice/SetPricePage";
 import SuppliersPage from "./views/Supermarket/Suppliers/SuppliersPage";
 import SupermarketCategoriesPage from "./views/Supermarket/ItemCategories/SupermarketCategoriesPage";
 import PurchasePage from "./views/Supermarket/Purchase/PurchasePage";
+import DirectSupplierInvoicePage from "./views/Supermarket/DirectSupplierInvoice/DirectSupplierInvoicePage";
 import StockPage from "./views/Supermarket/Stock/StockPage";
 import ServiceTicketsPage from "./views/Supermarket/ServiceTickets/ServiceTicketsPage";
 import PosSettingsPage from "./views/Supermarket/PosSettings/PosSettingsPage";
+import ReceiptCustomizePage from "./views/Supermarket/PosSettings/ReceiptCustomizePage";
 import PendingOfflineSalesPage from "./views/Supermarket/PendingOfflineSales/PendingOfflineSalesPage";
 import SupermarketReportsPage from "./views/Supermarket/Reports/SupermarketReportsPage";
 import WeighAndPrintPage from "./views/Supermarket/WeighAndPrint/WeighAndPrintPage";
@@ -563,6 +565,7 @@ const AppRoutes = () => {
         <Route path="/supermarket/product-variants" element={withLayout(MainLayout, ProductVariantsPage)} />
         <Route path="/supermarket/service-tickets" element={withLayout(MainLayout, ServiceTicketsPage)} />
         <Route path="/supermarket/pos-settings" element={withLayout(MainLayout, PosSettingsPage)} />
+        <Route path="/supermarket/receipt-customize" element={withLayout(MainLayout, ReceiptCustomizePage)} />
         <Route path="/supermarket/offline-sales" element={withLayout(MainLayout, PendingOfflineSalesPage)} />
         <Route path="/supermarket/reports" element={withLayout(MainLayout, SupermarketReportsPage)} />
         <Route path="/supermarket/weigh-and-print" element={withLayout(MainLayout, WeighAndPrintPage)} />
@@ -572,6 +575,7 @@ const AppRoutes = () => {
         <Route path="/supermarket/suppliers" element={withLayout(MainLayout, SuppliersPage)} />
         <Route path="/supermarket/category" element={withLayout(MainLayout, SupermarketCategoriesPage)} />
         <Route path="/supermarket/purchase" element={withLayout(MainLayout, PurchasePage)} />
+        <Route path="/supermarket/direct-supplier-invoice" element={withLayout(MainLayout, DirectSupplierInvoicePage)} />
         <Route path="/supermarket/stock" element={withLayout(MainLayout, StockPage)} />
         <Route path="/supermarket/sales-analytics" element={withLayout(MainLayout, SalesAnalyticsPage)} />
         {/* Same page, reused as the blueprint's "Dashboard" entry — it

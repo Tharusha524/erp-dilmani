@@ -82,6 +82,18 @@ export const bulkUpdateUnits = async (stockIds: string[], unitId: number) => {
   return response.data;
 };
 
+export const updateEoqSettings = async (
+  stockId: string,
+  orderingCost: number | null,
+  holdingCostPercent: number | null
+) => {
+  const response = await api.patch(`${API_URL}/${stockId}/eoq-settings`, {
+    eoq_ordering_cost: orderingCost,
+    eoq_holding_cost_percent: holdingCostPercent,
+  });
+  return response.data;
+};
+
 export const updateWholesalePricing = async (
   stockId: string,
   wholesaleQtyThreshold: number | null,

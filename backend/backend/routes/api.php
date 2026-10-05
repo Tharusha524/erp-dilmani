@@ -119,6 +119,7 @@ use App\Http\Controllers\LoyaltyTierController;
 use App\Http\Controllers\LoyaltyCardController;
 use App\Http\Controllers\LoyaltyPointsController;
 use App\Http\Controllers\OfferController;
+use App\Http\Controllers\CardTypeController;
 use App\Http\Controllers\PosShiftController;
 use App\Http\Controllers\WinBackCampaignController;
 use App\Http\Controllers\StockDamageController;
@@ -359,6 +360,7 @@ Route::patch('stock-masters/bulk-units', [StockMasterController::class, 'bulkUpd
 Route::apiResource('stock-masters', StockMasterController::class);
 Route::patch('stock-masters/{id}/mrp-price', [StockMasterController::class, 'updateMrpPrice']);
 Route::patch('stock-masters/{id}/wholesale-pricing', [StockMasterController::class, 'updateWholesalePricing']);
+Route::patch('stock-masters/{id}/eoq-settings', [StockMasterController::class, 'updateEoqSettings']);
 Route::patch('stock-masters/{id}/expiry-date', [StockMasterController::class, 'updateExpiryDate']);
 Route::get('stock-masters-expiry-list', [StockMasterController::class, 'expiryList']);
 
@@ -449,6 +451,11 @@ Route::get('loyalty-points/{debtorNo}/history', [LoyaltyPointsController::class,
 
 Route::apiResource('offers', OfferController::class);
 Route::get('offers-applicable', [OfferController::class, 'applicable']);
+Route::get('card-types', [CardTypeController::class, 'index']);
+Route::post('card-types', [CardTypeController::class, 'store']);
+Route::put('card-types/{id}', [CardTypeController::class, 'update']);
+Route::delete('card-types/{id}', [CardTypeController::class, 'destroy']);
+Route::post('card-types/tag-payment', [CardTypeController::class, 'tagPayment']);
 Route::get('offers-popularity', [OfferController::class, 'popularity']);
 
 // ---- Customer mobile app: self-service auth + "me" endpoints ----
@@ -480,6 +487,8 @@ Route::middleware(['auth:sanctum', 'customer.auth'])->prefix('customer')->group(
 
 Route::apiResource('pos-shifts', PosShiftController::class)->only(['index', 'store', 'show']);
 Route::post('pos-shifts/{id}/close', [PosShiftController::class, 'close']);
+Route::post('pos-shifts/{id}/float-movements', [PosShiftController::class, 'floatMovement']);
+Route::get('pos-shifts/{id}/float-movements', [PosShiftController::class, 'floatMovements']);
 
 Route::get('win-back/inactive-customers', [WinBackCampaignController::class, 'inactiveCustomers']);
 Route::post('win-back/send', [WinBackCampaignController::class, 'send']);

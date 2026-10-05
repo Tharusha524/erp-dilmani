@@ -94,32 +94,60 @@ class StockMasterController extends Controller
         foreach (array_keys($accountingDefaults) as $key) {
             unset($rules[$key]);
         }
-        $rules['category_id'] = 'required|integer|exists:item_category,category_id';
-        $rules['subcategory_id'] = 'nullable|integer|exists:subcategories,id';
-        $rules['brand_id'] = 'nullable|integer|exists:brands,id';
-        $rules['units'] = 'required|integer|exists:item_units,id';
+        $rules['category_id'] = 'nullable|integer';
+        $rules['subcategory_id'] = 'nullable|integer';
+        $rules['brand_id'] = 'nullable|integer';
+        $rules['units'] = 'nullable|integer|exists:item_units,id';
+        foreach (array_keys($accountingDefaults) as $key) {
+            $rules[$key] = 'nullable';
+        }
 
         $created = 0;
         $errors = [];
 
         foreach ($rows as $index => $row) {
             $rowNo = $index + 1;
-            $stockId = $row['stock_id'] ?? null;
+            $row['stock_id'] = isset($row['stock_id']) ? (string) $row['stock_id'] : null;
+            $stockId = $row['stock_id'];
 
             $categoryId = $this->resolveByName('item_category', 'description', 'category_id', $row['category'] ?? null);
             if (($row['category'] ?? '') !== '' && $categoryId === null) {
-                $errors[] = ['row' => $rowNo, 'stock_id' => $stockId, 'message' => "Category \"{$row['category']}\" not found."];
-                continue;
+                $categoryId = DB::table('item_category')->insertGetId([
+                    'description'        => trim($row['category']),
+                    'dflt_tax_type'      => 1,
+                    'dflt_units'         => 1,
+                    'dflt_mb_flag'       => 2,
+                    'dflt_sales_act'     => '2000',
+                    'dflt_cogs_act'      => '3010',
+                    'dflt_inventory_act' => '1100',
+                    'dflt_adjustment_act'=> '3020',
+                    'dflt_wip_act'       => '2200',
+                ]);
+            }
+            // Fall back to first available category if none provided
+            if ($categoryId === null) {
+                $categoryId = DB::table('item_category')->value('category_id');
             }
 
             $subcategoryId = $this->resolveByName('subcategories', 'name', 'id', $row['subcategory'] ?? null);
+            if (($row['subcategory'] ?? '') !== '' && $subcategoryId === null) {
+                $subcategoryId = DB::table('subcategories')->insertGetId(['name' => trim($row['subcategory']), 'category_id' => $categoryId]);
+            }
+
             $brandId = $this->resolveByName('brands', 'name', 'id', $row['brand'] ?? null);
+            if (($row['brand'] ?? '') !== '' && $brandId === null) {
+                $brandId = DB::table('brands')->insertGetId(['name' => trim($row['brand'])]);
+            }
 
             $unitsId = $this->resolveByName('item_units', 'name', 'id', $row['units'] ?? null)
                 ?? $this->resolveByName('item_units', 'abbr', 'id', $row['units'] ?? null);
             if (($row['units'] ?? '') !== '' && $unitsId === null) {
                 $errors[] = ['row' => $rowNo, 'stock_id' => $stockId, 'message' => "Unit \"{$row['units']}\" not found."];
                 continue;
+            }
+            // Fall back to the first available unit if none provided
+            if ($unitsId === null) {
+                $unitsId = DB::table('item_units')->value('id');
             }
 
             $data = array_merge($accountingDefaults, [
@@ -303,6 +331,31 @@ class StockMasterController extends Controller
 
         $stockMaster->wholesale_qty_threshold = $validated['wholesale_qty_threshold'] ?? null;
         $stockMaster->wholesale_price = $validated['wholesale_price'] ?? null;
+        $stockMaster->save();
+
+        return response()->json($stockMaster);
+    }
+
+    /**
+     * Set the two EOQ inputs this product needs — Ordering Cost and Holding
+     * Cost % — same isolated single-purpose pattern as updateMrpPrice()
+     * above. Annual demand (the third EOQ input) comes from real sales
+     * history, computed in LowStockController, not stored here.
+     */
+    public function updateEoqSettings(Request $request, string $id)
+    {
+        $stockMaster = $this->stockMasterRepo->find($id);
+        if (!$stockMaster) {
+            return response()->json(['message' => 'Stock Master not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'eoq_ordering_cost' => ['nullable', 'numeric', 'min:0'],
+            'eoq_holding_cost_percent' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+        ]);
+
+        $stockMaster->eoq_ordering_cost = $validated['eoq_ordering_cost'] ?? null;
+        $stockMaster->eoq_holding_cost_percent = $validated['eoq_holding_cost_percent'] ?? null;
         $stockMaster->save();
 
         return response()->json($stockMaster);

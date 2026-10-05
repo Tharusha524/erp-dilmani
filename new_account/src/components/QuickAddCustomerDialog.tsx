@@ -32,6 +32,7 @@ interface QuickAddCustomerDialogProps {
 export default function QuickAddCustomerDialog({ open, onClose, onCreated }: QuickAddCustomerDialogProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [birthDate, setBirthDate] = useState("");
 
   const { data: currencies } = useQuery({ queryKey: ["currencies"], queryFn: getCurrencies, enabled: open });
   const { data: salesTypes } = useQuery({ queryKey: ["sales-types"], queryFn: getSalesTypes, enabled: open });
@@ -70,6 +71,7 @@ export default function QuickAddCustomerDialog({ open, onClose, onCreated }: Qui
         cost_center2_id: 0,
         inactive: 0,
         mobile: phone.trim() || null,
+        date_of_birth: birthDate || null,
       });
 
       // A checkout can't resolve a branch for a customer that has none —
@@ -98,6 +100,7 @@ export default function QuickAddCustomerDialog({ open, onClose, onCreated }: Qui
       onCreated(customer);
       setName("");
       setPhone("");
+      setBirthDate("");
       onClose();
     },
     onError: (error) => {
@@ -121,6 +124,11 @@ export default function QuickAddCustomerDialog({ open, onClose, onCreated }: Qui
             label="Mobile Number" size="small" fullWidth
             value={phone} onChange={(e) => setPhone(e.target.value)}
             placeholder="07XXXXXXXX"
+          />
+          <TextField
+            label="Birth Date" type="date" size="small" fullWidth
+            value={birthDate} onChange={(e) => setBirthDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
           />
         </Stack>
       </DialogContent>

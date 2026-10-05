@@ -10,7 +10,7 @@ import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
 import { getStockList } from "../../../api/Inventory/StockListApi";
 import { createItemCode } from "../../../api/ItemCodes/ItemCodesApi";
-import { updateMrpPrice, updateExpiryDate, updateWholesalePricing } from "../../../api/Item/ItemApi";
+import { updateMrpPrice, updateExpiryDate, updateWholesalePricing, updateEoqSettings } from "../../../api/Item/ItemApi";
 import { useNavigate } from "react-router-dom";
 import { getSalesPricingByStockId, createSalesPricing, updateSalesPricing } from "../../../api/SalesPricing/SalesPricingApi";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
@@ -40,9 +40,11 @@ export default function SetPricePage() {
   const [newBarcode, setNewBarcode] = useState("");
   const [mrpPrice, setMrpPrice] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
-  const [activeTab, setActiveTab] = useState<"retail" | "wholesale">("retail");
+  const [activeTab, setActiveTab] = useState<"retail" | "wholesale" | "eoq">("retail");
   const [wholesaleQty, setWholesaleQty] = useState("");
   const [wholesalePrice, setWholesalePrice] = useState("");
+  const [eoqOrderingCost, setEoqOrderingCost] = useState("");
+  const [eoqHoldingCostPercent, setEoqHoldingCostPercent] = useState("");
 
   const { data: results } = useQuery({
     queryKey: ["stock-search", search],
@@ -94,6 +96,8 @@ export default function SetPricePage() {
     setExpiryDate(p.expiry_date ? String(p.expiry_date).slice(0, 10) : "");
     setWholesaleQty(p.wholesale_qty_threshold != null ? String(p.wholesale_qty_threshold) : "");
     setWholesalePrice(p.wholesale_price != null ? String(p.wholesale_price) : "");
+    setEoqOrderingCost(p.eoq_ordering_cost != null ? String(p.eoq_ordering_cost) : "");
+    setEoqHoldingCostPercent(p.eoq_holding_cost_percent != null ? String(p.eoq_holding_cost_percent) : "");
   };
 
   const saveMrpMutation = useMutation({
@@ -128,6 +132,21 @@ export default function SetPricePage() {
       queryClient.invalidateQueries({ queryKey: ["stock-list"] });
     },
     onError: (err: any) => notify.error(err?.response?.data?.message || "Failed to save wholesale pricing"),
+  });
+
+  const saveEoqMutation = useMutation({
+    mutationFn: () => updateEoqSettings(
+      product.stock_id,
+      eoqOrderingCost ? Number(eoqOrderingCost) : null,
+      eoqHoldingCostPercent ? Number(eoqHoldingCostPercent) : null
+    ),
+    onSuccess: () => {
+      notify.success("EOQ settings saved");
+      queryClient.invalidateQueries({ queryKey: ["stock-search"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-list"] });
+      queryClient.invalidateQueries({ queryKey: ["low-stock"] });
+    },
+    onError: (err: any) => notify.error(err?.response?.data?.message || "Failed to save EOQ settings"),
   });
 
   const saveMutation = useMutation({
@@ -252,6 +271,7 @@ export default function SetPricePage() {
                 <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
                   <Tab value="retail" label="Retail Pricing" />
                   <Tab value="wholesale" label="Wholesale Pricing" />
+                  <Tab value="eoq" label="EOQ Setup" />
                 </Tabs>
 
                 {activeTab === "retail" && (
@@ -353,6 +373,39 @@ export default function SetPricePage() {
                       sx={{ alignSelf: "flex-start" }}
                     >
                       {saveWholesaleMutation.isPending ? "Saving..." : "Save Wholesale Pricing"}
+                    </Button>
+                  </>
+                )}
+
+                {activeTab === "eoq" && (
+                  <>
+                    <Typography variant="caption" color="text.secondary">
+                      EOQ (Economic Order Quantity) is the ideal amount to reorder at once — it balances ordering
+                      cost against holding cost, using this product's real sales history as demand. Set the two
+                      inputs below, and the suggested reorder quantity shows up automatically on Low Stock Alerts.
+                    </Typography>
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                      <TextField
+                        label="Ordering Cost" type="number" size="small" sx={{ flex: 1 }}
+                        value={eoqOrderingCost}
+                        onChange={(e) => setEoqOrderingCost(e.target.value)}
+                        helperText="Cost to place one purchase order for this item (delivery, admin, etc.)"
+                      />
+                      <TextField
+                        label="Holding Cost" type="number" size="small" sx={{ flex: 1 }}
+                        value={eoqHoldingCostPercent}
+                        onChange={(e) => setEoqHoldingCostPercent(e.target.value)}
+                        InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }}
+                        helperText="Yearly cost to store one unit, as a % of its Purchase Cost"
+                      />
+                    </Stack>
+                    <Button
+                      variant="contained" size="large" startIcon={<PriceChangeIcon />}
+                      disabled={saveEoqMutation.isPending}
+                      onClick={() => saveEoqMutation.mutate()}
+                      sx={{ alignSelf: "flex-start" }}
+                    >
+                      {saveEoqMutation.isPending ? "Saving..." : "Save EOQ Settings"}
                     </Button>
                   </>
                 )}

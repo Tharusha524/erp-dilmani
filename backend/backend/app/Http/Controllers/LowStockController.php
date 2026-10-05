@@ -23,7 +23,10 @@ class LowStockController extends Controller
                 'sm.description',
                 'ls.loc_code',
                 'ls.quantity',
-                'ls.reorder_level'
+                'ls.reorder_level',
+                'sm.purchase_cost',
+                'sm.eoq_ordering_cost',
+                'sm.eoq_holding_cost_percent'
             )
             ->whereNotNull('ls.reorder_level')
             ->whereColumn('ls.quantity', '<=', 'ls.reorder_level')
@@ -52,6 +55,19 @@ class LowStockController extends Controller
                 $status = 'low';
             }
 
+            // EOQ = sqrt(2 * annual demand * ordering cost / annual holding
+            // cost per unit). Annual demand comes from this item's actual
+            // sales history (avg daily x365) — only null when the item's
+            // two EOQ inputs haven't been set yet (Set Price -> EOQ Setup).
+            $eoqQuantity = null;
+            if ($row->eoq_ordering_cost !== null && $row->eoq_holding_cost_percent !== null && $row->purchase_cost > 0) {
+                $annualDemand = $avgDaily * 365;
+                $holdingCostPerUnit = ($row->eoq_holding_cost_percent / 100) * $row->purchase_cost;
+                if ($annualDemand > 0 && $holdingCostPerUnit > 0) {
+                    $eoqQuantity = round(sqrt((2 * $annualDemand * $row->eoq_ordering_cost) / $holdingCostPerUnit));
+                }
+            }
+
             return [
                 'stock_id' => $row->stock_id,
                 'description' => $row->description,
@@ -60,6 +76,7 @@ class LowStockController extends Controller
                 'reorder_level' => $row->reorder_level,
                 'avg_daily_sales' => round($avgDaily, 2),
                 'days_of_stock_remaining' => $daysRemaining,
+                'eoq_quantity' => $eoqQuantity,
                 'status' => $status,
             ];
         });

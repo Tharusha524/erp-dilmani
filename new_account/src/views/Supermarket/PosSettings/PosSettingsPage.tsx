@@ -9,6 +9,8 @@ import SaveIcon from "@mui/icons-material/Save";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import TuneIcon from "@mui/icons-material/Tune";
+import { useNavigate } from "react-router-dom";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
 import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
@@ -16,6 +18,7 @@ import PageLoader from "../../../components/PageLoader";
 import ConfirmDialog from "../../../components/ConfirmDialog";
 import { getPosSettings, updatePosSettings } from "../../../api/Pos/posOpsApi";
 import { getItemUnits, createItemUnit, updateItemUnit, deleteItemUnit } from "../../../api/ItemUnit/ItemUnitApi";
+import { getCardTypes, createCardType, updateCardType, deleteCardType } from "../../../api/CardType/CardTypeApi";
 import { notify } from "../../../services/notificationService";
 
 const TOGGLES: { key: string; label: string; helper: string }[] = [
@@ -30,6 +33,7 @@ const TOGGLES: { key: string; label: string; helper: string }[] = [
 const emptyUnitForm = { id: null as number | string | null, abbr: "", name: "", decimals: "0", inactive: false };
 
 export default function PosSettingsPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["pos-settings"], queryFn: getPosSettings });
   const [values, setValues] = useState<Record<string, any>>({});
@@ -73,6 +77,43 @@ export default function PosSettingsPage() {
     onError: (err: any) => {
       notify.error(err?.response?.data?.message || "Failed to delete unit — it may still be used by a product");
       setConfirmDeleteUnitId(null);
+    },
+  });
+
+  // Card Types — Add/Edit/Delete the payment card brands (Visa, Mastercard,
+  // ...) available to tag at checkout, for reporting on which card brand
+  // was used. Plain master-data CRUD, no accounting impact.
+  const { data: cardTypes, isLoading: cardTypesLoading } = useQuery({ queryKey: ["card-types"], queryFn: () => getCardTypes() });
+  const [cardTypeDialogOpen, setCardTypeDialogOpen] = useState(false);
+  const [cardTypeForm, setCardTypeForm] = useState<{ id: number | string | null; name: string }>({ id: null, name: "" });
+  const [confirmDeleteCardTypeId, setConfirmDeleteCardTypeId] = useState<number | string | null>(null);
+
+  const openCreateCardType = () => { setCardTypeForm({ id: null, name: "" }); setCardTypeDialogOpen(true); };
+  const openEditCardType = (c: any) => { setCardTypeForm({ id: c.id, name: c.name ?? "" }); setCardTypeDialogOpen(true); };
+
+  const saveCardTypeMutation = useMutation({
+    mutationFn: () => {
+      const payload = { name: cardTypeForm.name.trim() };
+      return cardTypeForm.id ? updateCardType(cardTypeForm.id, payload) : createCardType(payload);
+    },
+    onSuccess: () => {
+      notify.success(cardTypeForm.id ? "Card type updated" : "Card type created");
+      queryClient.invalidateQueries({ queryKey: ["card-types"] });
+      setCardTypeDialogOpen(false);
+    },
+    onError: (err: any) => notify.error(err?.response?.data?.message || "Failed to save card type"),
+  });
+
+  const deleteCardTypeMutation = useMutation({
+    mutationFn: (id: number | string) => deleteCardType(id),
+    onSuccess: () => {
+      notify.success("Card type deleted");
+      queryClient.invalidateQueries({ queryKey: ["card-types"] });
+      setConfirmDeleteCardTypeId(null);
+    },
+    onError: (err: any) => {
+      notify.error(err?.response?.data?.message || "Failed to delete card type");
+      setConfirmDeleteCardTypeId(null);
     },
   });
 
@@ -138,10 +179,17 @@ export default function PosSettingsPage() {
 
       <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3 }}>
         <CardContent>
-          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Receipt & Billing</Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
-            The receipt logo is always your business logo from Setup → Company Setup — update it there to change every receipt.
-          </Typography>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Receipt & Billing</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+                The receipt logo is always your business logo from Setup → Company Setup — update it there to change every receipt.
+              </Typography>
+            </Box>
+            <Button variant="outlined" startIcon={<TuneIcon />} onClick={() => navigate("/supermarket/receipt-customize")}>
+              Customize Receipt
+            </Button>
+          </Stack>
           <Stack spacing={2}>
             <Divider />
             <Typography variant="body2" fontWeight={600}>Default Receipt Paper Size</Typography>
@@ -270,6 +318,78 @@ export default function PosSettingsPage() {
         onClose={() => setConfirmDeleteUnitId(null)}
         onConfirm={() => confirmDeleteUnitId != null && deleteUnitMutation.mutate(confirmDeleteUnitId)}
         loading={deleteUnitMutation.isPending}
+      />
+
+      <Card elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 3, mt: 2 }}>
+        <CardContent>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700}>Card Types</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Payment card brands (Visa, Mastercard, ...) the cashier can tag at checkout — for reporting only,
+                doesn't change what's charged.
+              </Typography>
+            </Box>
+            <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={openCreateCardType}>Add Card Type</Button>
+          </Stack>
+
+          {cardTypesLoading ? <PageLoader /> : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell align="center">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {(cardTypes ?? []).map((c: any) => (
+                    <TableRow key={c.id} hover>
+                      <TableCell>{c.name}</TableCell>
+                      <TableCell align="center">
+                        <IconButton size="small" onClick={() => openEditCardType(c)}><EditIcon fontSize="small" /></IconButton>
+                        <IconButton size="small" color="error" onClick={() => setConfirmDeleteCardTypeId(c.id)}><DeleteIcon fontSize="small" /></IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!cardTypes || cardTypes.length === 0) && (
+                    <TableRow><TableCell colSpan={2} align="center"><Typography variant="body2">No card types yet.</Typography></TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={cardTypeDialogOpen} onClose={() => setCardTypeDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>{cardTypeForm.id ? "Edit Card Type" : "Add Card Type"}</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Name" size="small" fullWidth sx={{ mt: 1 }}
+            placeholder="e.g. Visa"
+            value={cardTypeForm.name} onChange={(e) => setCardTypeForm({ ...cardTypeForm, name: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCardTypeDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            disabled={!cardTypeForm.name.trim() || saveCardTypeMutation.isPending}
+            onClick={() => saveCardTypeMutation.mutate()}
+          >
+            {saveCardTypeMutation.isPending ? "Saving..." : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!confirmDeleteCardTypeId}
+        title="Delete this card type?"
+        message="Past sales tagged with this card type keep their record — this only removes it from the list for new selections."
+        onClose={() => setConfirmDeleteCardTypeId(null)}
+        onConfirm={() => confirmDeleteCardTypeId != null && deleteCardTypeMutation.mutate(confirmDeleteCardTypeId)}
+        loading={deleteCardTypeMutation.isPending}
       />
     </FormPageLayout>
   );

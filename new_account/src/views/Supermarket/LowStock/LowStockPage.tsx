@@ -56,6 +56,7 @@ export default function LowStockPage() {
                 <TableCell align="right">Reorder Level</TableCell>
                 <TableCell align="right">Avg Daily Sales</TableCell>
                 <TableCell align="right">Days Remaining</TableCell>
+                <TableCell align="right">Suggested Reorder Qty (EOQ)</TableCell>
                 <TableCell align="center">Status</TableCell>
               </TableRow>
             </TableHead>
@@ -68,13 +69,14 @@ export default function LowStockPage() {
                   <TableCell align="right">{row.reorder_level}</TableCell>
                   <TableCell align="right">{row.avg_daily_sales}</TableCell>
                   <TableCell align="right">{row.days_of_stock_remaining ?? "—"}</TableCell>
+                  <TableCell align="right">{row.eoq_quantity ?? "—"}</TableCell>
                   <TableCell align="center">
                     <Chip label={row.status} size="small" color={statusColor[row.status] ?? "default"} />
                   </TableCell>
                 </TableRow>
               ))}
               {(!data || data.length === 0) && (
-                <TableRow><TableCell colSpan={7} align="center"><Typography variant="body2">No low-stock items. Everything looks fine.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} align="center"><Typography variant="body2">No low-stock items. Everything looks fine.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>

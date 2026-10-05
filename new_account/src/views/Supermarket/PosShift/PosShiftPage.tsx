@@ -3,18 +3,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, Stack, TextField, Table,
   TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, Chip, Typography,
+  ToggleButton, ToggleButtonGroup, Divider,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import SummarizeIcon from "@mui/icons-material/Summarize";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import { FormPageLayout } from "../../../components/Layout/FormPageLayout";
 import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
 import PageLoader from "../../../components/PageLoader";
-import { getPosShifts, openPosShift, closePosShift } from "../../../api/Pos/posApi";
+import { getPosShifts, openPosShift, closePosShift, addFloatMovement, getFloatMovements } from "../../../api/Pos/posApi";
 import { getShiftDayEndSummary } from "../../../api/Pos/posAdvancedApi";
 import useCurrentUser from "../../../hooks/useCurrentUser";
 import { useHomeCurrency } from "../../../hooks/useHomeCurrency";
+import { notify } from "../../../services/notificationService";
 
 export default function PosShiftPage() {
   const queryClient = useQueryClient();
@@ -26,6 +29,10 @@ export default function PosShiftPage() {
   const [closingExpected, setClosingExpected] = useState("0");
   const [closingCounted, setClosingCounted] = useState("0");
   const [summaryShiftId, setSummaryShiftId] = useState<number | null>(null);
+  const [floatShiftId, setFloatShiftId] = useState<number | null>(null);
+  const [floatType, setFloatType] = useState<"cash_in" | "cash_out">("cash_in");
+  const [floatAmount, setFloatAmount] = useState("");
+  const [floatReason, setFloatReason] = useState("");
 
   const { data: shifts, isLoading } = useQuery({ queryKey: ["pos-shifts"], queryFn: () => getPosShifts() });
 
@@ -50,6 +57,28 @@ export default function PosShiftPage() {
       queryClient.invalidateQueries({ queryKey: ["pos-shifts"] });
       setCloseDialogId(null);
     },
+  });
+
+  const { data: floatMovements } = useQuery({
+    queryKey: ["float-movements", floatShiftId],
+    queryFn: () => getFloatMovements(floatShiftId!),
+    enabled: floatShiftId !== null,
+  });
+
+  const floatMutation = useMutation({
+    mutationFn: () => addFloatMovement(floatShiftId!, {
+      type: floatType,
+      amount: Number(floatAmount),
+      reason: floatReason || undefined,
+      recorded_by: user?.id ? Number(user.id) : undefined,
+    }),
+    onSuccess: () => {
+      notify.success(floatType === "cash_in" ? "Cash In recorded" : "Cash Out recorded");
+      queryClient.invalidateQueries({ queryKey: ["float-movements", floatShiftId] });
+      setFloatAmount("");
+      setFloatReason("");
+    },
+    onError: () => notify.error("Failed to record movement"),
   });
 
   return (
@@ -90,9 +119,14 @@ export default function PosShiftPage() {
                   <TableCell align="center">
                     <Stack direction="row" spacing={1} justifyContent="center">
                       {s.status === "open" && (
-                        <Button size="small" variant="outlined" color="warning" startIcon={<StopIcon />} onClick={() => setCloseDialogId(s.id)}>
-                          Close
-                        </Button>
+                        <>
+                          <Button size="small" variant="outlined" color="success" startIcon={<SwapHorizIcon />} onClick={() => { setFloatShiftId(s.id); setFloatType("cash_in"); setFloatAmount(""); setFloatReason(""); }}>
+                            Cash In/Out
+                          </Button>
+                          <Button size="small" variant="outlined" color="warning" startIcon={<StopIcon />} onClick={() => setCloseDialogId(s.id)}>
+                            Close
+                          </Button>
+                        </>
                       )}
                       <Button size="small" variant="text" startIcon={<SummarizeIcon />} onClick={() => setSummaryShiftId(s.id)}>
                         Day-End Summary
@@ -147,6 +181,72 @@ export default function PosShiftPage() {
             })}
           >
             {closeMutation.isPending ? "Closing..." : "Close Shift"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cash In / Cash Out Dialog */}
+      <Dialog open={floatShiftId !== null} onClose={() => setFloatShiftId(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Cash In / Cash Out</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <ToggleButtonGroup
+              value={floatType} exclusive
+              onChange={(_, v) => { if (v) setFloatType(v); }}
+              fullWidth size="small"
+            >
+              <ToggleButton value="cash_in" color="success">Cash In (+)</ToggleButton>
+              <ToggleButton value="cash_out" color="error">Cash Out (−)</ToggleButton>
+            </ToggleButtonGroup>
+            <TextField
+              label="Amount (LKR)" type="number" fullWidth autoFocus
+              value={floatAmount} onChange={(e) => setFloatAmount(e.target.value)}
+              inputProps={{ min: 0, step: "any" }}
+            />
+            <TextField
+              label="Reason (optional)" fullWidth
+              value={floatReason} onChange={(e) => setFloatReason(e.target.value)}
+              placeholder="e.g. Manager withdrawal, Change top-up"
+            />
+
+            {(floatMovements ?? []).length > 0 && (
+              <>
+                <Divider><Typography variant="caption" color="text.secondary">Previous movements this shift</Typography></Divider>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Time</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell align="right">Amount</TableCell>
+                      <TableCell>Reason</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {(floatMovements ?? []).map((m: any) => (
+                      <TableRow key={m.id}>
+                        <TableCell>{new Date(m.created_at).toLocaleTimeString()}</TableCell>
+                        <TableCell>
+                          <Chip size="small" label={m.type === "cash_in" ? "Cash In" : "Cash Out"} color={m.type === "cash_in" ? "success" : "error"} />
+                        </TableCell>
+                        <TableCell align="right">{Number(m.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}</TableCell>
+                        <TableCell>{m.reason || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFloatShiftId(null)}>Close</Button>
+          <Button
+            variant="contained"
+            color={floatType === "cash_in" ? "success" : "error"}
+            disabled={!floatAmount || Number(floatAmount) <= 0 || floatMutation.isPending}
+            onClick={() => floatMutation.mutate()}
+          >
+            {floatMutation.isPending ? "Saving…" : `Record ${floatType === "cash_in" ? "Cash In" : "Cash Out"}`}
           </Button>
         </DialogActions>
       </Dialog>

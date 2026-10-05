@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, Stack, TextField, Table,
-  TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, Typography, IconButton, Tooltip,
+  TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, Typography, IconButton,
+  Tooltip, Divider, MenuItem, Select, FormControl, InputLabel, InputAdornment,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -12,19 +13,20 @@ import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
 import PageLoader from "../../../components/PageLoader";
 import { getSuppliers, createSupplier, updateSupplier, deleteSupplier } from "../../../api/Supplier/SupplierApi";
+import { getPaymentTerms } from "../../../api/PaymentTerm/PaymentTermApi";
 import { notify } from "../../../services/notificationService";
 
-const emptyForm = { supp_name: "", contact: "" };
+const emptyForm = {
+  supp_name: "",
+  contact: "",
+  mail_address: "",
+  credit_limit: "",
+  payment_terms: "",
+  bank_name: "",
+  bank_branch: "",
+  bank_acc_no: "",
+};
 
-/**
- * A short supplier list for day-to-day supermarket use — see who your
- * suppliers are, add a new one, or fix a name/contact typo, without opening
- * the full Purchase → Maintenance → Suppliers screen (GL accounts, tax
- * groups, credit terms, currency — built for the accounts team, not quick
- * lookups). Same genuine createSupplier/updateSupplier/getSuppliers APIs —
- * just a focused front end. Full detailed setup is still available under
- * Purchase → Maintenance for whoever needs it.
- */
 export default function SuppliersPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -32,13 +34,23 @@ export default function SuppliersPage() {
   const [editingSupplier, setEditingSupplier] = useState<any>(null);
 
   const { data: suppliers, isLoading } = useQuery({ queryKey: ["suppliers-all"], queryFn: getSuppliers });
+  const { data: paymentTerms } = useQuery({ queryKey: ["payment-terms"], queryFn: getPaymentTerms });
 
-  const createMutation = useMutation({
-    mutationFn: () => createSupplier({
+  const buildPayload = () => {
+    const parts = [form.bank_name.trim(), form.bank_branch.trim(), form.bank_acc_no.trim()].filter(Boolean);
+    return {
       supp_name: form.supp_name.trim(),
       supp_short_name: form.supp_name.trim().slice(0, 30),
       contact: form.contact.trim(),
-    }),
+      mail_address: form.mail_address.trim(),
+      credit_limit: form.credit_limit !== "" ? Number(form.credit_limit) : 0,
+      payment_terms: form.payment_terms !== "" ? Number(form.payment_terms) : undefined,
+      bank_account: parts.join(" — "),
+    };
+  };
+
+  const createMutation = useMutation({
+    mutationFn: () => createSupplier(buildPayload()),
     onSuccess: () => {
       notify.success("Supplier added");
       queryClient.invalidateQueries({ queryKey: ["suppliers-all"] });
@@ -48,12 +60,7 @@ export default function SuppliersPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: () => updateSupplier(editingSupplier.supplier_id, {
-      ...editingSupplier,
-      supp_name: form.supp_name.trim(),
-      supp_short_name: form.supp_name.trim().slice(0, 30),
-      contact: form.contact.trim(),
-    }),
+    mutationFn: () => updateSupplier(editingSupplier.supplier_id, { ...editingSupplier, ...buildPayload() }),
     onSuccess: () => {
       notify.success("Supplier updated");
       queryClient.invalidateQueries({ queryKey: ["suppliers-all"] });
@@ -85,17 +92,21 @@ export default function SuppliersPage() {
 
   const openEditDialog = (s: any) => {
     setEditingSupplier(s);
-    setForm({ supp_name: s.supp_name ?? "", contact: s.contact ?? "" });
+    setForm({
+      supp_name: s.supp_name ?? "",
+      contact: s.contact ?? "",
+      mail_address: s.mail_address ?? "",
+      credit_limit: s.credit_limit != null ? String(s.credit_limit) : "",
+      payment_terms: s.payment_terms != null ? String(s.payment_terms) : "",
+      bank_name: (s.bank_account ?? "").split(" — ")[0] ?? "",
+      bank_branch: (s.bank_account ?? "").split(" — ")[1] ?? "",
+      bank_acc_no: (s.bank_account ?? "").split(" — ")[2] ?? "",
+    });
     setOpen(true);
   };
 
-  const handleSubmit = () => {
-    if (editingSupplier) {
-      updateMutation.mutate();
-    } else {
-      createMutation.mutate();
-    }
-  };
+  const set = (key: string, val: string) => setForm((prev) => ({ ...prev, [key]: val }));
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <FormPageLayout>
@@ -114,6 +125,9 @@ export default function SuppliersPage() {
               <TableRow>
                 <TableCell>Name</TableCell>
                 <TableCell>Contact</TableCell>
+                <TableCell>Address</TableCell>
+                <TableCell>Credit Limit</TableCell>
+                <TableCell>Payment Terms</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -122,11 +136,14 @@ export default function SuppliersPage() {
                 <TableRow key={s.supplier_id} hover>
                   <TableCell>{s.supp_name}</TableCell>
                   <TableCell>{s.contact || "—"}</TableCell>
+                  <TableCell>{s.mail_address || "—"}</TableCell>
+                  <TableCell>{s.credit_limit != null ? `LKR ${Number(s.credit_limit).toLocaleString()}` : "—"}</TableCell>
+                  <TableCell>
+                    {(paymentTerms ?? []).find((t: any) => t.terms_indicator === s.payment_terms)?.description || (s.payment_terms ? s.payment_terms : "—")}
+                  </TableCell>
                   <TableCell align="center">
                     <Tooltip title="Edit Supplier">
-                      <IconButton size="small" onClick={() => openEditDialog(s)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
+                      <IconButton size="small" onClick={() => openEditDialog(s)}><EditIcon fontSize="small" /></IconButton>
                     </Tooltip>
                     <IconButton size="small" color="error" onClick={() => deleteMutation.mutate(s.supplier_id)}>
                       <DeleteIcon fontSize="small" />
@@ -135,36 +152,57 @@ export default function SuppliersPage() {
                 </TableRow>
               ))}
               {(!suppliers || suppliers.length === 0) && (
-                <TableRow><TableCell colSpan={3} align="center"><Typography variant="body2">No suppliers yet.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} align="center"><Typography variant="body2">No suppliers yet.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>
         </TableContainer>
       )}
 
-      <Dialog open={open} onClose={closeDialog} maxWidth="xs" fullWidth>
+      <Dialog open={open} onClose={closeDialog} maxWidth="sm" fullWidth>
         <DialogTitle>{editingSupplier ? "Edit Supplier" : "Add Supplier"}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Supplier Name" fullWidth autoFocus
-              value={form.supp_name} onChange={(e) => setForm({ ...form, supp_name: e.target.value })}
-            />
-            <TextField
-              label="Contact / Mobile (optional)" fullWidth
-              value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })}
-              helperText="Payment terms, credit limit, and GL accounts can be set later from Purchase → Maintenance → Suppliers"
-            />
+            <TextField label="Supplier Name *" fullWidth autoFocus value={form.supp_name} onChange={(e) => set("supp_name", e.target.value)} />
+            <TextField label="Telephone / Mobile" fullWidth value={form.contact} onChange={(e) => set("contact", e.target.value)} />
+            <TextField label="Address" fullWidth multiline rows={2} value={form.mail_address} onChange={(e) => set("mail_address", e.target.value)} />
+
+            <Divider><Typography variant="caption" color="text.secondary">Financial</Typography></Divider>
+
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label="Credit Limit" fullWidth
+                value={
+                  form.credit_limit !== "" && !isNaN(Number(form.credit_limit))
+                    ? Number(form.credit_limit).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : form.credit_limit
+                }
+                onChange={(e) => set("credit_limit", e.target.value.replace(/,/g, ""))}
+                onFocus={(e) => e.target.select()}
+                InputProps={{ startAdornment: <InputAdornment position="start">LKR</InputAdornment> }}
+              />
+              <FormControl fullWidth>
+                <InputLabel>Payment Terms</InputLabel>
+                <Select label="Payment Terms" value={form.payment_terms} onChange={(e) => set("payment_terms", String(e.target.value))}>
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {(paymentTerms ?? []).map((t: any) => (
+                    <MenuItem key={t.terms_indicator} value={t.terms_indicator}>{t.description}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+
+            <Divider><Typography variant="caption" color="text.secondary">Bank Details</Typography></Divider>
+
+            <TextField label="Bank Name" fullWidth value={form.bank_name} onChange={(e) => set("bank_name", e.target.value)} placeholder="e.g. Bank of Ceylon" />
+            <TextField label="Branch Name" fullWidth value={form.bank_branch} onChange={(e) => set("bank_branch", e.target.value)} placeholder="e.g. Kandy Branch" />
+            <TextField label="Account No" fullWidth value={form.bank_acc_no} onChange={(e) => set("bank_acc_no", e.target.value)} placeholder="e.g. 0123456789" />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeDialog}>Cancel</Button>
-          <Button
-            variant="contained"
-            disabled={!form.supp_name.trim() || createMutation.isPending || updateMutation.isPending}
-            onClick={handleSubmit}
-          >
-            {(createMutation.isPending || updateMutation.isPending) ? "Saving..." : "Save"}
+          <Button variant="contained" disabled={!form.supp_name.trim() || isPending} onClick={() => editingSupplier ? updateMutation.mutate() : createMutation.mutate()}>
+            {isPending ? "Saving..." : "Save"}
           </Button>
         </DialogActions>
       </Dialog>

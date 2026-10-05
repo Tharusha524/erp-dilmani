@@ -127,6 +127,7 @@ const baseSidebarItems: Array<SidebarItem> = [
     nestedItems: [
       { title: "Suppliers", href: "/supermarket/suppliers", icon: <GroupsIcon fontSize="small" /> },
       { title: "Purchase", href: "/supermarket/purchase", icon: <ReceiptIcon fontSize="small" /> },
+      { title: "Direct Supplier Invoice", href: "/supermarket/direct-supplier-invoice", icon: <ReceiptIcon fontSize="small" /> },
     ],
   },
   {

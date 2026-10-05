@@ -20,6 +20,14 @@ export const closePosShift = async (
   data: { closing_expected: number; closing_counted: number; notes?: string }
 ) => (await api.post(`/pos-shifts/${id}/close`, data)).data;
 
+export const addFloatMovement = async (
+  shiftId: number | string,
+  data: { type: "cash_in" | "cash_out"; amount: number; reason?: string; recorded_by?: number }
+) => (await api.post(`/pos-shifts/${shiftId}/float-movements`, data)).data;
+
+export const getFloatMovements = async (shiftId: number | string) =>
+  (await api.get(`/pos-shifts/${shiftId}/float-movements`)).data;
+
 // ---- Stock Damages ----
 export const getStockDamages = async (params?: { stock_id?: string; from_date?: string; to_date?: string }) =>
   (await api.get("/stock-damages", { params })).data;
