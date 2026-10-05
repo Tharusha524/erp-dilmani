@@ -133,7 +133,7 @@ export default function PromotionalPricesPage() {
           <Table size="small">
             <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
               <TableRow>
-                <TableCell>Product</TableCell><TableCell align="right">Promo Price</TableCell>
+                <TableCell>Product ID</TableCell><TableCell>Product</TableCell><TableCell align="right">Promo Price</TableCell>
                 <TableCell>Start</TableCell><TableCell>End</TableCell><TableCell>Status</TableCell><TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -142,6 +142,7 @@ export default function PromotionalPricesPage() {
                 const status = statusOf(p);
                 return (
                   <TableRow key={p.id}>
+                    <TableCell>{p.stock_id}</TableCell>
                     <TableCell>{p.stock?.description ?? p.stock_id}</TableCell>
                     <TableCell align="right">{formatCurrency(p.promo_price)}</TableCell>
                     <TableCell>{p.start_date}</TableCell>
@@ -159,7 +160,7 @@ export default function PromotionalPricesPage() {
                 );
               })}
               {(!promos || promos.length === 0) && (
-                <TableRow><TableCell colSpan={6} align="center"><Typography variant="body2">No promotional prices scheduled.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} align="center"><Typography variant="body2">No promotional prices scheduled.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>

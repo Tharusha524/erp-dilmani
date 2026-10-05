@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DebtorsMaster;
 use App\Models\LoyaltyCard;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class LoyaltyCardController extends Controller
@@ -64,5 +66,60 @@ class LoyaltyCardController extends Controller
         }
         $card->delete();
         return response()->json(['message' => 'Loyalty card deleted']);
+    }
+
+    // Lookup loyalty account by customer phone number
+    public function findByPhone(string $phone)
+    {
+        $debtor = DebtorsMaster::where('mobile', $phone)->first();
+        if (!$debtor) {
+            return response()->json(['message' => 'No customer found with this phone number'], 404);
+        }
+        $card = LoyaltyCard::with(['debtor', 'tier'])->where('debtor_no', $debtor->debtor_no)->first();
+        if (!$card) {
+            return response()->json(['message' => 'Customer found but no loyalty account', 'debtor' => $debtor], 404);
+        }
+        return response()->json($card);
+    }
+
+    // Register a new loyalty customer by phone number (creates debtor + loyalty account)
+    public function registerByPhone(Request $request)
+    {
+        $data = $request->validate([
+            'name'             => 'required|string|max:100',
+            'mobile'           => 'required|string|max:20|unique:debtors_master,mobile',
+            'loyalty_tier_id'  => 'nullable|exists:loyalty_tiers,id',
+        ]);
+
+        // Create a minimal debtor record
+        $debtorNo = 'LC' . strtoupper(Str::random(6));
+        while (DebtorsMaster::where('debtor_no', $debtorNo)->exists()) {
+            $debtorNo = 'LC' . strtoupper(Str::random(6));
+        }
+
+        $debtor = DebtorsMaster::create([
+            'debtor_no'      => $debtorNo,
+            'name'           => $data['name'],
+            'mobile'         => $data['mobile'],
+            'curr_code'      => DB::table('currencies')->value('currency_code') ?? 'LKR',
+            'sales_type'     => DB::table('sales_types')->value('id') ?? 3,
+            'credit_status'  => 'OK',
+            'payment_terms'  => DB::table('payment_terms')->value('terms_indicator') ?? 'cash',
+            'discount'       => 0,
+            'pymt_discount'  => 0,
+            'credit_limit'   => 0,
+            'inactive'       => false,
+        ]);
+
+        $card = LoyaltyCard::create([
+            'debtor_no'       => $debtor->debtor_no,
+            'card_no'         => 'LC' . strtoupper(Str::random(8)),
+            'issue_date'      => now()->toDateString(),
+            'loyalty_tier_id' => $data['loyalty_tier_id'] ?? null,
+            'points_balance'  => 0,
+            'status'          => 'active',
+        ]);
+
+        return response()->json($card->load(['debtor', 'tier']), 201);
     }
 }

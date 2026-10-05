@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DebtorsMasterRequest;
+use App\Models\LoyaltyCard;
 use App\Repositories\All\DebtorsMaster\DebtorsMasterInterface;
 use App\Services\Sales\CustomerCreditService;
 use App\Services\Sales\CustomerMasterDeleteService;
 use App\Models\DebtorsMaster;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class DebtorsMasterController extends Controller
 {
@@ -39,6 +41,18 @@ class DebtorsMasterController extends Controller
     public function store(DebtorsMasterRequest $request)
     {
         $debtor = $this->debtorRepo->create($request->validated());
+
+        // Auto-enroll every new customer into loyalty (Silver tier by default)
+        $silverTierId = \DB::table('loyalty_tiers')->orderBy('min_spend_threshold')->value('id');
+        LoyaltyCard::create([
+            'debtor_no'       => $debtor->debtor_no,
+            'card_no'         => 'LC' . strtoupper(Str::random(8)),
+            'issue_date'      => now()->toDateString(),
+            'loyalty_tier_id' => $silverTierId,
+            'points_balance'  => 0,
+            'status'          => 'active',
+        ]);
+
         return response()->json($debtor, 201);
     }
 

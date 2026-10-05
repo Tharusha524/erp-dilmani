@@ -17,6 +17,12 @@ export const updateLoyaltyCard = async (id: number | string, data: any) =>
 export const deleteLoyaltyCard = async (id: number | string) =>
   (await api.delete(`/loyalty-cards/${id}`)).data;
 
+// ---- Loyalty Phone Lookup ----
+export const getLoyaltyByPhone = async (phone: string) =>
+  (await api.get(`/loyalty-cards/by-phone/${encodeURIComponent(phone)}`)).data;
+export const registerLoyaltyByPhone = async (data: { name: string; mobile: string; loyalty_tier_id?: number | null }) =>
+  (await api.post("/loyalty-cards/register-by-phone", data)).data;
+
 // ---- Loyalty Points ----
 export const earnLoyaltyPoints = async (data: { debtor_no: number; amount_spent: number }) =>
   (await api.post("/loyalty-points/earn", data)).data;

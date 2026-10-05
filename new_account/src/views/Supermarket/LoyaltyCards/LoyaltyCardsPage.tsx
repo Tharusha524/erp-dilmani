@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, Stack, TextField, Table,
   TableHead, TableRow, TableCell, TableBody, TableContainer, Paper, Chip, Typography,
-  FormControl, InputLabel, Select, MenuItem, Autocomplete, IconButton, Tooltip,
+  FormControl, InputLabel, Select, MenuItem, IconButton, Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import HistoryIcon from "@mui/icons-material/History";
@@ -12,32 +12,35 @@ import PageTitle from "../../../components/PageTitle";
 import Breadcrumb from "../../../components/BreadCrumb";
 import PageLoader from "../../../components/PageLoader";
 import {
-  getLoyaltyCards, createLoyaltyCard, updateLoyaltyCard, getLoyaltyTiers,
-  getLoyaltyPointsHistory, redeemLoyaltyPoints,
+  getLoyaltyCards, updateLoyaltyCard, getLoyaltyTiers,
+  getLoyaltyPointsHistory, redeemLoyaltyPoints, registerLoyaltyByPhone,
 } from "../../../api/Loyalty/loyaltyApi";
-import { getCustomers } from "../../../api/Customer/AddCustomerApi";
 import { notify } from "../../../services/notificationService";
 
 export default function LoyaltyCardsPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [debtorNo, setDebtorNo] = useState<any>(null);
-  const [tierId, setTierId] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [tierId, setTierId] = useState<any>("");
   const [ledgerCard, setLedgerCard] = useState<any>(null);
   const [adjustPoints, setAdjustPoints] = useState("");
+  const [search, setSearch] = useState("");
 
   const { data: cards, isLoading } = useQuery({ queryKey: ["loyalty-cards"], queryFn: getLoyaltyCards });
-  const { data: customers } = useQuery({ queryKey: ["customers-all"], queryFn: getCustomers });
   const { data: tiers } = useQuery({ queryKey: ["loyalty-tiers"], queryFn: getLoyaltyTiers });
 
-  const createMutation = useMutation({
-    mutationFn: createLoyaltyCard,
+  const registerMutation = useMutation({
+    mutationFn: () => registerLoyaltyByPhone({ name, mobile: phone, loyalty_tier_id: tierId || null }),
     onSuccess: () => {
+      notify.success("Loyalty customer registered");
       queryClient.invalidateQueries({ queryKey: ["loyalty-cards"] });
       setOpen(false);
-      setDebtorNo(null);
+      setName("");
+      setPhone("");
       setTierId("");
     },
+    onError: (err: any) => notify.error(err?.response?.data?.message || "Failed to register"),
   });
 
   const toggleStatusMutation = useMutation({
@@ -51,10 +54,6 @@ export default function LoyaltyCardsPage() {
     enabled: !!ledgerCard,
   });
 
-  // A manual debit against the ledger — same redeemLoyaltyPoints endpoint a
-  // real redemption would use, just triggered by staff for a correction
-  // instead of a purchase. Writes a normal ledger row, doesn't touch the
-  // point-earning formula or accounting.
   const adjustMutation = useMutation({
     mutationFn: () => redeemLoyaltyPoints({ debtor_no: ledgerCard.debtor_no, points: Number(adjustPoints) }),
     onSuccess: () => {
@@ -66,19 +65,32 @@ export default function LoyaltyCardsPage() {
     onError: (err: any) => notify.error(err?.response?.data?.message || "Failed to adjust points"),
   });
 
-  const handleSubmit = () => {
-    if (!debtorNo) return;
-    createMutation.mutate({ debtor_no: debtorNo.debtor_no, loyalty_tier_id: tierId || null });
-  };
+  const filtered = (cards ?? []).filter((c: any) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (
+      c.debtor?.name?.toLowerCase().includes(s) ||
+      c.debtor?.mobile?.includes(s)
+    );
+  });
 
   return (
     <FormPageLayout>
-      <Box sx={{ p: 2, boxShadow: 2, borderRadius: 1, mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <Box sx={{ p: 2, boxShadow: 2, borderRadius: 1, mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
         <Box>
-          <PageTitle title="Loyalty Cards" />
-          <Breadcrumb breadcrumbs={[{ title: "Smart Supermarket", href: "/supermarket" }, { title: "Loyalty Cards" }]} />
+          <PageTitle title="Loyalty Customers" />
+          <Breadcrumb breadcrumbs={[{ title: "Smart Supermarket", href: "/supermarket" }, { title: "Loyalty Customers" }]} />
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)}>Issue Card</Button>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)}>Register Customer</Button>
+      </Box>
+
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          size="small" fullWidth
+          placeholder="Search by name or phone number..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </Box>
 
       {isLoading ? <PageLoader /> : (
@@ -86,19 +98,19 @@ export default function LoyaltyCardsPage() {
           <Table>
             <TableHead sx={{ backgroundColor: "var(--pallet-lighter-blue)" }}>
               <TableRow>
-                <TableCell>Card No</TableCell>
+                <TableCell>Phone Number</TableCell>
                 <TableCell>Customer</TableCell>
                 <TableCell>Tier</TableCell>
                 <TableCell align="right">Points Balance</TableCell>
-                <TableCell>Issue Date</TableCell>
+                <TableCell>Registered Date</TableCell>
                 <TableCell align="center">Status</TableCell>
                 <TableCell align="center">Ledger</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {(cards ?? []).map((card: any) => (
+              {filtered.map((card: any) => (
                 <TableRow key={card.id} hover>
-                  <TableCell>{card.card_no}</TableCell>
+                  <TableCell>{card.debtor?.mobile ?? "—"}</TableCell>
                   <TableCell>{card.debtor?.name}</TableCell>
                   <TableCell>{card.tier?.tier_name ?? "—"}</TableCell>
                   <TableCell align="right">{card.points_balance}</TableCell>
@@ -121,28 +133,25 @@ export default function LoyaltyCardsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {(!cards || cards.length === 0) && (
-                <TableRow><TableCell colSpan={7} align="center"><Typography variant="body2">No loyalty cards issued yet.</Typography></TableCell></TableRow>
+              {filtered.length === 0 && (
+                <TableRow><TableCell colSpan={7} align="center"><Typography variant="body2">No loyalty customers found.</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>
         </TableContainer>
       )}
 
+      {/* Register new loyalty customer */}
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Issue Loyalty Card</DialogTitle>
+        <DialogTitle>Register Loyalty Customer</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <Autocomplete
-              options={customers ?? []}
-              getOptionLabel={(c: any) => c.name ?? ""}
-              value={debtorNo}
-              onChange={(_, val) => setDebtorNo(val)}
-              renderInput={(params) => <TextField {...params} label="Customer" />}
-            />
+            <TextField label="Customer Name" value={name} onChange={(e) => setName(e.target.value)} fullWidth />
+            <TextField label="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} fullWidth placeholder="07XXXXXXXX" />
             <FormControl fullWidth>
               <InputLabel>Loyalty Tier</InputLabel>
               <Select value={tierId} label="Loyalty Tier" onChange={(e) => setTierId(e.target.value)}>
+                <MenuItem value="">No Tier</MenuItem>
                 {(tiers ?? []).map((t: any) => (
                   <MenuItem key={t.id} value={t.id}>{t.tier_name}</MenuItem>
                 ))}
@@ -152,14 +161,15 @@ export default function LoyaltyCardsPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" disabled={!debtorNo || createMutation.isPending} onClick={handleSubmit}>
-            {createMutation.isPending ? "Issuing..." : "Issue Card"}
+          <Button variant="contained" disabled={!name || !phone || registerMutation.isPending} onClick={() => registerMutation.mutate()}>
+            {registerMutation.isPending ? "Registering..." : "Register"}
           </Button>
         </DialogActions>
       </Dialog>
 
+      {/* Points ledger dialog */}
       <Dialog open={!!ledgerCard} onClose={() => setLedgerCard(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Points Ledger — {ledgerCard?.debtor?.name}</DialogTitle>
+        <DialogTitle>Points Ledger — {ledgerCard?.debtor?.name} ({ledgerCard?.debtor?.mobile})</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <Typography variant="body2" color="text.secondary">

@@ -52,7 +52,7 @@ import {
 } from "../../../api/Pos/posOpsApi";
 import { deductVariantStock } from "../../../api/Pos/posAdvancedApi";
 import { getCardTypes, tagPaymentCardType } from "../../../api/CardType/CardTypeApi";
-import { getLoyaltyCards, redeemLoyaltyPoints } from "../../../api/Loyalty/loyaltyApi";
+import { getLoyaltyCards, redeemLoyaltyPoints, getLoyaltyByPhone, registerLoyaltyByPhone } from "../../../api/Loyalty/loyaltyApi";
 import PosReceiptDialog from "../../../components/PosReceiptDialog";
 import QuickAddCustomerDialog from "../../../components/QuickAddCustomerDialog";
 import { useOnlineStatus, getOrCreateTerminalId } from "../../../offline/useOnlineStatus";
@@ -189,6 +189,14 @@ export default function PosCheckoutPage() {
   const [wholesalePinTarget, setWholesalePinTarget] = useState<string | null>(null);
   const [wholesalePinInput, setWholesalePinInput] = useState("");
   const [quickAddCustomerOpen, setQuickAddCustomerOpen] = useState(false);
+
+  // Phone-based loyalty lookup
+  const [loyaltyPhone, setLoyaltyPhone] = useState("");
+  const [loyaltySearching, setLoyaltySearching] = useState(false);
+  const [loyaltyRegisterOpen, setLoyaltyRegisterOpen] = useState(false);
+  const [loyaltyRegisterName, setLoyaltyRegisterName] = useState("");
+  const [loyaltyRegisterPhone, setLoyaltyRegisterPhone] = useState("");
+  const [loyaltyCard, setLoyaltyCard] = useState<any>(null);
 
   // Offline mode (desktop app only): when the connection drops, sales are
   // queued locally instead of posted live, then synced back automatically
@@ -780,6 +788,50 @@ export default function PosCheckoutPage() {
     // Reset to Walk-in for the next sale — never carry a customer over.
     const walkIn = (customers ?? []).find((c: any) => c.name === "Walk-in Customer");
     setCustomer(walkIn ?? null);
+  };
+
+  const handleLoyaltyPhoneLookup = async () => {
+    if (!loyaltyPhone.trim()) return;
+    setLoyaltySearching(true);
+    try {
+      const card = await getLoyaltyByPhone(loyaltyPhone.trim());
+      setLoyaltyCard(card);
+      // Auto-select the customer in checkout
+      const match = (customers ?? []).find((c: any) => String(c.debtor_no) === String(card.debtor_no));
+      if (match) setCustomer(match);
+      notify.success(`Loyalty customer found: ${card.debtor?.name} — ${card.points_balance} pts`);
+    } catch (err: any) {
+      if (err?.response?.status === 404 && err?.response?.data?.debtor) {
+        // Customer exists in debtors but no loyalty account yet
+        notify.info("Customer found but no loyalty account. Register below.");
+        setLoyaltyRegisterPhone(loyaltyPhone.trim());
+        setLoyaltyRegisterOpen(true);
+      } else if (err?.response?.status === 404) {
+        // No customer at all
+        setLoyaltyRegisterPhone(loyaltyPhone.trim());
+        setLoyaltyRegisterOpen(true);
+      } else {
+        notify.error("Phone lookup failed");
+      }
+    } finally {
+      setLoyaltySearching(false);
+    }
+  };
+
+  const handleLoyaltyRegister = async () => {
+    if (!loyaltyRegisterName || !loyaltyRegisterPhone) return;
+    try {
+      const card = await registerLoyaltyByPhone({ name: loyaltyRegisterName, mobile: loyaltyRegisterPhone });
+      setLoyaltyCard(card);
+      const match = (customers ?? []).find((c: any) => String(c.debtor_no) === String(card.debtor_no));
+      if (match) setCustomer(match);
+      notify.success(`Loyalty customer registered: ${card.debtor?.name}`);
+      setLoyaltyRegisterOpen(false);
+      setLoyaltyRegisterName("");
+      setLoyaltyRegisterPhone("");
+    } catch (err: any) {
+      notify.error(err?.response?.data?.message || "Registration failed");
+    }
   };
 
   const checkoutMutation = useMutation({
@@ -1637,6 +1689,24 @@ export default function PosCheckoutPage() {
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
             <Stack spacing={0.75}>
               <Typography variant="caption" fontWeight={700} color="text.secondary">CUSTOMER</Typography>
+              <Stack direction="row" spacing={0.5}>
+                <TextField
+                  size="small" fullWidth
+                  label="Phone Number (Loyalty)"
+                  value={loyaltyPhone}
+                  onChange={(e) => setLoyaltyPhone(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleLoyaltyPhoneLookup(); }}
+                  placeholder="07XXXXXXXX"
+                />
+                <Button size="small" variant="outlined" onClick={handleLoyaltyPhoneLookup} disabled={loyaltySearching} sx={{ whiteSpace: "nowrap", minWidth: 60 }}>
+                  {loyaltySearching ? "..." : "Find"}
+                </Button>
+              </Stack>
+              {loyaltyCard && (
+                <Typography variant="caption" color="success.main">
+                  {loyaltyCard.debtor?.name} — {loyaltyCard.points_balance} pts ({loyaltyCard.tier?.tier_name ?? "No tier"})
+                </Typography>
+              )}
               <Autocomplete
                 size="small"
                 options={customers ?? []}
@@ -2549,6 +2619,23 @@ export default function PosCheckoutPage() {
           setCustomer(newCustomer);
         }}
       />
+
+      {/* Register new loyalty customer by phone */}
+      <Dialog open={loyaltyRegisterOpen} onClose={() => setLoyaltyRegisterOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Register Loyalty Customer</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField label="Customer Name" value={loyaltyRegisterName} onChange={(e) => setLoyaltyRegisterName(e.target.value)} fullWidth size="small" />
+            <TextField label="Phone Number" value={loyaltyRegisterPhone} onChange={(e) => setLoyaltyRegisterPhone(e.target.value)} fullWidth size="small" />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLoyaltyRegisterOpen(false)}>Cancel</Button>
+          <Button variant="contained" disabled={!loyaltyRegisterName || !loyaltyRegisterPhone} onClick={handleLoyaltyRegister}>
+            Register & Attach
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 

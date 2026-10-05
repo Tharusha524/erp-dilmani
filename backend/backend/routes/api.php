@@ -456,6 +456,8 @@ Route::apiResource('sales-points', SalesPosController::class);
 
 // ---- Smart Supermarket: Loyalty, Offers, POS Shifts, Win-Back, Stock Damage, Analytics ----
 Route::apiResource('loyalty-tiers', LoyaltyTierController::class);
+Route::get('loyalty-cards/by-phone/{phone}', [\App\Http\Controllers\LoyaltyCardController::class, 'findByPhone']);
+Route::post('loyalty-cards/register-by-phone', [\App\Http\Controllers\LoyaltyCardController::class, 'registerByPhone']);
 Route::apiResource('loyalty-cards', LoyaltyCardController::class);
 Route::post('loyalty-points/earn', [LoyaltyPointsController::class, 'earn']);
 Route::post('loyalty-points/redeem', [LoyaltyPointsController::class, 'redeem']);

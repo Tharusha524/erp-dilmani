@@ -143,7 +143,7 @@ const baseSidebarItems: Array<SidebarItem> = [
     nestedItems: [
       { title: "Offers & Discounts", href: "/supermarket/offers", icon: <LocalOfferIcon fontSize="small" /> },
       { title: "Loyalty Tiers", href: "/supermarket/loyalty-tiers", icon: <LoyaltyIcon fontSize="small" /> },
-      { title: "Loyalty Cards", href: "/supermarket/loyalty-cards", icon: <CardMembershipIcon fontSize="small" /> },
+      { title: "Loyalty Customers", href: "/supermarket/loyalty-cards", icon: <CardMembershipIcon fontSize="small" /> },
       { title: "Win-Back Campaigns", href: "/supermarket/win-back", icon: <CampaignIcon fontSize="small" /> },
     ],
   },

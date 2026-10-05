@@ -16,20 +16,20 @@ class LowStockController extends Controller
         $lookbackDays = (int) $request->query('lookback_days', 30);
         $since = now()->subDays($lookbackDays)->toDateString();
 
-        $rows = DB::table('loc_stock as ls')
-            ->join('stock_master as sm', 'sm.stock_id', '=', 'ls.stock_id')
+        $rows = DB::table('stock_master as sm')
+            ->leftJoin('loc_stock as ls', 'ls.stock_id', '=', 'sm.stock_id')
             ->select(
-                'ls.stock_id',
+                'sm.stock_id',
                 'sm.description',
-                'ls.loc_code',
-                'ls.quantity',
-                'ls.reorder_level',
+                DB::raw("COALESCE(ls.loc_code, 'N/A') as loc_code"),
+                DB::raw('COALESCE(ls.quantity, 0) as quantity'),
+                DB::raw('COALESCE(ls.reorder_level, 0) as reorder_level'),
                 'sm.purchase_cost',
                 'sm.eoq_ordering_cost',
                 'sm.eoq_holding_cost_percent'
             )
-            ->whereNotNull('ls.reorder_level')
-            ->whereColumn('ls.quantity', '<=', 'ls.reorder_level')
+            ->where('sm.inactive', false)
+            ->whereRaw('COALESCE(ls.quantity, 0) <= COALESCE(ls.reorder_level, 0)')
             ->when($request->filled('loc_code'), fn ($q) => $q->where('ls.loc_code', $request->query('loc_code')))
             ->get();
 
