@@ -333,7 +333,7 @@ export default function PosCheckoutPage() {
   // showed next to each scanned item — shares its cache key with the Stock
   // page, and falls back to the same offline snapshot when there's no
   // connection, so it's never a live-only lookup that can block the sale.
-  const { data: stockListFromApi } = useQuery({ queryKey: ["stock-list-all"], queryFn: () => getStockList() });
+  const { data: stockListFromApi } = useQuery({ queryKey: ["stock-list-all"], queryFn: () => getStockList(), refetchInterval: 60_000, staleTime: 0 });
   const [offlineStockList, setOfflineStockList] = useState<any[]>([]);
   useEffect(() => {
     if (!isDesktopApp()) return;
