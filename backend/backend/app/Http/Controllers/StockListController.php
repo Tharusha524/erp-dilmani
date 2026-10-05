@@ -82,6 +82,6 @@ class StockListController extends Controller
             });
         }
 
-        return response()->json($query->orderBy('sm.description')->limit(500)->get());
+        return response()->json($query->orderBy('sm.description')->limit(5000)->get());
     }
 }
