@@ -274,7 +274,8 @@ function ProductsTab() {
                 <TableCell>Stock ID</TableCell>
                 <TableCell>Category</TableCell>
                 <TableCell>Unit</TableCell>
-                <TableCell align="right">Price</TableCell>
+                <TableCell align="right">Purchase Cost</TableCell>
+                <TableCell align="right">Selling Price</TableCell>
                 <TableCell align="right">Quantity on Hand</TableCell>
               </TableRow>
             </TableHead>
@@ -297,12 +298,13 @@ function ProductsTab() {
                       <TableCell>{s.category_name ?? "—"}</TableCell>
                       <TableCell>{s.unit_name ?? "—"}</TableCell>
                       <TableCell align="right">{formatCurrency(s.purchase_cost)}</TableCell>
+                      <TableCell align="right">{s.selling_price != null ? formatCurrency(Number(s.selling_price)) : "—"}</TableCell>
                       <TableCell align="right">
                         <Chip size="small" label={s.quantity} color={s.quantity <= 0 ? "error" : "default"} />
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell colSpan={8} sx={{ py: 0, borderBottom: isOpen ? undefined : "none" }}>
+                      <TableCell colSpan={9} sx={{ py: 0, borderBottom: isOpen ? undefined : "none" }}>
                         <Collapse in={isOpen} timeout="auto" unmountOnExit>
                           <ProductDetailPanel product={s} />
                         </Collapse>
