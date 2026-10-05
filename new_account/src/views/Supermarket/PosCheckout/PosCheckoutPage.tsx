@@ -586,12 +586,15 @@ export default function PosCheckoutPage() {
     if (!isOffline) {
       try {
         const pricing = await getSalesPricingByStockId(selectedItem.stock_id);
-        const rows = (pricing ?? []).filter((p: any) => p.currency_id === 8);
+        // eslint-disable-next-line eqeqeq
+        const rows = (Array.isArray(pricing) ? pricing : []).filter((p: any) => p.currency_id == 8);
         // Charge the customer's own price list (e.g. Wholesale) when they
         // have one and this product has a price under it — otherwise fall
         // back to Retail (sales_type_id 3), same as before this existed.
-        salePrice = (customerSalesTypeId && rows.find((p: any) => p.sales_type_id === customerSalesTypeId)?.price)
-          ?? rows.find((p: any) => p.sales_type_id === 3)?.price;
+        // eslint-disable-next-line eqeqeq
+        salePrice = (customerSalesTypeId && rows.find((p: any) => p.sales_type_id == customerSalesTypeId)?.price)
+          // eslint-disable-next-line eqeqeq
+          ?? rows.find((p: any) => p.sales_type_id == 3)?.price;
       } catch {
         // Non-fatal — falls back to purchase_cost below, same as before this existed.
       }
@@ -1465,6 +1468,20 @@ export default function PosCheckoutPage() {
                   setManualSellingPriceTouched(false);
                   setManualDiscountInput("");
                   setManualDiscountMode2("percent");
+                  if (val && !isOffline) {
+                    getSalesPricingByStockId(val.stock_id).then((pricing: any) => {
+                      // eslint-disable-next-line eqeqeq
+                      const rows = (Array.isArray(pricing) ? pricing : []).filter((p: any) => p.currency_id == 8);
+                      // eslint-disable-next-line eqeqeq
+                      const sp = (customerSalesTypeId && rows.find((p: any) => p.sales_type_id == customerSalesTypeId)?.price)
+                        // eslint-disable-next-line eqeqeq
+                        ?? rows.find((p: any) => p.sales_type_id == 3)?.price;
+                      if (sp != null) {
+                        setManualSellingPrice(String(Number(sp)));
+                        setManualSellingPriceTouched(false);
+                      }
+                    }).catch(() => { });
+                  }
                   if (val) setTimeout(() => { lineDiscountInputRef.current?.focus(); lineDiscountInputRef.current?.select(); }, 0);
                 }}
                 renderInput={(params) => (
@@ -1838,6 +1855,20 @@ export default function PosCheckoutPage() {
                       setManualSellingPriceTouched(false);
                       setManualDiscountInput("");
                       setManualDiscountMode2("percent");
+                      if (val && !isOffline) {
+                        getSalesPricingByStockId(val.stock_id).then((pricing: any) => {
+                          // eslint-disable-next-line eqeqeq
+                          const rows = (Array.isArray(pricing) ? pricing : []).filter((p: any) => p.currency_id == 8);
+                          // eslint-disable-next-line eqeqeq
+                          const sp = (customerSalesTypeId && rows.find((p: any) => p.sales_type_id == customerSalesTypeId)?.price)
+                            // eslint-disable-next-line eqeqeq
+                            ?? rows.find((p: any) => p.sales_type_id == 3)?.price;
+                          if (sp != null) {
+                            setManualSellingPrice(String(Number(sp)));
+                            setManualSellingPriceTouched(false);
+                          }
+                        }).catch(() => { });
+                      }
                       // Keyboard-only flow: pick item -> Enter -> Discount -> Enter -> Qty.
                       if (val) setTimeout(() => { lineDiscountInputRef.current?.focus(); lineDiscountInputRef.current?.select(); }, 0);
                     }}
