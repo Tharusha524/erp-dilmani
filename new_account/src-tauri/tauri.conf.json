@@ -35,11 +35,6 @@
     ],
     "android": {
       "debugApplicationIdSuffix": ".debug"
-    },
-    "windows": {
-      "webviewInstallMode": {
-        "type": "embedBootstrapper"
-      }
     }
   },
   "plugins": {
