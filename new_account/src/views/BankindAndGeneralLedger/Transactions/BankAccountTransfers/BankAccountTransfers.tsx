@@ -25,6 +25,7 @@ import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 
 export default function BankAccountTransfers() {
   const navigate = useNavigate();
@@ -77,6 +78,9 @@ export default function BankAccountTransfers() {
   const [transferDate, setTransferDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
+  const { reference: nextTransferReference } = useNextFiscalYearReference(4, {
+    asOfDate: transferDate,
+  });
   const [reference, setReference] = useState("");
   const [costCenter, setCostCenter] = useState("");
   const [memo, setMemo] = useState("");
@@ -109,37 +113,16 @@ export default function BankAccountTransfers() {
     }
   }, [toAccount, bankAccounts]);
 
-  // Set reference when fiscal year loads (or fallback when DB empty)
+  // Auto-generate reference based on fiscal year — uses the shared
+  // TransactionReferenceService (via useNextFiscalYearReference) so this follows
+  // the Funds Transfer type's configured Prefix/Pattern under Setup > Transaction
+  // References. (Previously this pulled from stock_moves type 17, which is
+  // Inventory Location Transfer — an unrelated table, not bank transfers.)
   useEffect(() => {
-    // Determine year: prefer fiscal year start if available, otherwise use current calendar year
-    const year = currentFiscalYear
-      ? new Date(currentFiscalYear.fiscal_year_from).getFullYear()
-      : new Date().getFullYear();
-
-    // Fetch existing references to generate next sequential number
-    // Only consider stock moves of the same transaction type (17 = adjustment)
-    getStockMoves()
-      .then((stockMoves) => {
-        const moves = Array.isArray(stockMoves) ? stockMoves : [];
-        const yearReferences = moves
-          .filter((move: any) => move && move.type === 17 && move.reference && String(move.reference).endsWith(`/${year}`))
-          .map((move: any) => String(move.reference))
-          .map((ref: string) => {
-            const match = String(ref).match(/^(\d{3})\/\d{4}$/);
-            return match ? parseInt(match[1], 10) : 0;
-          })
-          .filter((num: number) => !isNaN(num) && num > 0);
-
-        const nextNumber = yearReferences.length > 0 ? Math.max(...yearReferences) + 1 : 1;
-        const formattedNumber = nextNumber.toString().padStart(3, '0');
-        setReference(`${formattedNumber}/${year}`);
-      })
-      .catch((error) => {
-        console.error("Error fetching stock moves for reference generation:", error);
-        // Fallback to 001 if there's an error or DB is empty
-        setReference(`001/${year}`);
-      });
-  }, [currentFiscalYear]);
+    if (nextTransferReference) {
+      setReference(nextTransferReference);
+    }
+  }, [nextTransferReference]);
 
   // Validate date is within fiscal year
   const validateDate = (selectedDate: string) => {

@@ -48,6 +48,7 @@ import { relationId, bankAccountLabel, sortCashBankAccounts } from "../../../../
 import { isCashSalePaymentTerm } from "../../../../utils/customerCredit";
 import { getStockQoh } from "../../../../api/Inventory/StockQuantityApi";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 
 function faLocationCode(loc: { locationCode?: string; loc_code?: string }): string {
     return String(loc.locationCode ?? loc.loc_code ?? "").toUpperCase();
@@ -97,6 +98,9 @@ export default function FixedAssetsSale() {
     const [payment, setPayment] = useState("");
     const [priceList, setPriceList] = useState("");
     const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split("T")[0]);
+    const { reference: nextSaleReference } = useNextFiscalYearReference(10, {
+        asOfDate: invoiceDate,
+    });
     const [deliverFrom, setDeliverFrom] = useState("");
     const [cashAccount, setCashAccount] = useState("");
     const [comments, setComments] = useState("");
@@ -230,14 +234,15 @@ export default function FixedAssetsSale() {
         }
     };
 
-    // ===== Auto-generate reference =====
+    // ===== Auto-generate reference based on fiscal year =====
+    // Uses the shared TransactionReferenceService (via useNextFiscalYearReference) so
+    // this follows the Sales Invoice type's configured Prefix/Pattern under
+    // Setup > Transaction References, instead of a random placeholder number.
     useEffect(() => {
-        const year = new Date().getFullYear();
-        const random = Math.floor(Math.random() * 1000)
-            .toString()
-            .padStart(3, "0");
-        setReference(`${random}/${year}`);
-    }, []);
+        if (nextSaleReference) {
+            setReference(nextSaleReference);
+        }
+    }, [nextSaleReference]);
 
     // Default branch when customer changes
     useEffect(() => {

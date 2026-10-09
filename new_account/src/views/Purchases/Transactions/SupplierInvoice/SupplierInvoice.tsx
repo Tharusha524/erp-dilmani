@@ -58,6 +58,7 @@ import { useTransactionMoney } from "../../../../hooks/useTransactionMoney";
 import { getSuppTrans } from "../../../../api/SuppTrans/SuppTransApi";
 import { getInventoryLocations } from "../../../../api/InventoryLocation/InventoryLocationApi";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 
 export default function SupplierInvoice() {
     const navigate = useNavigate();
@@ -120,6 +121,9 @@ export default function SupplierInvoice() {
     const [taxGroup, setTaxGroup] = useState(0);
     const [terms, setTerms] = useState(0);
     const [reference, setReference] = useState("");
+    const { reference: nextSupplierInvoiceReference } = useNextFiscalYearReference(20, {
+        asOfDate: invoiceDate,
+    });
     const [costCenter, setCostCenter] = useState(0);
     const [supplierRef, setSupplierRef] = useState(grnNav.suppliersReference ?? "");
     const [memo, setMemo] = useState("");
@@ -246,58 +250,15 @@ export default function SupplierInvoice() {
         }
     }, [selectedFiscalYear]);
 
+    // Auto-generate reference based on fiscal year — uses the shared
+    // TransactionReferenceService (via useNextFiscalYearReference) so this follows
+    // the Supplier Invoice type's configured Prefix/Pattern under Setup >
+    // Transaction References, instead of a hardcoded "NNN/year" format.
     useEffect(() => {
-        (async () => {
-            try {
-                // Determine year: prefer fiscal year start if available, otherwise use current calendar year
-                const year = selectedFiscalYear
-                    ? new Date(selectedFiscalYear.fiscal_year_from).getFullYear()
-                    : new Date().getFullYear();
-
-                // Determine fiscal year label
-                let yearLabel = String(year);
-                if (selectedFiscalYear) {
-                    const fromYear = new Date(selectedFiscalYear.fiscal_year_from).getFullYear();
-                    const toYear = new Date(selectedFiscalYear.fiscal_year_to).getFullYear();
-                    yearLabel = selectedFiscalYear.fiscal_year || (fromYear === toYear ? String(fromYear) : `${fromYear}-${toYear}`);
-                }
-
-                // compute next sequential number for trans_type 20 within this fiscal year
-                let nextNum = 1;
-                try {
-                    const allSupp = await getSuppTrans();
-                    if (Array.isArray(allSupp) && allSupp.length > 0) {
-                        const yearPattern = `/${yearLabel}`;
-                        const matchingRefs = allSupp
-                            .filter((t: any) => Number(t.trans_type ?? t.type ?? 0) === 20)
-                            .map((s: any) => s.reference ?? s.supp_reference ?? '')
-                            .filter((ref: string) => String(ref).endsWith(yearPattern))
-                            .map((ref: string) => {
-                                const parts = String(ref).split('/');
-                                if (parts.length >= 2) {
-                                    const numPart = parts[0];
-                                    const parsed = parseInt(numPart, 10);
-                                    return isNaN(parsed) ? 0 : parsed;
-                                }
-                                return 0;
-                            })
-                            .filter((n: number) => n > 0);
-
-                        if (matchingRefs.length > 0) {
-                            const maxRef = Math.max(...matchingRefs);
-                            nextNum = maxRef + 1;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Failed to fetch supplier transactions for reference generation', e);
-                }
-
-                setReference(`${nextNum.toString().padStart(3, '0')}/${yearLabel}`);
-            } catch (err) {
-                console.warn('Failed to generate supplier invoice reference', err);
-            }
-        })();
-    }, [selectedFiscalYear]);
+        if (nextSupplierInvoiceReference) {
+            setReference(nextSupplierInvoiceReference);
+        }
+    }, [nextSupplierInvoiceReference]);
 
     // Fetch API
     useEffect(() => {

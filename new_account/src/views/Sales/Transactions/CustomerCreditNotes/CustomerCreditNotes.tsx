@@ -54,6 +54,7 @@ import theme from "../../../../theme";
 import CustomerCurrencyField from "../../../../components/CustomerCurrencyField";
 import CurrencyAmountInput from "../../../../components/CurrencyAmountInput";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 
 interface ChartMaster {
     account_code: string;
@@ -84,6 +85,11 @@ export default function CustomerCreditNotes() {
     const [glAccount, setGlAccount] = useState("");
     const [memo, setMemo] = useState("");
     const [dateError, setDateError] = useState("");
+
+    // trans_type 11 = Customer Credit Note
+    const { reference: nextCreditNoteReference } = useNextFiscalYearReference(11, {
+        asOfDate: creditNoteDate,
+    });
 
     // ===== Fetch master data =====
     const { data: customers = [] } = useQuery({ queryKey: ["customers"], queryFn: getCustomers });
@@ -255,31 +261,15 @@ export default function CustomerCreditNotes() {
         );
     };
 
-    // ===== Auto-generate reference =====
+    // ===== Auto-generate reference based on fiscal year =====
+    // Uses the shared TransactionReferenceService (via useNextFiscalYearReference) so
+    // the number/format always matches what's configured in Setup > Transaction References,
+    // instead of a hardcoded "NNN/year" format.
     useEffect(() => {
-        if (!selectedFiscalYear) return;
-        const yearLabel = selectedFiscalYear.fiscal_year || new Date(selectedFiscalYear.fiscal_year_from).getFullYear();
-
-        if (debtorTrans.length === 0) {
-            setReference(`001/${yearLabel}`);
-            return;
+        if (nextCreditNoteReference) {
+            setReference(nextCreditNoteReference);
         }
-        const refsForType = debtorTrans
-            .filter((d: any) => d.trans_type === 11)
-            .map((d: any) => d.reference)
-            .filter((ref: string) => ref && typeof ref === 'string');
-        const numbers = refsForType.map((ref: string) => {
-            const parts = ref.split('/');
-            if (parts.length === 2 && parts[1] === yearLabel.toString()) {
-                const num = parseInt(parts[0], 10);
-                return isNaN(num) ? 0 : num;
-            }
-            return 0;
-        });
-        const maxNum = Math.max(...numbers, 0);
-        const nextNum = maxNum + 1;
-        setReference(`${nextNum.toString().padStart(3, '0')}/${yearLabel}`);
-    }, [selectedFiscalYear, debtorTrans]);
+    }, [nextCreditNoteReference]);
 
     // Auto-select first customer, branch, and sales type until user manually selects customer
     useEffect(() => {

@@ -30,6 +30,7 @@ import { postWorkOrderEntry } from "../../../../api/Manufacturing/ManufacturingA
 import { runTransactionSave, assertPersistedResponse } from "../../../../utils/transactionSave";
 import ItemSearchSelect from "../../../../components/ItemSearchSelect";
 import FormattedNumberField from "../../../../components/FormattedNumberField";
+import { useNextFiscalYearReference } from "../../../../hooks/useNextFiscalYearReference";
 
 export default function WorkOrderEntry() {
   const navigate = useNavigate();
@@ -89,6 +90,9 @@ export default function WorkOrderEntry() {
   const [destinationLocation, setDestinationLocation] = useState("");
   const [quantity, setQuantity] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const { reference: nextWorkOrderReference } = useNextFiscalYearReference(26, {
+    asOfDate: date,
+  });
   const [dateRequiredBy, setDateRequiredBy] = useState("");
   const [labourCost, setLabourCost] = useState("0.00");
   const [creditLabourAccount, setCreditLabourAccount] = useState("");

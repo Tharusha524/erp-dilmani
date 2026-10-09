@@ -164,24 +164,10 @@ class ChartAccountMetadata
      */
     public static function isIncomeClassRow(array|int|string $rowOrType): bool
     {
-        if (is_array($rowOrType)) {
-            $classId = trim((string) ($rowOrType['classId'] ?? ''));
-            if ($classId === '3') {
-                return true;
-            }
-            if (in_array($classId, ['4', '5'], true)) {
-                return false;
-            }
-        }
-
         $type = is_array($rowOrType) ? (int) ($rowOrType['account_type'] ?? 0) : (int) $rowOrType;
         $meta = self::forAccountType($type);
         if ($meta) {
-            if ((int) ($meta['class_ctype'] ?? 0) === 4) {
-                return true;
-            }
-
-            return trim((string) ($meta['class_id'] ?? '')) === '3';
+            return (int) ($meta['class_ctype'] ?? 0) === 4;
         }
 
         return in_array($type, [7, 8], true);
@@ -194,24 +180,10 @@ class ChartAccountMetadata
      */
     public static function isCostClassRow(array|int|string $rowOrType): bool
     {
-        if (is_array($rowOrType)) {
-            $classId = trim((string) ($rowOrType['classId'] ?? ''));
-            if (in_array($classId, ['4', '5'], true)) {
-                return true;
-            }
-            if ($classId === '3') {
-                return false;
-            }
-        }
-
         $type = is_array($rowOrType) ? (int) ($rowOrType['account_type'] ?? 0) : (int) $rowOrType;
         $meta = self::forAccountType($type);
         if ($meta) {
-            if ((int) ($meta['class_ctype'] ?? 0) === 6) {
-                return true;
-            }
-
-            return in_array(trim((string) ($meta['class_id'] ?? '')), ['4', '5'], true);
+            return (int) ($meta['class_ctype'] ?? 0) === 6;
         }
 
         return in_array($type, [10, 11, 12], true);
@@ -238,13 +210,11 @@ class ChartAccountMetadata
     {
         $meta = self::forAccountType($accountType);
         if ($meta) {
-            $classId = trim((string) ($meta['class_id'] ?? ''));
-            if (in_array($classId, ['4', '5'], true)) {
-                return false;
-            }
-            if ($classId === '3') {
+            if ((int) ($meta['class_ctype'] ?? 0) === 4) {
                 return ! self::isSalesRevenueGroup((string) ($meta['name'] ?? '')) && (int) $accountType !== 8;
             }
+
+            return false;
         }
 
         return (int) $accountType === 9;
@@ -260,8 +230,7 @@ class ChartAccountMetadata
 
         $meta = self::forAccountType($accountType);
         if ($meta) {
-            $classId = trim((string) ($meta['class_id'] ?? ''));
-            if (in_array($classId, ['4', '5'], true)) {
+            if ((int) ($meta['class_ctype'] ?? 0) === 6) {
                 $typeName = strtoupper(html_entity_decode((string) ($meta['name'] ?? ''), ENT_QUOTES | ENT_HTML5));
 
                 return ! preg_match('/(PAYROLL|GENERAL|ADMINISTRATIVE|G&A)/', $typeName);
@@ -281,8 +250,7 @@ class ChartAccountMetadata
 
         $meta = self::forAccountType($accountType);
         if ($meta) {
-            $classId = trim((string) ($meta['class_id'] ?? ''));
-            if (in_array($classId, ['4', '5'], true)) {
+            if ((int) ($meta['class_ctype'] ?? 0) === 6) {
                 $typeName = strtoupper(html_entity_decode((string) ($meta['name'] ?? ''), ENT_QUOTES | ENT_HTML5));
 
                 return (bool) preg_match('/(PAYROLL|GENERAL|ADMINISTRATIVE|G&A)/', $typeName);

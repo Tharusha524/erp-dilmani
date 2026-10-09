@@ -92,8 +92,11 @@ class ProfitAndLossStatementBuilder
             'compare' => round($totalIncome['compare'] - $totalOperatingExpenses['compare'], 2),
         ];
 
-        $totalIncomeAll = $this->sumAmounts($incomeRows);
-        $totalCostsAll = $this->sumAmounts($costRows);
+        $incomeRowsForTotals = $incomeRows->concat($discountAllowedRows);
+        $costRowsForTotals = $costRows->concat($discountGivenRows);
+
+        $totalIncomeAll = $this->sumAmounts($incomeRowsForTotals);
+        $totalCostsAll = $this->sumAmounts($costRowsForTotals);
         $calculatedReturnAll = [
             'period' => round($totalIncomeAll['period'] - $totalCostsAll['period'], 2),
             'compare' => round($totalIncomeAll['compare'] - $totalCostsAll['compare'], 2),
@@ -101,8 +104,8 @@ class ProfitAndLossStatementBuilder
 
         return [
             'detailedSections' => [
-                $this->groupedAccountSection('income_detail', 'Income', $incomeRows, 'Total Income'),
-                $this->groupedAccountSection('costs_detail', 'Costs', $costRows, 'Total Costs'),
+                $this->groupedAccountSection('income_detail', 'Income', $incomeRowsForTotals, 'Total Income'),
+                $this->groupedAccountSection('costs_detail', 'Costs', $costRowsForTotals, 'Total Costs'),
             ],
             'detailedSummary' => [
                 'totalIncome' => $this->withAchieve($totalIncomeAll),
