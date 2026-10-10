@@ -260,6 +260,9 @@ export default function UpdatePurchaseOrderEntry() {
       quantity_received: 0,
     },
   ]);
+  // A completed row (not the last, always-open one) is locked until its
+  // "Edit" button is clicked — before that, its fields can't be changed.
+  const [editingRowId, setEditingRowId] = useState<number | null>(null);
 
   const handleAddRow = () => {
     setRows((prev) => [
@@ -324,7 +327,7 @@ export default function UpdatePurchaseOrderEntry() {
   };
 
   // ========= Subtotal =========
-  const subTotal = rows.reduce((sum, r) => sum + r.total, 0);
+  const subTotal = rows.slice(0, -1).reduce((sum, r) => sum + r.total, 0);
 
   // ========= Place Order =========
   const handlePlaceOrder = async () => {
@@ -540,7 +543,11 @@ export default function UpdatePurchaseOrderEntry() {
           </TableHead>
 
           <TableBody>
-            {rows.map((row, i) => (
+            {rows.map((row, i) => {
+              const isLastRow = i === rows.length - 1;
+              const isLocked = !isLastRow && editingRowId !== row.id;
+
+              return (
               <TableRow key={row.id}>
                 <TableCell>{i + 1}</TableCell>
 
@@ -554,6 +561,7 @@ export default function UpdatePurchaseOrderEntry() {
                   <TextField
                     select
                     size="small"
+                    disabled={isLocked}
                     value={row.stockId}
                     onChange={(e) => {
                       const selectedStockId = e.target.value;
@@ -605,7 +613,7 @@ export default function UpdatePurchaseOrderEntry() {
 
                 {/* Quantity */}
                 <TableCell>
-                  <FormattedNumberField size="small" value={row.quantity} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
+                  <FormattedNumberField size="small" value={row.quantity} InputProps={{ readOnly: isLocked }} onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))} />
                 </TableCell>
 
                 {/* Unit */}
@@ -618,6 +626,7 @@ export default function UpdatePurchaseOrderEntry() {
                   <TextField
                     size="small"
                     type="date"
+                    disabled={isLocked}
                     value={row.deliveryDate}
                     onChange={(e) => handleChange(row.id, "deliveryDate", e.target.value)}
                   />
@@ -629,6 +638,7 @@ export default function UpdatePurchaseOrderEntry() {
                     size="small"
                     value={row.price}
                     currencyCode={currencyCode}
+                    disabled={isLocked}
                     onChange={(v) => handleChange(row.id, "price", v)}
                   />
                 </TableCell>
@@ -637,15 +647,21 @@ export default function UpdatePurchaseOrderEntry() {
 
                 {/* Actions */}
                 <TableCell align="center">
-                  {i === rows.length - 1 ? (
-                    <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddRow}>
+                  {isLastRow ? (
+                    <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={handleAddRow} disabled={!row.itemCode || !(Number(row.quantity) > 0) || !(Number(row.price) > 0)}>
                       Add
                     </Button>
                   ) : (
                     <Stack direction="row" spacing={1}>
-                      <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => alert(`Edit row ${row.id}`)}>
-                        Edit
-                      </Button>
+                      {editingRowId === row.id ? (
+                        <Button variant="contained" size="small" onClick={() => setEditingRowId(null)}>
+                          Done
+                        </Button>
+                      ) : (
+                        <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => setEditingRowId(row.id)}>
+                          Edit
+                        </Button>
+                      )}
                       <Button variant="outlined" color="error" size="small" startIcon={<DeleteIcon />} onClick={() => handleRemoveRow(row.id)}>
                         Delete
                       </Button>
@@ -653,7 +669,8 @@ export default function UpdatePurchaseOrderEntry() {
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
 
           <TableFooter>

@@ -144,6 +144,9 @@ export default function DirectInvoice() {
     const [dateError, setDateError] = useState("");
     const [shippingCharge, setShippingCharge] = useState(0);
     const [priceColumnLabel, setPriceColumnLabel] = useState("Price After Tax");
+    // A completed row (not the last, always-open one) is locked until its
+    // "Edit" button is clicked — before that, its fields can't be changed.
+    const [editingRowId, setEditingRowId] = useState<number | null>(null);
 
     // Additional fields for Quotation Delivery Details
     const [validUntil, setValidUntil] = useState("");
@@ -1337,13 +1340,18 @@ export default function DirectInvoice() {
                     </TableHead>
 
                     <TableBody>
-                        {rows.map((row, i) => (
-                            <TableRow key={row.id}>
+                        {rows.map((row, i) => {
+                            const isLastRow = i === rows.length - 1;
+                            const isLocked = !isLastRow && editingRowId !== row.id;
+
+                            return (
+                            <TableRow key={row.id} data-row-id={row.id}>
                                 <TableCell>{i + 1}</TableCell>
                                 <TableCell>
                                     <ItemSearchSelect
                                         displayField="code"
                                         hideLabel
+                                        disabled={isLocked}
                                         selectedStockId={String(row.selectedItemId ?? row.itemCode ?? "")}
                                         value={row.description}
                                         items={items as any[]}
@@ -1361,6 +1369,7 @@ export default function DirectInvoice() {
                                 <TableCell>
                                     <ItemSearchSelect
                                         hideLabel
+                                        disabled={isLocked}
                                         value={row.description}
                                         selectedStockId={String(row.selectedItemId ?? row.itemCode ?? "")}
                                         items={items as any[]}
@@ -1379,6 +1388,7 @@ export default function DirectInvoice() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.quantity}
+                                        InputProps={{ readOnly: isLocked }}
                                         onChange={(e) => {
                                             const inputValue = Number(e.target.value);
                                             handleChange(row.id, "quantity", inputValue);
@@ -1393,6 +1403,7 @@ export default function DirectInvoice() {
                                     <CurrencyAmountInput
                                         value={priceColumnLabel === "Price before Tax" ? row.priceBeforeTax : row.priceAfterTax}
                                         currencyCode={customerCurrency}
+                                        disabled={isLocked}
                                         onChange={(v) => handleChange(row.id, priceColumnLabel === "Price before Tax" ? "priceBeforeTax" : "priceAfterTax", v)}
                                     />
                                 </TableCell>
@@ -1408,12 +1419,14 @@ export default function DirectInvoice() {
                                                         100
                                                 ) / 100}
                                                 currencyCode={customerCurrency}
+                                                disabled={isLocked}
                                                 onChange={(v) => handleDiscountAmountChange(row, Number(v) || 0)}
                                             />
                                         ) : (
                                             <FormattedNumberField
                                                 size="small"
                                                 value={row.discount}
+                                                InputProps={{ readOnly: isLocked }}
                                                 onChange={(e) => {
                                                     const inputValue = Math.min(100, Math.max(0, Number(e.target.value) || 0));
                                                     handleChange(row.id, "discount", inputValue);
@@ -1425,6 +1438,7 @@ export default function DirectInvoice() {
                                             select
                                             size="small"
                                             value={row.discountMode}
+                                            disabled={isLocked}
                                             onChange={(e) => setDiscountMode(row.id, e.target.value as "percent" | "amount")}
                                             sx={{ minWidth: 56 }}
                                         >
@@ -1435,32 +1449,32 @@ export default function DirectInvoice() {
                                 </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
                                 <TableCell>
-                                    {i === rows.length - 1 ? (
+                                    {isLastRow ? (
                                         <Button
                                             size="small"
                                             variant="contained"
                                             startIcon={<AddIcon />}
                                             onClick={handleAddRow}
+                                            disabled={!row.itemCode || !(Number(row.quantity) > 0) || !(Number(row.priceAfterTax) > 0 || Number(row.priceBeforeTax) > 0)}
                                         >
                                             Add
                                         </Button>
                                     ) : (
                                         <Stack direction="row" spacing={1} justifyContent="center">
-                                            <Button
-                                                variant="outlined"
-                                                size="small"
-                                                startIcon={<EditIcon />}
-                                                onClick={() => {
-                                                    // Focus on the first editable field (item code)
-                                                    const rowElement = document.querySelector(`[data-row-id="${row.id}"]`);
-                                                    if (rowElement) {
-                                                        const firstInput = rowElement.querySelector('input') as HTMLInputElement;
-                                                        if (firstInput) firstInput.focus();
-                                                    }
-                                                }}
-                                            >
-                                                Edit
-                                            </Button>
+                                            {editingRowId === row.id ? (
+                                                <Button variant="contained" size="small" onClick={() => setEditingRowId(null)}>
+                                                    Done
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    startIcon={<EditIcon />}
+                                                    onClick={() => setEditingRowId(row.id)}
+                                                >
+                                                    Edit
+                                                </Button>
+                                            )}
                                             <Button
                                                 variant="outlined"
                                                 color="error"
@@ -1474,7 +1488,8 @@ export default function DirectInvoice() {
                                     )}
                                 </TableCell>
                             </TableRow>
-                        ))}
+                            );
+                        })}
                     </TableBody>
 
                     <TableFooter>

@@ -163,7 +163,7 @@ class StockMaster extends Model
     protected function imageUrl(): Attribute
     {
         return Attribute::make(
-            get: fn ($value, array $attributes) => !empty($attributes['image']) ? asset('storage/' . $attributes['image']) : null,
+            get: fn ($value, array $attributes) => !empty($attributes['image']) ? url('api/storage-file/' . $attributes['image']) : null,
         );
     }
 }

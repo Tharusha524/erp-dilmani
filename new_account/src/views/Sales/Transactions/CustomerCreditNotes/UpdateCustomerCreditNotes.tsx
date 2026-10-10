@@ -19,6 +19,7 @@ import {
     ListSubheader,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -314,6 +315,9 @@ export default function UpdateCustomerCreditNotes() {
             isExisting: false,
         },
     ]);
+    // A completed row (not the last, always-open one) is locked until its
+    // "Edit" button is clicked — before that, its fields can't be changed.
+    const [editingRowId, setEditingRowId] = useState<number | null>(null);
 
     const handleAddRow = () => {
         // Get current customer's discount
@@ -443,7 +447,7 @@ export default function UpdateCustomerCreditNotes() {
         }
     }, [branch, branches]);
 
-    const subTotal = rows.reduce((sum, r) => sum + r.total, 0);
+    const subTotal = rows.slice(0, -1).reduce((sum, r) => sum + r.total, 0);
 
     // Calculate taxes if taxIncl is true
     const selectedPriceList = useMemo(() => {
@@ -973,7 +977,11 @@ export default function UpdateCustomerCreditNotes() {
                     </TableHead>
 
                     <TableBody>
-                        {rows.map((row, i) => (
+                        {rows.map((row, i) => {
+                            const isLastRow = i === rows.length - 1;
+                            const isLocked = !isLastRow && editingRowId !== row.id;
+
+                            return (
                             <TableRow key={row.id}>
                                 <TableCell>{i + 1}</TableCell>
                                 <TableCell>
@@ -981,7 +989,7 @@ export default function UpdateCustomerCreditNotes() {
                                         size="small"
                                         value={row.itemCode}
                                         onChange={(e) => handleChange(row.id, "itemCode", e.target.value)}
-                                        InputProps={{ readOnly: row.isExisting }}
+                                        InputProps={{ readOnly: row.isExisting || isLocked }}
                                     />
                                 </TableCell>
                                 <TableCell>
@@ -996,6 +1004,7 @@ export default function UpdateCustomerCreditNotes() {
                                         <TextField
                                             select
                                             size="small"
+                                            disabled={isLocked}
                                             value={row.description}
                                             onChange={async (e) => {
                                                 const selectedValue = e.target.value?.trim();
@@ -1064,6 +1073,7 @@ export default function UpdateCustomerCreditNotes() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.quantity}
+                                        InputProps={{ readOnly: isLocked }}
                                         onChange={(e) => handleChange(row.id, "quantity", Number(e.target.value))}
                                     />
                                 </TableCell>
@@ -1074,19 +1084,30 @@ export default function UpdateCustomerCreditNotes() {
                                     <CurrencyAmountInput
                                         value={row.price}
                                         currencyCode={customerCurrency}
+                                        disabled={isLocked}
                                         onChange={(v) => handleChange(row.id, "price", v)}
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <FormattedNumberField size="small" value={row.discount} InputProps={{ readOnly: true }} />
+                                    <FormattedNumberField size="small" value={row.discount} InputProps={{ readOnly: isLocked }} onChange={(e) => handleChange(row.id, "discount", Number(e.target.value))} />
                                 </TableCell>
                                 <TableCell>{formatMoney(row.total)}</TableCell>
                                 <TableCell>
-                                    {i === rows.length - 1 ? (
-                                        <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={handleAddRow}>
+                                    {isLastRow ? (
+                                        <Button size="small" variant="contained" startIcon={<AddIcon />} onClick={handleAddRow} disabled={!row.itemCode || !(Number(row.quantity) > 0) || !(Number(row.price) > 0)}>
                                             Add
                                         </Button>
                                     ) : (
+                                        <Stack direction="row" spacing={1}>
+                                        {editingRowId === row.id ? (
+                                            <Button size="small" variant="contained" onClick={() => setEditingRowId(null)}>
+                                                Done
+                                            </Button>
+                                        ) : (
+                                            <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={() => setEditingRowId(row.id)}>
+                                                Edit
+                                            </Button>
+                                        )}
                                         <Button
                                             size="small"
                                             variant="outlined"
@@ -1096,10 +1117,12 @@ export default function UpdateCustomerCreditNotes() {
                                         >
                                             Delete
                                         </Button>
+                                        </Stack>
                                     )}
                                 </TableCell>
                             </TableRow>
-                        ))}
+                            );
+                        })}
                     </TableBody>
 
                     <TableFooter>

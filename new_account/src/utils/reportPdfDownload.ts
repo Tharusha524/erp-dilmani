@@ -72,3 +72,40 @@ export function downloadPdfBlob(blob: Blob, filename: string) {
   link.parentNode?.removeChild(link);
   window.URL.revokeObjectURL(url);
 }
+
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+export async function generateReportExcel(
+  reportKey: string,
+  params: Record<string, unknown>
+): Promise<Blob> {
+  try {
+    const response = await api.post(
+      "/reports/generate-excel",
+      { reportKey, ...normalizeReportPdfParams(params) },
+      { responseType: "blob", skipErrorDialog: true } as Record<string, unknown>
+    );
+
+    const blob = response.data as Blob;
+    if (blob.type && blob.type.includes("application/json")) {
+      const text = await blob.text();
+      const parsed = JSON.parse(text) as { message?: string };
+      throw new Error(parsed.message || "Failed to generate report Excel");
+    }
+
+    return blob;
+  } catch (error) {
+    throw await parseBlobError(error);
+  }
+}
+
+export function downloadExcelBlob(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(new Blob([blob], { type: XLSX_MIME }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename.endsWith(".xlsx") ? filename : `${filename}.xlsx`);
+  document.body.appendChild(link);
+  link.click();
+  link.parentNode?.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}

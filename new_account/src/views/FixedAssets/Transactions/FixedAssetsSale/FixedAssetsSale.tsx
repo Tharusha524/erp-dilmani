@@ -89,6 +89,9 @@ export default function FixedAssetsSale() {
     const navigate = useNavigate();
     const { enqueueSnackbar } = useSnackbar();
     const [submitting, setSubmitting] = useState(false);
+    // A completed row (not the last, always-open one) is locked until its
+    // "Edit" button is clicked — before that, its fields can't be changed.
+    const [editingRowId, setEditingRowId] = useState<number | null>(null);
 
     // ===== Form fields =====
     const [customer, setCustomer] = useState("");
@@ -496,7 +499,7 @@ export default function FixedAssetsSale() {
         { title: "Fixed Assets Sale" },
     ];
 
-    const subTotal = rows.reduce((sum, r) => sum + r.total, 0);
+    const subTotal = rows.slice(0, -1).reduce((sum, r) => sum + r.total, 0);
     const amountTotal = subTotal + shippingCharge;
 
     return (
@@ -650,14 +653,19 @@ export default function FixedAssetsSale() {
                     </TableHead>
 
                     <TableBody>
-                        {rows.map((row, i) => (
-                            <TableRow key={row.id}>
+                        {rows.map((row, i) => {
+                            const isLastRow = i === rows.length - 1;
+                            const isLocked = !isLastRow && editingRowId !== row.id;
+
+                            return (
+                            <TableRow key={row.id} data-row-id={row.id}>
                                 <TableCell>{i + 1}</TableCell>
                                 <TableCell>
                                     <ItemSearchSelect
                                         displayField="code"
                                         hideLabel
                                         placeholder="Search fixed asset code…"
+                                        disabled={isLocked}
                                         selectedStockId={String(row.selectedItemId ?? row.itemCode ?? "")}
                                         value={row.itemCode}
                                         items={faItems as ItemSearchOption[]}
@@ -673,6 +681,7 @@ export default function FixedAssetsSale() {
                                         displayField="description"
                                         hideLabel
                                         placeholder="Search fixed asset…"
+                                        disabled={isLocked}
                                         selectedStockId={String(row.selectedItemId ?? row.itemCode ?? "")}
                                         value={row.description}
                                         items={faItems as ItemSearchOption[]}
@@ -699,6 +708,7 @@ export default function FixedAssetsSale() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.quantity}
+                                        InputProps={{ readOnly: isLocked }}
                                         inputProps={{
                                             min: 0,
                                             max: row.qoh > 0 ? row.qoh : undefined,
@@ -733,6 +743,7 @@ export default function FixedAssetsSale() {
                                     <FormattedNumberField
                                         size="small"
                                         value={row.priceAfterTax}
+                                        InputProps={{ readOnly: isLocked }}
                                         onChange={(e) => handleChange(row.id, "priceAfterTax", Number(e.target.value))}
                                     />
                                 </TableCell>
@@ -745,32 +756,32 @@ export default function FixedAssetsSale() {
                                 </TableCell>
                                 <TableCell>{row.total.toFixed(2)}</TableCell>
                                 <TableCell>
-                                    {i === rows.length - 1 ? (
+                                    {isLastRow ? (
                                         <Button
                                             size="small"
                                             variant="contained"
                                             startIcon={<AddIcon />}
                                             onClick={handleAddRow}
+                                            disabled={!row.itemCode || !(Number(row.quantity) > 0) || !(Number(row.priceAfterTax) > 0)}
                                         >
                                             Add
                                         </Button>
                                     ) : (
                                        <Stack direction="row" spacing={1} justifyContent="center">
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<EditIcon />}
-                        onClick={() => {
-                          // Focus on the first editable field (item code)
-                          const rowElement = document.querySelector(`[data-row-id="${row.id}"]`);
-                          if (rowElement) {
-                            const firstInput = rowElement.querySelector('input') as HTMLInputElement;
-                            if (firstInput) firstInput.focus();
-                          }
-                        }}
-                      >
-                        Edit
-                      </Button>
+                      {editingRowId === row.id ? (
+                        <Button variant="contained" size="small" onClick={() => setEditingRowId(null)}>
+                          Done
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<EditIcon />}
+                          onClick={() => setEditingRowId(row.id)}
+                        >
+                          Edit
+                        </Button>
+                      )}
                       <Button
                         variant="outlined"
                         color="error"
@@ -784,7 +795,8 @@ export default function FixedAssetsSale() {
                                     )}
                                 </TableCell>
                             </TableRow>
-                        ))}
+                            );
+                        })}
                     </TableBody>
 
                     <TableFooter>

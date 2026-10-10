@@ -79,6 +79,8 @@ class BankTransInquiryRepository extends BaseRepository implements BankTransInqu
                 'id' => $row->id,
                 'number' => $row->number,
                 'type' => $row->type_name ?? $row->type,
+                'trans_type' => $row->type,
+                'trans_no' => $row->number,
                 'reference' => $row->reference,
                 'date' => $row->date,
                 'debit' => round((float) $row->debit, 2),

@@ -281,7 +281,34 @@ export default function BankAccountInquiry() {
                   </Button>
                 </TableCell>
                 <TableCell align="center">
-                  <Button variant="outlined" size="small" onClick={() => console.log("Edit", r.number)}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => {
+                      const transNo = Number(r.transNo ?? r.number);
+                      const transType =
+                        r.transType !== undefined && !Number.isNaN(Number(r.transType))
+                          ? Number(r.transType)
+                          : undefined;
+
+                      // Bank Deposit (2) still has no edit screen/API.
+                      if (transType === 0) {
+                        navigate("/bankingandgeneralledger/transactions/journal-entry", {
+                          state: { trans_no: transNo, trans_type: transType },
+                        });
+                      } else if (transType === 1) {
+                        navigate("/bankingandgeneralledger/transactions/payments", {
+                          state: { trans_no: transNo, trans_type: transType },
+                        });
+                      } else if (transType === 4) {
+                        navigate("/bankingandgeneralledger/transactions/bank-account-transfers", {
+                          state: { trans_no: transNo, trans_type: transType },
+                        });
+                      } else {
+                        notify.info(`Editing "${r.type}" transactions isn't supported yet.`);
+                      }
+                    }}
+                  >
                     Edit
                   </Button>
                 </TableCell>

@@ -15,6 +15,7 @@
         "laravel/tinker": "^2.10.1",
         "league/flysystem-google-cloud-storage": "^3.34",
         "moneyphp/money": "^4.9",
+        "phpoffice/phpspreadsheet": "^5.10",
         "tecnickcom/tcpdf": "^6.11"
     },
     "require-dev": {

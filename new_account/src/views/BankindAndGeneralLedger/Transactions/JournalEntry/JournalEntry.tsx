@@ -263,6 +263,9 @@ export default function JournalEntry() {
   const [saveError, setSaveError] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [openSelectRowId, setOpenSelectRowId] = useState<number | null>(null);
+  // A completed row (not the last, always-open one) is locked until its
+  // "Edit" button is clicked — before that, its fields can't be changed.
+  const [editingRowId, setEditingRowId] = useState<number | null>(null);
   const [tabValue, setTabValue] = useState(0);
 
   // Set reference number from active fiscal year (scoped by transaction type)
@@ -953,7 +956,11 @@ export default function JournalEntry() {
           </TableHead>
 
           <TableBody>
-            {rows.map((row, index) => (
+            {rows.map((row, index) => {
+              const isLastRow = index === rows.length - 1;
+              const isLocked = !isLastRow && editingRowId !== row.id;
+
+              return (
               <TableRow key={row.id} hover data-row-id={row.id}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>
@@ -963,6 +970,7 @@ export default function JournalEntry() {
                   <TextField
                     select
                     size="small"
+                    disabled={isLocked}
                     value={String(row.selectedAccountCode || row.accountCode || "")}
                     SelectProps={{
                         open: openSelectRowId === row.id,
@@ -1049,6 +1057,7 @@ export default function JournalEntry() {
                     select
                     size="small"
                     sx={{ minWidth: 160 }}
+                    disabled={isLocked}
                     value={row.costCenter ? String(row.costCenter) : ""}
                     onChange={(e) => handleChange(row.id, "costCenter", e.target.value)}
                   >
@@ -1068,6 +1077,7 @@ export default function JournalEntry() {
                       select
                       size="small"
                       sx={{ minWidth: 180 }}
+                      disabled={isLocked}
                       value={row.personId ? String(row.personId) : ""}
                       onChange={(e) => handleCounterpartyChange(row.id, 2, e.target.value)}
                     >
@@ -1085,6 +1095,7 @@ export default function JournalEntry() {
                       select
                       size="small"
                       sx={{ minWidth: 180 }}
+                      disabled={isLocked}
                       value={row.personId ? String(row.personId) : ""}
                       onChange={(e) => handleCounterpartyChange(row.id, 3, e.target.value)}
                     >
@@ -1112,7 +1123,9 @@ export default function JournalEntry() {
                     sx={{ minWidth: 110 }}
                     inputProps={{ step: "0.01" }}
                     placeholder="0.00"
+                    fixedDecimals={2}
                     value={row.debit}
+                    InputProps={{ readOnly: isLocked }}
                     onChange={(e) => handleDebitCreditChange(row.id, "debit", e.target.value)}
                   />
                 </TableCell>
@@ -1123,33 +1136,38 @@ export default function JournalEntry() {
                     sx={{ minWidth: 110 }}
                     inputProps={{ step: "0.01" }}
                     placeholder="0.00"
+                    fixedDecimals={2}
                     value={row.credit}
+                    InputProps={{ readOnly: isLocked }}
                     onChange={(e) => handleDebitCreditChange(row.id, "credit", e.target.value)}
                   />
                 </TableCell>
                 <TableCell>
-                  <TextField size="small" value={row.memo} onChange={(e) => handleChange(row.id, "memo", e.target.value)} />
+                  <TextField size="small" value={row.memo} InputProps={{ readOnly: isLocked }} onChange={(e) => handleChange(row.id, "memo", e.target.value)} />
                 </TableCell>
                 <TableCell align="center">
-                  {index === rows.length - 1 ? (
-                    <Button variant="contained" color="primary" size="small" startIcon={<AddIcon />} onClick={handleAddItem}>
+                  {isLastRow ? (
+                    <Button variant="contained" color="primary" size="small" startIcon={<AddIcon />} onClick={handleAddItem} disabled={!row.selectedAccountCode || !(Number(row.debit) > 0 || Number(row.credit) > 0)}>
                       Add
                     </Button>
                   ) : (
                     <Stack direction="row" spacing={1} justifyContent="center">
-                      <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => {
-                        const rowElement = document.querySelector(`[data-row-id="${row.id}"]`);
-                        if (rowElement) {
-                          const firstInput = rowElement.querySelector('input') as HTMLInputElement;
-                          if (firstInput) firstInput.focus();
-                        }
-                      }}>Edit</Button>
+                      {editingRowId === row.id ? (
+                        <Button variant="contained" size="small" onClick={() => setEditingRowId(null)}>
+                          Done
+                        </Button>
+                      ) : (
+                        <Button variant="outlined" size="small" startIcon={<EditIcon />} onClick={() => setEditingRowId(row.id)}>
+                          Edit
+                        </Button>
+                      )}
                       <Button variant="outlined" color="error" size="small" startIcon={<DeleteIcon />} onClick={() => handleRemoveRow(row.id)}>Delete</Button>
                     </Stack>
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
 
           <TableFooter>

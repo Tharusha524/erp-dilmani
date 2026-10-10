@@ -205,6 +205,7 @@ import SoftwareUpdateTable from "./views/Setup/Maintenance/SoftwareUpgrade/Softw
 import InstallChartOfAccounts from "./views/Setup/Maintenance/InstallChartOfAccounts/InstallChartOfAccounts";
 import SystemDiagnostics from "./views/Setup/Maintenance/SystemDiagnostic/SystemDiagnostics";
 import UserLoginLogs from "./views/Setup/Maintenance/UserLoginLogs/UserLoginLogs";
+import SlideshowImagesTable from "./views/Setup/Maintenance/SlideshowImages/SlideshowImagesTable";
 import BackgroundColorSettings from "./views/Setup/Maintenance/BackgroundColor/BackgroundColorSettings";
 import UpdateGeneralSettingsForm from "./views/Sales/Maintenance/AddManageCustomers/GeneralSettingsForm/UpdateGeneralSettingsForm";
 import TransactionReferencesTable from "./views/Setup/CompanySetup/TransactionReferences/TransactionReferencesTable";
@@ -1290,6 +1291,14 @@ const AppRoutes = () => {
             element={
               <ProtectedRoute required={PERMISSION_ID_MAP['User login activity page']}>
                 {withLayout(MainLayout, UserLoginLogs)}
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="maintenance/slideshow-images"
+            element={
+              <ProtectedRoute required={PERMISSION_ID_MAP['Login slideshow images']}>
+                {withLayout(MainLayout, SlideshowImagesTable)}
               </ProtectedRoute>
             }
           />

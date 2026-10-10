@@ -181,7 +181,19 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 Route::get('/work-order-images/{path}', [\App\Http\Controllers\WoSheetOrderController::class, 'showImage'])
     ->where('path', '.*');
 
+// Public — the login/signup page itself isn't authenticated yet.
+Route::get('login-slideshow-images', [\App\Http\Controllers\LoginSlideshowImageController::class, 'index']);
+
+// Public — serves files from the "public" storage disk directly, working
+// the same locally and on hosting regardless of whether the storage:link
+// symlink exists (see StorageFileController for why).
+Route::get('storage-file/{path}', [\App\Http\Controllers\StorageFileController::class, 'show'])
+    ->where('path', '.*');
+
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('login-slideshow-images', [\App\Http\Controllers\LoginSlideshowImageController::class, 'store']);
+    Route::delete('login-slideshow-images/{id}', [\App\Http\Controllers\LoginSlideshowImageController::class, 'destroy']);
+    Route::post('login-slideshow-images/reorder', [\App\Http\Controllers\LoginSlideshowImageController::class, 'reorder']);
     Route::get('/standalone-stocks', [StandaloneStockController::class, 'index']);
     Route::post('/standalone-stocks', [StandaloneStockController::class, 'store']);
     Route::put('/standalone-stocks/{id}', [StandaloneStockController::class, 'update']);
@@ -317,6 +329,8 @@ Route::get('banking/payment/{transNo}', [BankingTransactionController::class, 's
 Route::put('banking/payment/{transNo}', [BankingTransactionController::class, 'updatePayment']);
 Route::post('banking/deposit', [BankingTransactionController::class, 'deposit']);
 Route::post('banking/transfer', [BankingTransactionController::class, 'transfer']);
+Route::get('banking/transfer/{transNo}', [BankingTransactionController::class, 'showTransfer']);
+Route::put('banking/transfer/{transNo}', [BankingTransactionController::class, 'updateTransfer']);
 Route::post('banking/journal', [BankingTransactionController::class, 'journal']);
 Route::get('banking/journal/{transNo}', [BankingTransactionController::class, 'showJournal']);
 Route::put('banking/journal/{transNo}', [BankingTransactionController::class, 'updateJournal']);
@@ -366,6 +380,8 @@ Route::post('bank-account-inquiry/search', [BankAccountInquiryController::class,
 Route::post('tax-inquiry/search', [TaxInquiryController::class, 'search']);
 
 Route::post('trial-balance/search', [TrialBalanceController::class, 'search']);
+Route::get('gl-accounts/{accountCode}/transactions', [\App\Http\Controllers\GlAccountInquiryController::class, 'show'])
+    ->where('accountCode', '.*');
 
 Route::post('balance-sheet/search', [BalanceSheetController::class, 'search']);
 
@@ -516,6 +532,7 @@ Route::post('sys-prefs/bulk', [\App\Http\Controllers\SysPrefsController::class, 
 Route::apiResource('sys-prefs', \App\Http\Controllers\SysPrefsController::class);
 
 Route::post('/reports/generate', [\App\Http\Controllers\ReportController::class, 'generate']);
+Route::post('/reports/generate-excel', [\App\Http\Controllers\ReportController::class, 'generateExcel']);
 Route::post('/reports/monthly-sales-summary', [\App\Http\Controllers\ReportController::class, 'monthlySalesSummary']);
 Route::post('/reports/customer-balances', [\App\Http\Controllers\ReportController::class, 'customerBalances']);
 Route::post('/reports/aged-customer-analysis', [\App\Http\Controllers\ReportController::class, 'agedCustomerAnalysis']);

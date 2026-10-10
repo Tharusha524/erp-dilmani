@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Repositories\All\Reports\ReportsInterface;
 use App\Services\CompanyReportHeader;
 use App\Services\Pdf\TcpdfGenerator;
+use App\Services\Reports\ReportExcelBuilder;
 use App\Services\Reports\ReportPdfBuilder;
 use App\Support\ActiveFiscalYear;
 use Carbon\Carbon;
@@ -14,13 +15,46 @@ class ReportController extends Controller
 {
     protected $reports;
     protected ReportPdfBuilder $pdfBuilder;
+    protected ReportExcelBuilder $excelBuilder;
     protected TcpdfGenerator $pdf;
 
-    public function __construct(ReportsInterface $reports, ReportPdfBuilder $pdfBuilder, TcpdfGenerator $pdf)
-    {
+    public function __construct(
+        ReportsInterface $reports,
+        ReportPdfBuilder $pdfBuilder,
+        ReportExcelBuilder $excelBuilder,
+        TcpdfGenerator $pdf
+    ) {
         $this->reports = $reports;
         $this->pdfBuilder = $pdfBuilder;
+        $this->excelBuilder = $excelBuilder;
         $this->pdf = $pdf;
+    }
+
+    /**
+     * Unified Excel (.xlsx) generation for report types built from the
+     * generic headers/rows structure.
+     */
+    public function generateExcel(Request $request)
+    {
+        try {
+            $reportKey = $request->input('reportKey', 'generic');
+            $contents = $this->excelBuilder->build($reportKey, $request);
+            $filename = $reportKey . '_' . date('Y-m-d') . '.xlsx';
+
+            return response($contents, 200, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'private, max-age=0, must-revalidate',
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Failed to generate report Excel: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
