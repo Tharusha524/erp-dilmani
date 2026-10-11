@@ -13,7 +13,6 @@ export default function PaymentsSuccess() {
   const glState = {
     ...(state as Record<string, unknown>),
     transactionKind: "payment",
-    autoPrint: true,
   };
 
   const breadcrumbItems = [

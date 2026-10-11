@@ -2574,7 +2574,15 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/transactions/gl-journal-entries"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            // "Inventory Operations" has no checkbox in Access Setup and can
+            // never be granted on its own — accept the permission of the
+            // page that actually links here (Inventory Adjustments) too.
+            <ProtectedRoute
+              required={[
+                PERMISSION_ID_MAP['Inventory adjustments'],
+                PERMISSION_ID_MAP['Inventory Operations'],
+              ]}
+            >
               {withLayout(MainLayout, ViewInventoryGLJournalEntries)}
             </ProtectedRoute>
           }
@@ -2735,7 +2743,18 @@ const AppRoutes = () => {
         <Route
           path="/itemsandinventory/maintenance/items/transactions/view-adjustment"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Inventory Operations']}>
+            // "Inventory Operations" has no checkbox in Access Setup and can
+            // never be granted on its own — accept the permissions of the
+            // pages that actually link here (Stock Transactions view,
+            // Inventory Item Movements, Inventory Adjustments) too.
+            <ProtectedRoute
+              required={[
+                PERMISSION_ID_MAP['Stock transactions view'],
+                PERMISSION_ID_MAP['Items analytical reports and inquiries'],
+                PERMISSION_ID_MAP['Inventory adjustments'],
+                PERMISSION_ID_MAP['Inventory Operations'],
+              ]}
+            >
               {withLayout(MainLayout, ItemAdjustmentDetails)}
             </ProtectedRoute>
           }
@@ -3525,7 +3544,15 @@ const AppRoutes = () => {
         <Route
           path="/bankingandgeneralledger/transactions/gl-postings"
           element={
-            <ProtectedRoute required={PERMISSION_ID_MAP['Banking & GL Transactions']}>
+            <ProtectedRoute
+              required={[
+                PERMISSION_ID_MAP['Bank payments'],
+                PERMISSION_ID_MAP['Bank deposits'],
+                PERMISSION_ID_MAP['GL analytical reports and inquiries'],
+                PERMISSION_ID_MAP['Bank reports and inquiries'],
+                PERMISSION_ID_MAP['Banking & GL Transactions'],
+              ]}
+            >
               {withLayout(MainLayout, GLPostings)}
             </ProtectedRoute>
           }

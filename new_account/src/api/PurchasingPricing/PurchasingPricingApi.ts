@@ -32,10 +32,13 @@ export const getPurchData = async (stockId?: string | number): Promise<PurchData
  */
 export const getPurchDataById = async (
   supplier_id: number,
-  stock_id: string
+  stock_id: string,
+  options?: { skipErrorDialog?: boolean }
 ): Promise<PurchData> => {
   try {
-    const response = await api.get(`${API_URL}/${supplier_id}/${stock_id}`);
+    const response = await api.get(`${API_URL}/${supplier_id}/${stock_id}`, {
+      skipErrorDialog: options?.skipErrorDialog,
+    } as any);
     return response.data;
   } catch (error: any) {
     console.error(error.response?.data || error);

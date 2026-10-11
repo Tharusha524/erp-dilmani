@@ -24,6 +24,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getBankAccounts } from "../../../../api/BankAccount/BankAccountApi";
+import { getAccountTypes } from "../../../../api/BankAccount/AccountTypesApi";
 import Breadcrumb from "../../../../components/BreadCrumb";
 import PageTitle from "../../../../components/PageTitle";
 import theme from "../../../../theme";
@@ -68,9 +69,19 @@ export default function BankAccountInquiry() {
     queryFn: getBankAccounts,
   });
 
+  const { data: accountTypes = [] } = useQuery({
+    queryKey: ["accountTypes"],
+    queryFn: getAccountTypes,
+  });
+
   const [selectedAccount, setSelectedAccount] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const today = new Date().toISOString().split("T")[0];
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
+
+  const selectedBankAccount = (bankAccounts as any[]).find((acc: any) => String(acc.id) === String(selectedAccount));
+  const selectedAccountType = (accountTypes as any[]).find((t: any) => String(t.id) === String(selectedBankAccount?.account_type));
+  const isCashAccount = (selectedAccountType?.type_name || "").toLowerCase().includes("cash");
 
   const formatMoney = (n: number) =>
     Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -213,7 +224,7 @@ export default function BankAccountInquiry() {
 
         {summary && (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Current book balance (all dates): <strong>{formatMoney(summary.book_balance)}</strong>
+            {isCashAccount ? "Cash book balance" : "Bank book balance"} (all dates): <strong>{formatMoney(summary.book_balance)}</strong>
           </Typography>
         )}
       </Paper>

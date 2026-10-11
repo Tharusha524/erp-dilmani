@@ -441,6 +441,7 @@ export default function Payments() {
               value={date}
               onChange={(e) => handleDateChange(e.target.value)}
               InputLabelProps={{ shrink: true }}
+              inputProps={{ lang: "en-GB" }}
               error={!!dateError}
               helperText={dateError}
             />

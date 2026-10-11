@@ -123,7 +123,7 @@ export async function registerUser({
 }
 
 export async function validateUser(): Promise<User> {
-  const res = await api.get("/user");
+  const res = await api.get("/user", { skipErrorDialog: true } as any);
   return res.data;
 }
 

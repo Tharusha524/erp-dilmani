@@ -62,7 +62,7 @@ class TcpdfGenerator
         $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
         $pdf->SetCreator(config('app.name', 'ERP'));
         $pdf->SetAuthor(config('app.name', 'ERP'));
-        $pdf->SetTitle('ERP Report');
+        $pdf->SetTitle((string) ($data['title'] ?? config('app.name', 'ERP').' Report'));
         // DejaVu Sans gives modern readable Unicode-safe output.
         $pdf->SetFont('dejavusans', '', 10);
         $pdf->AddPage();

@@ -177,24 +177,49 @@ class DashboardService
       ->sum(DB::raw($this->suppNetExpr()));
   }
 
+  /**
+   * Trade debtors balance — read from the same GL control account the Balance
+   * Sheet uses, so the dashboard figure always agrees with it instead of being
+   * recomputed separately from debtor_trans (which was also wrong for
+   * foreign-currency customers). Resolved locally (not via GlAccountResolver)
+   * because different companies name this account "Trade Debtors" or
+   * "Receivable" — sys_prefs.receivableAccount is checked first when set.
+   */
   private function totalReceivables(string $asAt): float
   {
-    if (!Schema::hasTable('debtor_trans')) {
+    $accountCode = $this->resolveReceivablesAccountCode();
+    if (!$accountCode) {
       return 0;
     }
 
-    $rows = DB::table('debtor_trans as t')
-      ->selectRaw(
-        'SUM(' . $this->signedDebtorBalanceExpr() . ') as balance'
-      )
-      ->where(function ($q) use ($asAt) {
-        $q->where('t.tran_date', '<=', $asAt)->orWhereNull('t.tran_date');
-      })
-      ->groupBy('t.debtor_no')
-      ->havingRaw('ABS(SUM(' . $this->signedDebtorBalanceExpr() . ')) > 0.001')
-      ->get();
+    return (float) ($this->bankBalanceService->getGlBalance($accountCode, $asAt) ?? 0);
+  }
 
-    return (float) $rows->sum('balance');
+  private function resolveReceivablesAccountCode(): ?string
+  {
+    if (!Schema::hasTable('chart_master')) {
+      return null;
+    }
+
+    if (Schema::hasTable('sys_prefs')) {
+      $configured = DB::table('sys_prefs')->where('name', 'receivableAccount')->value('value');
+      if ($configured && DB::table('chart_master')->where('account_code', $configured)->where('inactive', 0)->exists()) {
+        return (string) $configured;
+      }
+    }
+
+    foreach (['%Trade Debtor%', '%Receivable%'] as $pattern) {
+      $found = DB::table('chart_master')
+        ->where('inactive', 0)
+        ->where('account_name', 'like', $pattern)
+        ->orderBy('account_code')
+        ->value('account_code');
+      if ($found) {
+        return (string) $found;
+      }
+    }
+
+    return null;
   }
 
   private function totalPayables(string $asAt): float
