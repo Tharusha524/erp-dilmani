@@ -84,8 +84,6 @@ const AddWorkOrder = () => {
 
   const [frontImageFile, setFrontImageFile] = useState<File | null>(null);
   const [frontImagePreview, setFrontImagePreview] = useState<string | null>(null);
-  const [backImageFile, setBackImageFile] = useState<File | null>(null);
-  const [backImagePreview, setBackImagePreview] = useState<string | null>(null);
 
   const [category, setCategory] = useState("");
   const [orderDate, setOrderDate] = useState("");
@@ -130,7 +128,6 @@ const AddWorkOrder = () => {
     setAdvance(existingOrder.advance != null ? String(existingOrder.advance) : "");
     setBalance(existingOrder.balance != null ? String(existingOrder.balance) : "");
     setFrontImagePreview(storageUrl(existingOrder.front_image_path));
-    setBackImagePreview(storageUrl(existingOrder.back_image_path));
 
     const nextSizeQty: Record<string, string> = {};
     existingOrder.sizes?.forEach((s) => {
@@ -220,7 +217,6 @@ const AddWorkOrder = () => {
     if (advance) formData.append("advance", advance);
     if (balance) formData.append("balance", balance);
     if (frontImageFile) formData.append("front_image", frontImageFile);
-    if (backImageFile) formData.append("back_image", backImageFile);
 
     let sizeIndex = 0;
     SIZE_GROUPS.forEach((group) => {
@@ -430,11 +426,13 @@ const AddWorkOrder = () => {
 
           {/* Design Upload Section */}
           <Grid container spacing={4} justifyContent="center">
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <Paper
                 variant="outlined"
                 sx={{
-                  height: 300,
+                  // Matches the client's combined front+back artboard: 43.5" × 25.0".
+                  aspectRatio: "43.5 / 25",
+                  width: "100%",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -453,43 +451,11 @@ const AddWorkOrder = () => {
                   onChange={(e) => handleImageUpload(e, setFrontImageFile, setFrontImagePreview)}
                 />
                 {frontImagePreview ? (
-                  <img src={frontImagePreview} alt="Front Design" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  <img src={frontImagePreview} alt="Design" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                 ) : (
                   <>
                     <CloudUploadIcon color="action" sx={{ fontSize: 60, mb: 1 }} />
-                    <Typography color="textSecondary">Upload Front Design</Typography>
-                  </>
-                )}
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Paper
-                variant="outlined"
-                sx={{
-                  height: 300,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  overflow: "hidden",
-                  position: "relative",
-                  "&:hover": { backgroundColor: "action.hover" },
-                }}
-                component="label"
-              >
-                <input
-                  type="file"
-                  hidden
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, setBackImageFile, setBackImagePreview)}
-                />
-                {backImagePreview ? (
-                  <img src={backImagePreview} alt="Back Design" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                ) : (
-                  <>
-                    <CloudUploadIcon color="action" sx={{ fontSize: 60, mb: 1 }} />
-                    <Typography color="textSecondary">Upload Back Design</Typography>
+                    <Typography color="textSecondary">Upload Design (Front &amp; Back)</Typography>
                   </>
                 )}
               </Paper>

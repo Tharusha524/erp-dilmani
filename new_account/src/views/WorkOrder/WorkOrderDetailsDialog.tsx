@@ -61,6 +61,16 @@ const storageUrl = (path: string | null): string | null => {
   return `${backendBase}/storage/${path.replace(/^\/+/, "")}`;
 };
 
+// Same shape as the client's combined front+back artboard (43.5" × 25.0").
+const designImageSx = {
+  width: "100%",
+  aspectRatio: "43.5 / 25",
+  objectFit: "contain",
+  borderRadius: 1,
+  display: "block",
+  border: "1px solid var(--pallet-border-blue)",
+} as const;
+
 const detailRow = (label: string, value: React.ReactNode) => (
   <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 0.5 }}>
     <Typography variant="body2" fontWeight={600} sx={{ minWidth: 130, color: "text.secondary" }}>
@@ -308,24 +318,26 @@ export default function WorkOrderDetailsDialog({ orderId, onClose }: Props) {
                   <Typography variant="subtitle2" fontWeight={700} color="primary" gutterBottom>
                     Design
                   </Typography>
-                  <Stack direction="row" spacing={3} justifyContent="center">
+                  <Stack direction="row" spacing={3} justifyContent="center" flexWrap="wrap" useFlexGap>
                     {order.front_image_path && (
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">Front Design</Typography>
+                      <Box sx={{ width: 560, maxWidth: "100%" }}>
+                        <Typography variant="caption" color="text.secondary">
+                          {order.back_image_path ? "Front Design" : "Design (Front & Back)"}
+                        </Typography>
                         <Box
                           component="img"
                           src={storageUrl(order.front_image_path) || undefined}
-                          sx={{ width: 320, height: 320, objectFit: "cover", borderRadius: 1, display: "block", border: "1px solid var(--pallet-border-blue)" }}
+                          sx={designImageSx}
                         />
                       </Box>
                     )}
                     {order.back_image_path && (
-                      <Box>
+                      <Box sx={{ width: 560, maxWidth: "100%" }}>
                         <Typography variant="caption" color="text.secondary">Back Design</Typography>
                         <Box
                           component="img"
                           src={storageUrl(order.back_image_path) || undefined}
-                          sx={{ width: 320, height: 320, objectFit: "cover", borderRadius: 1, display: "block", border: "1px solid var(--pallet-border-blue)" }}
+                          sx={designImageSx}
                         />
                       </Box>
                     )}

@@ -134,8 +134,9 @@ const DesignImages = ({
   size?: number;
 }) => {
   if (!front && !back) return null;
+  // Client's combined front+back artboard is 43.5" × 25.0".
   const imgStyle: React.CSSProperties = {
-    width: size,
+    width: Math.round((size * 43.5) / 25),
     height: size,
     objectFit: "contain",
     border: "1px solid #ccc",
@@ -147,7 +148,7 @@ const DesignImages = ({
         {front && (
           <figure style={{ margin: 0, textAlign: "center" }}>
             <img src={front} alt="Front design" style={imgStyle} />
-            <figcaption style={{ fontSize: 11, color: "#666" }}>Front</figcaption>
+            <figcaption style={{ fontSize: 11, color: "#666" }}>{back ? "Front" : "Design (Front & Back)"}</figcaption>
           </figure>
         )}
         {back && (
@@ -764,7 +765,7 @@ export default function WorkOrderPrintSheet() {
           h3 { margin: 13px 0 6px !important; font-size: 13px !important; }
           table { font-size: 11.5px !important; }
           td, th { padding: 5px 7px !important; }
-          .wo-design img { width: 215px !important; height: 215px !important; }
+          .wo-design img { width: 374px !important; height: 215px !important; }
           .wo-remark { min-height: 75px !important; }
           /* Never split a section, table or figure across pages. */
           .wo-block, table, figure, tr { break-inside: avoid !important; page-break-inside: avoid !important; }
